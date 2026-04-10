@@ -1,6 +1,9 @@
 [build]
   publish = "."
-  functions = "netlify/functions"
+  functions = "functions"
+
+[functions]
+  directory = "functions"
 
 [[redirects]]
   from = "/api/anthropic"
