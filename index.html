@@ -24,8 +24,8 @@
   --purple:     #B97AFF;
   --purple-dim: rgba(185,122,255,0.12);
   --text:  #E2EAF4;
-  --text2: #8FA3BC;
-  --text3: #4A6080;
+  --text2: #FFFFFF;
+  --text3: #FFFFFF;
   --glow:  0 0 20px rgba(0,255,136,0.15);
 }
 
@@ -3851,10 +3851,10 @@ function renderTrendPanel() {
       options: {
         responsive:true, maintainAspectRatio:true,
         scales: {
-          x: { ticks:{ color:'#8FA3BC', font:{size:9,family:'JetBrains Mono'} }, grid:{display:false} },
-          y: { ticks:{ color:'#8FA3BC', font:{size:9,family:'JetBrains Mono'} }, grid:{color:'rgba(255,255,255,0.04)'} }
+          x: { ticks:{ color:'#FFFFFF', font:{size:9,family:'JetBrains Mono'} }, grid:{display:false} },
+          y: { ticks:{ color:'#FFFFFF', font:{size:9,family:'JetBrains Mono'} }, grid:{color:'rgba(255,255,255,0.04)'} }
         },
-        plugins:{ legend:{ labels:{ color:'#8FA3BC', font:{size:9,family:'JetBrains Mono'}, boxWidth:10 } } }
+        plugins:{ legend:{ labels:{ color:'#FFFFFF', font:{size:9,family:'JetBrains Mono'}, boxWidth:10 } } }
       }
     });
 
@@ -3872,10 +3872,10 @@ function renderTrendPanel() {
       options: {
         responsive:true, maintainAspectRatio:true,
         scales: {
-          x: { ticks:{ color:'#8FA3BC', font:{size:9,family:'JetBrains Mono'} }, grid:{display:false} },
-          y: { ticks:{ color:'#8FA3BC', font:{size:9,family:'JetBrains Mono'}, callback: v => v+'%' }, grid:{color:'rgba(255,255,255,0.04)'} }
+          x: { ticks:{ color:'#FFFFFF', font:{size:9,family:'JetBrains Mono'} }, grid:{display:false} },
+          y: { ticks:{ color:'#FFFFFF', font:{size:9,family:'JetBrains Mono'}, callback: v => v+'%' }, grid:{color:'rgba(255,255,255,0.04)'} }
         },
-        plugins:{ legend:{ labels:{ color:'#8FA3BC', font:{size:9,family:'JetBrains Mono'}, boxWidth:10 } } }
+        plugins:{ legend:{ labels:{ color:'#FFFFFF', font:{size:9,family:'JetBrains Mono'}, boxWidth:10 } } }
       }
     });
   });
@@ -5423,11 +5423,11 @@ function drawRadar(canvas, labels, datasets) {
           ticks:    { display: false },
           grid:     { color: 'rgba(255,255,255,0.06)' },
           angleLines:{ color: 'rgba(255,255,255,0.06)' },
-          pointLabels: { color: '#8FA3BC', font: { size: 10, family: 'JetBrains Mono' } },
+          pointLabels: { color: '#FFFFFF', font: { size: 10, family: 'JetBrains Mono' } },
         }
       },
       plugins: {
-        legend: { labels: { color: '#8FA3BC', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 12 } },
+        legend: { labels: { color: '#FFFFFF', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 12 } },
       }
     }
   });
@@ -5472,9 +5472,9 @@ function renderBarChart() {
           y: {
             min: 0, max: 100,
             grid:  { color: 'rgba(255,255,255,0.04)' },
-            ticks: { color: '#8FA3BC', font: { size: 10, family: 'JetBrains Mono' } },
+            ticks: { color: '#FFFFFF', font: { size: 10, family: 'JetBrains Mono' } },
           },
-          x: { ticks: { color: '#8FA3BC', font: { size: 10, family: 'JetBrains Mono' } }, grid: { display: false } }
+          x: { ticks: { color: '#FFFFFF', font: { size: 10, family: 'JetBrains Mono' } }, grid: { display: false } }
         },
         plugins: {
           legend: { display: false },
@@ -7178,13 +7178,13 @@ function renderWaterfallChart(cf) {
         scales: {
           x: {
             stacked: true,
-            ticks: { color: '#8FA3BC', font: { size: 10, family: 'JetBrains Mono' } },
+            ticks: { color: '#FFFFFF', font: { size: 10, family: 'JetBrains Mono' } },
             grid: { display: false }
           },
           y: {
             stacked: true,
             ticks: {
-              color: '#8FA3BC',
+              color: '#FFFFFF',
               font: { size: 9, family: 'JetBrains Mono' },
               callback: v => {
                 const abs = Math.abs(v);
