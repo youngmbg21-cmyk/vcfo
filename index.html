@@ -1407,7 +1407,7 @@ body::after {
     <button class="btn-load" onclick="handleSearchLoad()">SEARCH</button>
     <div id="fetchYearPicker" style="display:flex;align-items:center;gap:4px;">
       <span style="font-size:9px;color:var(--text3);letter-spacing:0.08em;white-space:nowrap;">FY:</span>
-      <select id="fetchYearSelect" style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:4px 6px;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;outline:none;cursor:pointer;appearance:auto;min-width:65px;">
+      <select id="fetchYearSelect" onchange="onFetchYearChange()" style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:4px 6px;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;outline:none;cursor:pointer;appearance:auto;min-width:65px;">
         <option value="latest">Latest</option>
         <option value="2024">2024</option>
         <option value="2023" selected>2023</option>
@@ -3131,6 +3131,19 @@ function updateFetchYearOptions(availableYears) {
       const marker  = isAvail ? ' ✓' : '';
       return `<option value="${y}" ${y === current ? 'selected' : ''}>${y}${marker}</option>`;
     }).join('');
+}
+
+// When the year picker changes, re-fetch data for the currently loaded company
+function onFetchYearChange() {
+  if (!companyData) return; // no company loaded yet
+  const orgNr = companyData.orgNr;
+  if (!orgNr) return;
+
+  const newYear = getSelectedFetchYear();
+  showToast(`Fetching FY${newYear} for ${companyData.name}…`);
+
+  // Re-load the company with the new year
+  loadCompanyByOrg(orgNr);
 }
 
 // ============================================================
