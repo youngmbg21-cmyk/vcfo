@@ -1409,11 +1409,6 @@ body::after {
       <span style="font-size:9px;color:var(--text3);letter-spacing:0.08em;white-space:nowrap;">FY:</span>
       <select id="fetchYearSelect" onchange="onFetchYearChange()" style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:4px 6px;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;outline:none;cursor:pointer;appearance:auto;min-width:65px;">
         <option value="latest">Latest</option>
-        <option value="2024">2024</option>
-        <option value="2023" selected>2023</option>
-        <option value="2022">2022</option>
-        <option value="2021">2021</option>
-        <option value="2020">2020</option>
       </select>
     </div>
     <div style="font-size:10px;color:var(--text3);" id="apiHint">SE Registry · Bolagsverket iXBRL</div>
@@ -1621,7 +1616,7 @@ body::after {
           <div style="font-size:10px;color:var(--text3);margin-top:2px;" id="cfoSubtitle">AI-powered internal financial health analysis</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn-secondary" onclick="runCFOAudit()" data-i18n="btn_refresh">↺ Refresh Analysis</button>
+          <button class="btn-secondary" onclick="refreshCFOAudit()" data-i18n="btn_refresh">↺ Refresh Analysis</button>
           <button class="btn-secondary" onclick="window.print()" data-i18n="btn_export">⬇ Export</button>
         </div>
       </div>
@@ -3941,7 +3936,7 @@ function mapAPIResponse(api, clean) {
     inventarierBV: api.propertyPlantEquipmentNet || 0,
     inventarierAcqCost: api.propertyPlantEquipmentGross || 0,
     auditorRemark: api.auditorRemark || false,
-    auditorRemarkDetail: api.auditorRemarkText || '',
+    auditorRemarkDetail: api.auditorRemarkText || api.auditorRemarkDetail || '',
     prevNetSales: api.prevNetSales || 0,
     prevOpProfit: api.prevOpProfit || 0,
     prevNetProfit: api.prevNetProfit || 0,
@@ -3954,6 +3949,9 @@ function mapAPIResponse(api, clean) {
     depreciation: api.depreciation || 0,
     personnel: api.personnel || 0,
     rawMaterials: api.costOfGoods || 0,
+    periodiseringsfonder: api.periodiseringsfonder || 0,
+    andelarKoncern: api.andelarKoncern || 0,
+    subsidiaries: api.subsidiaries || [],
   };
 }
 
@@ -4071,12 +4069,19 @@ function renderFinancialsTab(d) {
 
   const priorYrLabel = prev ? `FY${priorYrKey}` : 'Prior Year';
 
+  // EBIT = Operating Profit (already in d.opProfit)
+  // EBITDA = Operating Profit + Depreciation
+  const ebitda      = d.opProfit + (d.depreciation || 0);
+  const prevEbitda  = prev ? (prev.opProfit + (prev.depreciation || 0)) : 0;
+  const ebitdaMargin = d.netSales > 0 ? (ebitda / d.netSales * 100) : null;
+
   document.getElementById('finIncome').innerHTML = `
     <table class="data-table">
       <thead><tr><th>Line Item</th><th style="text-align:right">FY${d.fiscalYear}</th><th style="text-align:right">${priorYrLabel}</th><th style="text-align:right">YoY Δ</th></tr></thead>
       <tbody>
         <tr><td>Net Sales</td><td style="text-align:right">${fmtSEK(d.netSales)}</td><td style="text-align:right">${fmtSEK(prevNetSales)}</td><td style="text-align:right">${yoyPct(d.netSales, prevNetSales)}</td></tr>
-        <tr><td>Operating Profit</td><td style="text-align:right" class="${d.opProfit>0?'pos':'neg'}">${fmtSEK(d.opProfit)}</td><td style="text-align:right">${fmtSEK(prevOpProfit)}</td><td style="text-align:right">${yoyPct(d.opProfit, prevOpProfit)}</td></tr>
+        <tr><td>EBIT (Operating Profit)</td><td style="text-align:right" class="${d.opProfit>0?'pos':'neg'}">${fmtSEK(d.opProfit)}</td><td style="text-align:right">${fmtSEK(prevOpProfit)}</td><td style="text-align:right">${yoyPct(d.opProfit, prevOpProfit)}</td></tr>
+        <tr><td>EBITDA${ebitdaMargin!==null?' <span style="font-size:9px;color:var(--text3);">('+ebitdaMargin.toFixed(1)+'% margin)</span>':''}</td><td style="text-align:right" class="${ebitda>0?'pos':'neg'}">${fmtSEK(ebitda)}</td><td style="text-align:right">${fmtSEK(prevEbitda)}</td><td style="text-align:right">${yoyPct(ebitda, prevEbitda)}</td></tr>
         <tr><td>Net Profit</td><td style="text-align:right" class="${d.netProfit>0?'pos':'neg'}">${fmtSEK(d.netProfit)}</td><td style="text-align:right">${fmtSEK(prevNetProfit)}</td><td style="text-align:right">${yoyPct(d.netProfit, prevNetProfit)}</td></tr>
         <tr><td>ROS</td><td style="text-align:right" class="${ros>10?'pos':ros>5?'amb':'neg'}">${fmtPct(ros)}</td><td style="text-align:right">${fmtPct(prevROS)}</td><td style="text-align:right">${yoyPct(ros, prevROS)}</td></tr>
         <tr><td>Dividends Paid</td><td style="text-align:right" class="${d.dividendsPaid>d.netProfit?'neg':'amb'}">${fmtSEK(d.dividendsPaid)}</td><td style="text-align:right">${prevDividends ? fmtSEK(prevDividends) : '—'}</td><td style="text-align:right">${prevDividends ? yoyPct(d.dividendsPaid, prevDividends) : '—'}</td></tr>
@@ -4145,7 +4150,15 @@ function buildRatioRows(d) {
 // ============================================================
 function computeAndRenderDeterministicCFO(d) {
   const ros = d.netSales ? (d.opProfit / d.netSales * 100) : 0;
-  const prevROS = d.prevROS || null;
+
+  // Prefer actual prior year from historyData over stored field
+  const priorYrKey = String(parseInt(d.fiscalYear) - 1);
+  const prevData   = historyData[priorYrKey] || null;
+  const prevROS    = prevData && prevData.netSales
+    ? (prevData.opProfit / prevData.netSales * 100)
+    : (d.prevROS || null);
+  const prevNetSales = prevData ? prevData.netSales : (d.prevNetSales || null);
+
   const rosDelta = prevROS !== null ? (ros - prevROS) : null;
   const payout = d.netProfit > 0 ? (d.dividendsPaid / d.netProfit * 100) : 0;
   const isAggressivePayout = d.dividendsPaid > d.netProfit;
@@ -4340,6 +4353,7 @@ function computeAndRenderDeterministicCFO(d) {
     <div class="separator"></div>
     <div class="field-row"><span class="field-key">${opProfLabel}</span><span class="field-val ${d.opProfit>0?'pos':'neg'}">${fmtSEK(d.opProfit)}</span></div>
     <div class="field-row"><span class="field-key">${netSalLabel}</span><span class="field-val">${fmtSEK(d.netSales)}</span></div>
+    ${prevNetSales ? `<div class="field-row"><span class="field-key">${isSv ? 'Intäktsförändring' : 'Revenue Growth'}</span><span class="field-val ${d.netSales >= prevNetSales ? 'pos' : 'neg'}">${((d.netSales - prevNetSales) / Math.abs(prevNetSales) * 100).toFixed(1)}%</span></div>` : ''}
     <div class="field-row"><span class="field-key">${deltaLabel}</span><span class="field-val ${rosDelta>=0?'pos':'neg'}">${rosDelta !== null ? (rosDelta>=0?'+':'')+fmtPct(rosDelta) : '—'}</span></div>
     <div class="field-row"><span class="field-key">${assessLabel}</span><span class="field-val ${rosDelta>0?'pos':rosDelta<-3?'neg':'amb'}">${assessVal}</span></div>
     <div style="margin-top:12px;padding:10px;background:var(--bg4);border-radius:4px;font-size:10px;color:var(--text3);">
@@ -4511,6 +4525,12 @@ function computeAndRenderDeterministicMA(d) {
 // ============================================================
 // AI CFO AUDIT — Anthropic API
 // ============================================================
+function refreshCFOAudit() {
+  if (!companyData) { showToast(t('toast_no_company')); return; }
+  computeAndRenderDeterministicCFO(companyData);
+  showToast(`✓ CFO Audit refreshed — FY${companyData.fiscalYear}`);
+}
+
 async function runCFOAudit() {
   if (!companyData) { showToast(t('toast_no_company')); return; }
   if (!anthropicKey) { openSettings(); showToast(t('toast_no_api_key')); return; }
@@ -4626,17 +4646,37 @@ async function runMAScreen() {
   btn.innerHTML = `<span class="loading-dots"><span></span><span></span><span></span></span> Screening`;
 
   const d = companyData;
-  const score = maScore || '—';
+  const score = maScore || 0;
+  const verdict = score >= 65 ? 'BUY' : score >= 40 ? 'HOLD' : 'PASS';
   const ros = d.netSales ? (d.opProfit/d.netSales*100).toFixed(2) : 0;
   const assetDeprec = d.inventarierAcqCost > 0 ? ((1-d.inventarierBV/d.inventarierAcqCost)*100).toFixed(0) : 'N/A';
 
+  // Compute score breakdown for the prompt
+  const roe = d.equity ? (d.netProfit/d.equity*100) : 0;
+  let _profScore = 0, _compScore = 0, _bsScore = 0, _effScore = 0;
+  if (ros > 15) _profScore += 15; else if (ros > 8) _profScore += 10; else if (ros > 3) _profScore += 5;
+  if (roe > 15) _profScore += 10; else if (roe > 8) _profScore += 6; else if (roe > 3) _profScore += 3;
+  if (!d.auditorRemark) _compScore += 20; else _compScore += 5;
+  const _payout = d.netProfit > 0 ? d.dividendsPaid/d.netProfit*100 : 999;
+  if (_payout < 60) _compScore += 5; else if (_payout < 100) _compScore += 2;
+  const _cr = d.currentLiabilities > 0 ? d.totalCurrentAssets/d.currentLiabilities : 0;
+  const _de = d.equity > 0 ? (d.longTermDebt+d.currentLiabilities)/d.equity : 99;
+  if (_cr > 1.8) _bsScore += 10; else if (_cr > 1.2) _bsScore += 6; else if (_cr > 0.8) _bsScore += 3;
+  if (_de < 1.0) _bsScore += 10; else if (_de < 2.0) _bsScore += 6; else if (_de < 3.5) _bsScore += 3;
+  const _ltdPct = d.equity > 0 ? d.longTermDebtOver5y/d.equity*100 : 100;
+  if (_ltdPct < 20) _bsScore += 5; else if (_ltdPct < 50) _bsScore += 3;
+  const _ad = d.inventarierAcqCost > 0 ? (1 - d.inventarierBV/d.inventarierAcqCost)*100 : 0;
+  if (_ad < 70) _effScore += 15; else if (_ad < 90) _effScore += 8; else _effScore += 2;
+  const _rg = d.prevNetSales > 0 ? (d.netSales - d.prevNetSales)/d.prevNetSales*100 : 0;
+  if (_rg > 10) _effScore += 10; else if (_rg > 3) _effScore += 7; else if (_rg > 0) _effScore += 4;
+
   animateProgress('maProgress', 80, 12000);
 
-  const prompt = `You are a Senior M&A Analyst at a Nordic private equity firm. You are conducting acquisition due diligence on ${d.name} (org. nr. ${d.orgNr}), a Swedish ${d.type} in ${d.industry}. Fiscal year: ${d.fiscalYear}. 
+  const prompt = `You are a Senior M&A Analyst at a Nordic private equity firm. You are conducting acquisition due diligence on ${d.name} (org. nr. ${d.orgNr}), a Swedish ${d.type} in ${d.industry}. Fiscal year: ${d.fiscalYear}.
 
 FINANCIAL PROFILE:
 - Net Sales: ${fmtSEK(d.netSales)} | Op. Profit: ${fmtSEK(d.opProfit)} | Net Profit: ${fmtSEK(d.netProfit)}
-- ROS: ${ros}% | Total Assets: ${fmtSEK(d.totalAssets)} | Equity: ${fmtSEK(d.equity)}
+- ROS: ${ros}% | ROE: ${roe.toFixed(2)}% | Total Assets: ${fmtSEK(d.totalAssets)} | Equity: ${fmtSEK(d.equity)}
 - Long-term Debt: ${fmtSEK(d.longTermDebt)} | Due >5 years: ${fmtSEK(d.longTermDebtOver5y)}
 - Current Ratio: ${d.currentLiabilities > 0 ? (d.totalCurrentAssets/d.currentLiabilities).toFixed(2) : 'N/A'}x
 - Dividends: ${fmtSEK(d.dividendsPaid)} (${d.netProfit > 0 ? (d.dividendsPaid/d.netProfit*100).toFixed(0) : 'N/A'}% payout)
@@ -4645,12 +4685,20 @@ DUE DILIGENCE FINDINGS:
 - Auditor Remark (Anmärkning ABL 7:10): ${d.auditorRemark ? 'YES — '+d.auditorRemarkDetail : 'NO'}
 - Asset Depreciation Level: ${assetDeprec}% of acquisition cost (Book Value: ${fmtSEK(d.inventarierBV)})
 - Long-term Debt >5yr as % of Equity: ${d.equity > 0 ? (d.longTermDebtOver5y/d.equity*100).toFixed(1) : 'N/A'}%
-- Algorithmic Fit Score: ${score}/100
+
+ALGORITHMIC ACQUISITION FIT SCORE: ${score}/100 → ${verdict}
+Score Breakdown:
+  - Profitability:  ${_profScore}/25 (ROS ${ros}%, ROE ${roe.toFixed(1)}%)
+  - Compliance:     ${_compScore}/25 (Auditor remark: ${d.auditorRemark ? 'YES' : 'NO'}, Payout: ${_payout < 999 ? _payout.toFixed(0)+'%' : 'N/A'})
+  - Balance Sheet:  ${_bsScore}/25 (CR: ${_cr.toFixed(2)}x, D/E: ${_de.toFixed(2)}x)
+  - Asset Quality:  ${_effScore}/25 (Depreciation: ${assetDeprec}%, Rev. Growth: ${_rg.toFixed(1)}%)
+
+IMPORTANT: The algorithmic verdict is ${verdict}. Your verdict MUST be "${verdict}" to stay consistent with the score-based recommendation shown to the user. Your role is to EXPLAIN and JUSTIFY this verdict with qualitative due diligence analysis, not to override it. Focus your analysis on the reasoning behind each score component.
 
 Return ONLY a JSON object:
 {
-  "verdict": "BUY" | "HOLD" | "PASS",
-  "verdictRationale": "1-sentence headline rationale",
+  "verdict": "${verdict}",
+  "verdictRationale": "1-sentence headline rationale explaining why ${verdict} is correct given the score breakdown",
   "findings": [
     {
       "area": "Compliance Due Diligence",
@@ -4694,6 +4742,8 @@ Return ONLY a JSON object:
     const raw = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
     const clean = raw.replace(/```json|```/g,'').trim();
     const parsed = JSON.parse(clean);
+    // Enforce algorithmic verdict — never let AI override the score-based recommendation
+    parsed.verdict = verdict;
     renderMAOutput(parsed);
   } catch(e) {
     document.getElementById('maAIOutput').innerHTML = `<div style="color:var(--red);font-size:11px;">⚠ API Error: ${e.message}<br><span style="color:var(--text3);">The deterministic score above is still valid. Check your API key in ⚙ Settings.</span></div>`;
@@ -4794,6 +4844,19 @@ document.addEventListener('DOMContentLoaded', () => {
     setStatusBar(t('status_ready'), 'na');
     initChatMode();
     initCompareTab();
+    // Populate year picker dynamically
+    (function() {
+      const sel = document.getElementById('fetchYearSelect');
+      if (!sel) return;
+      const cur = new Date().getFullYear();
+      for (let y = cur; y >= cur - 5; y--) {
+        const opt = document.createElement('option');
+        opt.value = String(y);
+        opt.textContent = String(y);
+        if (y === cur - 1) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    })();
     try {
       const cached = localStorage.getItem('vcfo_bch_cache');
       if (cached) {
