@@ -244,106 +244,96 @@ exports.handler = async (event) => {
 // ══════════════════════════════════════════════════════════════
 
 function parseAllabolagMultiYear(html, orgNr, companyName) {
-  // Step 1: Extract all <table> blocks and find the financial table
-  // The financial table contains rows with labels like "Nettoomsättning"
-  const tables = [];
-  const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
-  let tableMatch;
-  while ((tableMatch = tableRegex.exec(html)) !== null) {
-    tables.push(tableMatch[1]);
-  }
+  // Allabolag uses MUI (Material UI) tables with scope attributes like
+  // "resultat2024-12", "resultat2023-12" to identify year columns.
+  // Strategy: work on stripped text + find year-keyed data patterns.
 
-  // Find the table that contains financial keywords
-  let finTable = null;
-  for (const t of tables) {
-    const lower = t.toLowerCase();
-    if (lower.includes('nettoomsättning') || lower.includes('nettoomstning') ||
-        lower.includes('omsättning') || lower.includes('rörelseresultat') ||
-        lower.includes('balansomslutning') || lower.includes('summa tillgångar')) {
-      finTable = t;
-      break;
+  // Step 1: Discover available years from scope/id attributes
+  const yearMatches = html.match(/resultat(20\d{2})-\d{2}/g) || [];
+  const years = [...new Set(yearMatches.map(m => m.match(/(20\d{2})/)[1]))].sort((a,b) => b-a);
+
+  // Also try to find years from header cells or column headers
+  if (years.length === 0) {
+    const headerYears = html.match(/>(\d{4}(?:\/\d{2})?(?:-\d{2})?)<\/(?:th|td|span|p)/g) || [];
+    for (const hy of headerYears) {
+      const m = hy.match(/(20\d{2})/);
+      if (m && !years.includes(m[1])) years.push(m[1]);
     }
+    years.sort((a,b) => b-a);
   }
 
-  if (!finTable) return null;
+  if (years.length === 0) return null;
 
-  // Step 2: Parse header row to find year columns
-  const headerMatch = finTable.match(/<tr[^>]*>([\s\S]*?)<\/tr>/i);
-  if (!headerMatch) return null;
-
-  const headerCells = [];
-  const thRegex = /<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi;
-  let thMatch;
-  while ((thMatch = thRegex.exec(headerMatch[1])) !== null) {
-    headerCells.push(thMatch[1].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim());
-  }
-
-  // Find which columns are years (4-digit numbers)
-  const yearColumns = []; // [{index, year}]
-  headerCells.forEach((cell, idx) => {
-    const ym = cell.match(/(20\d{2})/);
-    if (ym && idx > 0) { // skip first column (labels)
-      yearColumns.push({ index: idx, year: ym[1] });
-    }
-  });
-
-  if (yearColumns.length === 0) return null;
-
-  // Step 3: Parse all data rows — extract label + values per year column
-  const rows = [];
+  // Step 2: Extract all table rows with their cell contents
+  // Strip to text but preserve row/cell boundaries
+  const allRows = [];
   const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   let trMatch;
-  // Skip the first match (header)
-  trRegex.exec(finTable); // consume header
-  while ((trMatch = trRegex.exec(finTable)) !== null) {
-    const tds = [];
-    const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
-    let tdMatch;
-    while ((tdMatch = tdRegex.exec(trMatch[1])) !== null) {
-      tds.push(tdMatch[1].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/\u00a0/g, '').trim());
+  while ((trMatch = trRegex.exec(html)) !== null) {
+    const cells = [];
+    const cellRegex = /<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi;
+    let cellMatch;
+    while ((cellMatch = cellRegex.exec(trMatch[1])) !== null) {
+      const text = cellMatch[1]
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/\u00a0/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      cells.push(text);
     }
-    if (tds.length >= 2) {
-      const label = tds[0].toLowerCase().replace(/\s+/g, ' ').trim();
-      const values = {};
-      for (const yc of yearColumns) {
-        if (tds[yc.index] !== undefined) {
-          const raw = tds[yc.index].replace(/\s/g, '').replace(/,/g, '.');
-          const num = raw.match(/^-?\d+\.?\d*$/) ? parseFloat(raw) : null;
-          values[yc.year] = num;
-        }
-      }
-      rows.push({ label, values });
+    if (cells.length >= 2) {
+      allRows.push(cells);
     }
   }
 
-  // Step 4: Map labels to financial fields per year
-  const FIELD_MAP = [
-    { field: 'netSales',    keywords: ['nettoomsättning', 'nettoomstning', 'net sales'] },
-    { field: 'opProfit',    keywords: ['rörelseresultat', 'rrelseresultat', 'operating'] },
-    { field: 'netProfit',   keywords: ['resultat efter finansiella', 'resultat e. fin', 'årets resultat', 'resultat före skatt'] },
+  // Step 3: Find rows that match financial labels and extract per-year values
+  const FIELDS = [
+    { field: 'netSales',    keywords: ['nettoomsättning', 'nettoomstning'] },
+    { field: 'opProfit',    keywords: ['rörelseresultat', 'rrelseresultat'] },
+    { field: 'netProfit',   keywords: ['resultat efter finansiella', 'årets resultat', 'resultat före skatt'] },
     { field: 'totalAssets', keywords: ['summa tillgångar', 'summa tillgngar', 'balansomslutning'] },
     { field: 'equity',      keywords: ['summa eget kapital', 'eget kapital'] },
-    { field: 'employees',   keywords: ['antal anställda', 'anställda', 'medelantal anst'] },
+    { field: 'employees',   keywords: ['antal anställda', 'medelantal anst'] },
   ];
 
-  function findRow(keywords) {
-    for (const row of rows) {
-      for (const kw of keywords) {
-        if (row.label.includes(kw)) return row;
+  // For each field, find the matching row and extract numeric values
+  const fieldData = {}; // { fieldName: { '2024': number, '2023': number, ... } }
+
+  for (const f of FIELDS) {
+    for (const row of allRows) {
+      const label = row[0].toLowerCase();
+      const matched = f.keywords.some(kw => label.includes(kw));
+      if (matched) {
+        fieldData[f.field] = {};
+        // The numeric values are in cells after the label
+        // Map them to years in order (first value = most recent year)
+        const numericCells = [];
+        for (let i = 1; i < row.length; i++) {
+          const cleaned = row[i].replace(/\s/g, '').replace(/,/g, '.');
+          const num = cleaned.match(/^-?\d+\.?\d*$/) ? parseFloat(cleaned) : null;
+          numericCells.push(num);
+        }
+        // Map to years (columns align with years in order)
+        for (let i = 0; i < Math.min(years.length, numericCells.length); i++) {
+          if (numericCells[i] !== null) {
+            fieldData[f.field][years[i]] = numericCells[i];
+          }
+        }
+        break; // Use first matching row only
       }
     }
-    return null;
   }
 
-  // Extract metadata from the full HTML
+  // Step 4: Extract metadata
   const sniMatch = html.match(/SNI[:\s-]*(\d{2,5})/i);
   const sni = sniMatch ? sniMatch[1].trim() : '';
   const legalMatch = html.match(/(Publikt aktiebolag|Aktiebolag|Handelsbolag|Enskild firma)/i);
   const legalForm = legalMatch ? legalMatch[1] : 'Aktiebolag';
 
-  // Step 5: Build data object for each year
-  const yearObjects = yearColumns.map(yc => {
-    const yr = yc.year;
+  // Step 5: Build year objects
+  const yearObjects = years.map(yr => {
     const obj = {
       name: companyName || `Company ${orgNr}`,
       registrationNumber: orgNr,
@@ -354,38 +344,30 @@ function parseAllabolagMultiYear(html, orgNr, companyName) {
       legalForm,
     };
 
-    for (const fm of FIELD_MAP) {
-      const row = findRow(fm.keywords);
-      obj[fm.field] = row ? (row.values[yr] || null) : null;
-    }
+    // Get values for this year
+    const ns = fieldData.netSales?.[yr] ?? null;
+    const op = fieldData.opProfit?.[yr] ?? null;
+    const np = fieldData.netProfit?.[yr] ?? null;
+    const ta = fieldData.totalAssets?.[yr] ?? null;
+    const eq = fieldData.equity?.[yr] ?? null;
+    const em = fieldData.employees?.[yr] ?? null;
 
-    // Allabolag shows values in tkr — auto-detect and scale
-    const maxVal = Math.max(
-      Math.abs(obj.netSales || 0),
-      Math.abs(obj.totalAssets || 0),
-      Math.abs(obj.equity || 0)
-    );
+    // Auto-detect scale (tkr vs full SEK)
+    const maxVal = Math.max(Math.abs(ns || 0), Math.abs(ta || 0), Math.abs(eq || 0));
     const scale = maxVal > 100000000 ? 1 : 1000;
 
-    // Apply scale and set API-compatible field names
-    obj.netSales = obj.netSales !== null ? obj.netSales * scale : 0;
+    obj.netSales = ns !== null ? ns * scale : 0;
     obj.revenues = obj.netSales;
-    obj.operatingProfit = obj.opProfit !== null ? obj.opProfit * scale : 0;
-    delete obj.opProfit;
-    obj.netIncome = obj.netProfit !== null ? obj.netProfit * scale : 0;
+    obj.operatingProfit = op !== null ? op * scale : 0;
+    obj.netIncome = np !== null ? np * scale : 0;
     obj.profitForYear = obj.netIncome;
-    delete obj.netProfit;
-    obj.totalAssets = obj.totalAssets !== null ? obj.totalAssets * scale : 0;
-    obj.equity = obj.equity !== null ? obj.equity * scale : 0;
+    obj.totalAssets = ta !== null ? ta * scale : 0;
+    obj.equity = eq !== null ? eq * scale : 0;
     obj.totalEquity = obj.equity;
+    obj.employees = em;
 
     return obj;
   });
 
-  // Sort by year descending (most recent first)
-  yearObjects.sort((a, b) => parseInt(b.financialYear) - parseInt(a.financialYear));
-
-  return {
-    years: yearObjects,
-  };
+  return { years: yearObjects };
 }
