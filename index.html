@@ -2907,20 +2907,9 @@ async function fetchWithProxy(url, options = {}, timeoutMs = 8000) {
 //     });
 //   }};
 
-// Auto-detect Netlify Function proxy
+// Netlify Function proxy — always try relative path, graceful 404 if not on Netlify
 function getNetlifyProxyUrl() {
-  // If we're on a Netlify site, use the built-in function
-  if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    if (host.includes('netlify.app') || host.includes('netlify.com')) {
-      return '/api/anthropic';
-    }
-    // Also use it for localhost during netlify dev
-    if (host === 'localhost' && window.location.port === '8888') {
-      return '/api/anthropic';
-    }
-  }
-  return null;
+  return '/api/anthropic';
 }
 
 async function callAnthropic(body, apiKey) {
@@ -3041,24 +3030,28 @@ async function fetchBolagsverket(orgNum) {
           document.getElementById('bvText').textContent = `Bolagsverket: Connected · FY${resolvedYr}${yearNote} (${wrapper.source || 'live'})`;
           return wrapper.latestReport;
         } else {
-          // Proxy reached Bolagsverket but no data found for this company
+          // Proxy reached Bolagsverket successfully but no data found for this company
           const avail = wrapper.availableYears?.length
             ? ` · Available years: ${wrapper.availableYears.join(', ')}`
             : '';
           document.getElementById('bvDot').className   = 'api-dot err';
-          document.getElementById('bvText').textContent = `Bolagsverket: No iXBRL data for FY${fetchYear}${avail}`;
+          document.getElementById('bvText').textContent = `Bolagsverket: No iXBRL filing found${avail}`;
           // If there are available years but not the one requested, update the UI
           if (wrapper.availableYears?.length && !wrapper.availableYears.includes(fetchYear)) {
             updateFetchYearHint(wrapper.availableYears);
           }
+          // Proxy confirmed no data — don't retry via CORS chain
+          return null;
         }
       }
     } catch(e) {
+      // Proxy itself failed (404 = not on Netlify, network error, etc.)
+      // Fall through to Tier 2 CORS chain
       console.warn('Netlify BV proxy failed:', e.message);
     }
   }
 
-  // Tier 2: Direct fetch with CORS proxy chain (browser-side)
+  // Tier 2: Direct fetch with CORS proxy chain (browser-side fallback)
   const targets = [
     `https://xbrl.bolagsverket.se/api/v1/reports?registrationNumber=${clean}&top=1`,
     `https://api.bolagsverket.se/v1/arenden/${clean}`,
@@ -3084,15 +3077,10 @@ async function fetchBolagsverket(orgNum) {
 }
 
 // Auto-detect Netlify Bolagsverket proxy URL
+// Auto-detect Netlify proxy — try the relative path always,
+// it will 404 if not on Netlify which we handle gracefully
 function getBolagsverketProxyUrl() {
-  if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    if (host.includes('netlify.app') || host.includes('netlify.com') ||
-        (host === 'localhost' && window.location.port === '8888')) {
-      return '/api/bolagsverket';
-    }
-  }
-  return null;
+  return '/api/bolagsverket';
 }
 
 // ============================================================
@@ -3443,16 +3431,8 @@ async function searchByName(query) {
 
 // ── Server-side registry search (Netlify Function) ──
 async function searchByNameServer(query) {
-  // Determine the search URL — works on Netlify, localhost:8888 (netlify dev), or with proxy
-  let searchUrl = null;
-  if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    if (host.includes('netlify.app') || host.includes('netlify.com') ||
-        (host === 'localhost' && window.location.port === '8888')) {
-      searchUrl = `/api/company-search?q=${encodeURIComponent(query)}`;
-    }
-  }
-  if (!searchUrl) return null; // Not on Netlify — skip server search
+  // Always try the relative Netlify Function path — graceful 404 if not deployed
+  const searchUrl = `/api/company-search?q=${encodeURIComponent(query)}`;
 
   try {
     const ctrl  = new AbortController();
