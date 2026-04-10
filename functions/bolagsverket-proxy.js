@@ -70,20 +70,47 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers: corsHeaders, body: '' };
   }
 
-  // Health check
+  // Health check — also tests year-specific URL patterns
   if (event.queryStringParameters?.health) {
+    const testOrg = '5590016076'; // Stadstak Sthlm AB
     const diagnostics = {
-      version: 'v5-allabolag',
+      version: 'v6-year-fix',
       nodeVersion: process.version,
       timestamp: new Date().toISOString(),
       tests: {},
     };
-    try {
-      const res = await serverFetch('https://www.allabolag.se/5560004615/bokslut');
-      const text = await res.text();
-      diagnostics.tests.allabolag = { ok: res.ok, status: res.status, bodyLength: text.length, hasData: text.includes('Nettoomsättning') || text.includes('omsättning') };
-    } catch(e) {
-      diagnostics.tests.allabolag = { error: e.message };
+
+    // Test different URL patterns to find which one works for year-specific data
+    const patterns = [
+      { name: 'default',      url: `https://www.allabolag.se/${testOrg}/bokslut` },
+      { name: 'year-slash',   url: `https://www.allabolag.se/${testOrg}/bokslut/2023` },
+      { name: 'year-query',   url: `https://www.allabolag.se/${testOrg}/bokslut?year=2023` },
+      { name: 'year-hash',    url: `https://www.allabolag.se/${testOrg}/bokslut#2023` },
+    ];
+
+    for (const p of patterns) {
+      try {
+        const res = await serverFetch(p.url);
+        const text = await res.text();
+        // Look for a year indicator in the response
+        const has2023 = text.includes('2023');
+        const has2024 = text.includes('2024');
+        const hasData = text.includes('Nettoomsättning') || text.includes('omsättning');
+        // Try to find which fiscal year the page is showing
+        const fyMatch = text.match(/Bokslut\s+(\d{4})/i) || text.match(/Räkenskapsår[:\s]*(\d{4})/i);
+        diagnostics.tests[p.name] = {
+          ok: res.ok,
+          status: res.status,
+          finalUrl: p.url,
+          bodyLength: text.length,
+          hasData,
+          detectedFY: fyMatch ? fyMatch[1] : null,
+          has2023,
+          has2024,
+        };
+      } catch(e) {
+        diagnostics.tests[p.name] = { error: e.message };
+      }
     }
     return {
       statusCode: 200,
