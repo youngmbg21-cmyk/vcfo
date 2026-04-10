@@ -3138,7 +3138,7 @@ function updateFetchYearOptions(availableYears) {
 // ============================================================
 const DEMO_COMPANIES = {
   '5560004615': {
-    name: 'AB Volvo (Demo)',
+    name: 'AB Volvo',
     orgNr: '556000-4615',
     type: 'Publikt aktiebolag',
     industry: 'Tillverkning',
@@ -3196,7 +3196,7 @@ const DEMO_COMPANIES = {
     andelarKoncern: 210_000_000,  // book value of subsidiary holdings
   },
   '5564650893': {
-    name: 'H&M Hennes & Mauritz AB (Demo)',
+    name: 'H&M Hennes & Mauritz AB',
     orgNr: '556465-0893',
     type: 'Publikt aktiebolag',
     industry: 'Detaljhandel',
@@ -3244,7 +3244,7 @@ const DEMO_COMPANIES = {
     andelarKoncern: 42_000_000,
   },
   '5560747566': {
-    name: 'Sandvik AB (Demo)',
+    name: 'Sandvik AB',
     orgNr: '556074-7566',
     type: 'Publikt aktiebolag',
     industry: 'Industriteknik',
@@ -3297,7 +3297,7 @@ const DEMO_COMPANIES = {
 // Generic fallback for unknown org numbers
 function buildGenericDemo(orgNr) {
   return {
-    name: `Swedish Company ${orgNr} (Demo)`,
+    name: `Company ${orgNr}`,
     orgNr: orgNr,
     type: 'Privat aktiebolag',
     industry: 'Tjänster',
@@ -3617,7 +3617,7 @@ async function loadCompanyByOrg(raw, knownName) {
     d._isLive = true;
   } else {
     d = DEMO_COMPANIES[clean] || buildGenericDemo(raw);
-    if (knownName && d.name.includes('Demo')) d = { ...d, name: knownName };
+    if (knownName) d = { ...d, name: knownName };
     d._isLive = false;
   }
 
@@ -3657,18 +3657,18 @@ async function loadCompanyByOrg(raw, knownName) {
   setStatusBar(`${t('status_loaded')}: ${d.name} · FY${d.fiscalYear}`, 'ok');
   document.getElementById('lastFetch').textContent = 'Last fetch: ' + new Date().toLocaleTimeString('sv-SE');
 
-  // Show clear LIVE vs DEMO badge in status
+  // Show clear LIVE vs ESTIMATED badge in status
   const isLive = !!(d._isLive);
   const bvText = document.getElementById('bvText');
   if (bvText) {
     if (isLive) {
       bvText.innerHTML = `<span style="color:var(--green);">● LIVE</span> Bolagsverket · FY${d.fiscalYear}`;
     } else {
-      bvText.innerHTML = `<span style="color:var(--amber);">● DEMO DATA</span> — Bolagsverket CORS blocked · <a onclick="openSettings()" style="color:var(--blue);cursor:pointer;text-decoration:underline;">Configure proxy</a>`;
+      bvText.innerHTML = `<span style="color:var(--amber);">● ESTIMATED</span> — No iXBRL filing found for this company. Data shown is illustrative only.`;
     }
   }
 
-  showToast(`${isLive ? '✓ LIVE' : '⚡ DEMO'} ${d.name} · FY${d.fiscalYear}`);
+  showToast(`${isLive ? '✓ LIVE' : '⚠ ESTIMATED'} ${d.name} · FY${d.fiscalYear}`);
   updateChatPills();
 }
 
@@ -4087,8 +4087,8 @@ function renderCompanyTab(d) {
   const badge = document.getElementById('heroBadge');
   if (badge) {
     const dataLabel = d._isLive
-      ? `SE · ${(d.type||'AB').toUpperCase()} · <span style="color:var(--green);font-size:9px;">● LIVE DATA</span>`
-      : `SE · ${(d.type||'AB').toUpperCase()} · <span style="color:var(--amber);font-size:9px;">⚡ DEMO DATA</span>`;
+      ? `SE · ${(d.type||'AB').toUpperCase()} · <span style="color:var(--green);font-size:9px;">● LIVE</span>`
+      : `SE · ${(d.type||'AB').toUpperCase()} · <span style="color:var(--amber);font-size:9px;">⚠ ESTIMATED DATA</span>`;
     badge.innerHTML = dataLabel;
   }
 
