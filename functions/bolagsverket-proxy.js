@@ -1,6 +1,51 @@
 // Netlify serverless function — proxies requests to Bolagsverket's iXBRL API.
-// Runs server-side so there are no CORS restrictions.
-// Accepts org number + optional year, cascades through years to find data.
+// Uses node-fetch compatible approach for Netlify's Lambda runtime.
+
+const https = require('https');
+const http = require('http');
+
+// Simple fetch wrapper that works on all Node.js versions
+function serverFetch(url, options = {}) {
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(url);
+    const lib = parsedUrl.protocol === 'https:' ? https : http;
+
+    const reqOptions = {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: options.method || 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'VCFO-Terminal/1.0',
+        ...(options.headers || {}),
+      },
+      timeout: 12000,
+    };
+
+    const req = lib.request(reqOptions, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        resolve({
+          ok: res.statusCode >= 200 && res.statusCode < 300,
+          status: res.statusCode,
+          text: () => Promise.resolve(body),
+          json: () => {
+            try { return Promise.resolve(JSON.parse(body)); }
+            catch(e) { return Promise.reject(new Error(`JSON parse failed: ${body.slice(0, 200)}`)); }
+          },
+        });
+      });
+    });
+
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('Request timeout')); });
+
+    if (options.body) req.write(options.body);
+    req.end();
+  });
+}
 
 exports.handler = async (event) => {
   const corsHeaders = {
@@ -26,15 +71,12 @@ exports.handler = async (event) => {
   const requestedYear = event.queryStringParameters?.year || '';
   const docId         = event.queryStringParameters?.docId || '';
 
-  // Build year cascade: if "latest" or empty, try most recent years first
-  // iXBRL filings became common from ~2021 onward; many companies only have 2023+
   const currentYear = new Date().getFullYear();
   let yearCascade;
   if (requestedYear === 'latest' || !requestedYear) {
     yearCascade = [];
     for (let y = currentYear; y >= 2020; y--) yearCascade.push(String(y));
   } else {
-    // Specific year requested — try it first, then cascade to nearby years
     const yr = parseInt(requestedYear);
     yearCascade = [String(yr)];
     for (let delta = 1; delta <= 3; delta++) {
@@ -55,14 +97,11 @@ exports.handler = async (event) => {
   };
 
   // ══════════════════════════════════════════════════════════════
-  // Source 1: Bolagsverket iXBRL API (primary — best structured data)
+  // Source 1: Bolagsverket iXBRL API
   // ══════════════════════════════════════════════════════════════
   try {
-    // Fetch up to 10 reports for this company (all available years)
     const url = `https://xbrl.bolagsverket.se/api/v1/reports?registrationNumber=${orgNr}&top=10`;
-    const res = await fetch(url, {
-      headers: { 'Accept': 'application/json', 'User-Agent': 'VCFO-Terminal/1.0' },
-    });
+    const res = await serverFetch(url);
 
     if (res.ok) {
       const data = await res.json();
@@ -72,32 +111,24 @@ exports.handler = async (event) => {
         results.reports = reports;
         results.source = 'bolagsverket-xbrl';
 
-        // Find the best matching report using the year cascade
         let target = null;
         for (const yr of yearCascade) {
           target = reports.find(r => {
             const fy = (r.financialYear || r.reportPeriod || r.period || '').toString();
             return fy.includes(yr);
           });
-          if (target) {
-            results.resolvedYear = yr;
-            break;
-          }
+          if (target) { results.resolvedYear = yr; break; }
         }
-        // If no year match, use the first (most recent) report
         if (!target) {
           target = reports[0];
           const fy = (target.financialYear || target.reportPeriod || target.period || '').toString();
           results.resolvedYear = fy.slice(0, 4) || 'unknown';
         }
 
-        // Try to fetch full report details if a URL is available
         const reportUrl = target.url || target.documentUrl || target.reportUrl;
         if (reportUrl) {
           try {
-            const detailRes = await fetch(reportUrl, {
-              headers: { 'Accept': 'application/json', 'User-Agent': 'VCFO-Terminal/1.0' },
-            });
+            const detailRes = await serverFetch(reportUrl);
             if (detailRes.ok) {
               const detail = await detailRes.json();
               results.latestReport = { ...target, ...detail };
@@ -105,10 +136,11 @@ exports.handler = async (event) => {
           } catch (e) { results.errors.push(`detail: ${e.message}`); }
         }
 
-        if (!results.latestReport) {
-          results.latestReport = target;
-        }
+        if (!results.latestReport) results.latestReport = target;
       }
+    } else {
+      const body = await res.text();
+      results.errors.push(`xbrl: HTTP ${res.status} — ${body.slice(0, 200)}`);
     }
   } catch (e) {
     results.errors.push(`xbrl: ${e.message}`);
@@ -120,17 +152,17 @@ exports.handler = async (event) => {
   if (!results.latestReport) {
     try {
       const url = `https://api.bolagsverket.se/vardefulladatamangder/v1/organisationer/${orgNr}`;
-      const res = await fetch(url, {
-        headers: { 'Accept': 'application/json', 'User-Agent': 'VCFO-Terminal/1.0' },
-      });
+      const res = await serverFetch(url);
 
       if (res.ok) {
         const data = await res.json();
         if (data && typeof data === 'object' && Object.keys(data).length > 2) {
           results.latestReport = data;
           results.source = 'bolagsverket-vdm';
-          results.resolvedYear = (data.financialYear || data.reportPeriod || requestedYear || '').toString().slice(0, 4);
+          results.resolvedYear = (data.financialYear || data.reportPeriod || '').toString().slice(0, 4);
         }
+      } else {
+        results.errors.push(`vdm: HTTP ${res.status}`);
       }
     } catch (e) {
       results.errors.push(`vdm: ${e.message}`);
@@ -138,14 +170,12 @@ exports.handler = async (event) => {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // Source 3: Document list (for year selector & fallback data)
+  // Source 3: Document list
   // ══════════════════════════════════════════════════════════════
   if (!results.reports.length) {
     try {
       const url = `https://api.bolagsverket.se/vardefulladatamangder/v1/organisationer/${orgNr}/dokument`;
-      const res = await fetch(url, {
-        headers: { 'Accept': 'application/json', 'User-Agent': 'VCFO-Terminal/1.0' },
-      });
+      const res = await serverFetch(url);
 
       if (res.ok) {
         const data = await res.json();
@@ -154,7 +184,6 @@ exports.handler = async (event) => {
           results.reports = docs;
           if (!results.source) results.source = 'bolagsverket-docs';
 
-          // If we still don't have a report, try fetching the best year's document
           if (!results.latestReport) {
             for (const yr of yearCascade) {
               const match = docs.find(d => {
@@ -165,9 +194,8 @@ exports.handler = async (event) => {
                 const dId = match.documentId || match.id;
                 if (dId) {
                   try {
-                    const docRes = await fetch(
-                      `https://api.bolagsverket.se/vardefulladatamangder/v1/dokument/${dId}`,
-                      { headers: { 'Accept': 'application/json', 'User-Agent': 'VCFO-Terminal/1.0' } }
+                    const docRes = await serverFetch(
+                      `https://api.bolagsverket.se/vardefulladatamangder/v1/dokument/${dId}`
                     );
                     if (docRes.ok) {
                       const docData = await docRes.json();
@@ -177,7 +205,7 @@ exports.handler = async (event) => {
                         break;
                       }
                     }
-                  } catch(e) { /* doc fetch failed, try next year */ }
+                  } catch(e) { /* try next year */ }
                 }
               }
             }
@@ -190,15 +218,12 @@ exports.handler = async (event) => {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // Source 4: Fetch a specific document by ID (for year switching)
+  // Source 4: Specific document by ID
   // ══════════════════════════════════════════════════════════════
   if (docId) {
     try {
       const url = `https://api.bolagsverket.se/vardefulladatamangder/v1/dokument/${docId}`;
-      const res = await fetch(url, {
-        headers: { 'Accept': 'application/json', 'User-Agent': 'VCFO-Terminal/1.0' },
-      });
-
+      const res = await serverFetch(url);
       if (res.ok) {
         const data = await res.json();
         if (data) {
@@ -206,16 +231,14 @@ exports.handler = async (event) => {
           if (!results.source) results.source = 'bolagsverket-doc';
         }
       }
-    } catch (e) {
-      results.errors.push(`doc: ${e.message}`);
-    }
+    } catch (e) { results.errors.push(`doc: ${e.message}`); }
   }
 
-  // Build summary of what years are available
+  // Available years summary
   results.availableYears = results.reports
     .map(r => (r.financialYear || r.rakenskapsAr || r.reportPeriod || r.year || '').toString().slice(0, 4))
     .filter(y => y && parseInt(y) >= 2018)
-    .filter((v, i, a) => a.indexOf(v) === i) // unique
+    .filter((v, i, a) => a.indexOf(v) === i)
     .sort((a, b) => parseInt(b) - parseInt(a));
 
   return {

@@ -1,6 +1,41 @@
 // Netlify serverless function — searches Swedish companies by name.
-// Queries multiple free Swedish company data sources server-side
-// (no CORS issues) and returns matching companies with org numbers.
+const https = require('https');
+
+function serverFetch(url, options = {}) {
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(url);
+    const reqOptions = {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.protocol === 'https:' ? 443 : 80,
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: options.method || 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; VCFO-Terminal/1.0)',
+        ...(options.headers || {}),
+      },
+      timeout: 10000,
+    };
+
+    const lib = parsedUrl.protocol === 'https:' ? https : require('http');
+    const req = lib.request(reqOptions, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        resolve({
+          ok: res.statusCode >= 200 && res.statusCode < 300,
+          status: res.statusCode,
+          contentType: res.headers['content-type'] || '',
+          body,
+          json: () => { try { return JSON.parse(body); } catch(e) { return null; } },
+        });
+      });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
+    req.end();
+  });
+}
 
 exports.handler = async (event) => {
   const corsHeaders = {
@@ -15,127 +50,58 @@ exports.handler = async (event) => {
 
   const query = (event.queryStringParameters?.q || '').trim();
   if (!query || query.length < 2) {
-    return {
-      statusCode: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Query parameter "q" required (min 2 chars)' }),
-    };
+    return { statusCode: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Query "q" required (min 2 chars)' }) };
   }
 
   const results = [];
 
-  // ── Source 1: Bolagsverket Näringslivsregistret (XBRL search) ──
-  // Their web search uses this endpoint internally
+  // Source 1: Bolagsverket iXBRL API
   try {
-    const bvUrl = `https://xbrl.bolagsverket.se/api/v1/reports?companyName=${encodeURIComponent(query)}&top=8`;
-    const bvRes = await fetch(bvUrl, {
-      headers: { 'Accept': 'application/json', 'User-Agent': 'VCFO-Terminal/1.0' },
-    });
-    if (bvRes.ok) {
-      const bvData = await bvRes.json();
-      const reports = bvData.reports || bvData.items || bvData || [];
-      if (Array.isArray(reports)) {
-        for (const r of reports) {
-          const orgNr = r.registrationNumber || r.organisationNumber || r.orgNr || '';
-          const name  = r.companyName || r.name || '';
-          if (orgNr && name) {
-            const formatted = orgNr.length === 10 && !orgNr.includes('-')
-              ? orgNr.slice(0, 6) + '-' + orgNr.slice(6)
-              : orgNr;
-            results.push({
-              name,
-              orgNr: formatted,
-              legalForm: r.legalForm || 'AB',
-              industry: r.industry || r.sector || '',
-              source: 'bolagsverket',
-              confidence: 'high',
-            });
-          }
+    const url = `https://xbrl.bolagsverket.se/api/v1/reports?companyName=${encodeURIComponent(query)}&top=8`;
+    const res = await serverFetch(url);
+    if (res.ok) {
+      const data = res.json();
+      const reports = data?.reports || data?.items || (Array.isArray(data) ? data : []);
+      for (const r of reports) {
+        const orgNr = r.registrationNumber || r.organisationNumber || '';
+        const name  = r.companyName || r.name || '';
+        if (orgNr && name) {
+          const formatted = orgNr.length === 10 && !orgNr.includes('-')
+            ? orgNr.slice(0, 6) + '-' + orgNr.slice(6) : orgNr;
+          results.push({ name, orgNr: formatted, legalForm: r.legalForm || 'AB', industry: r.industry || '', source: 'bolagsverket', confidence: 'high' });
         }
       }
     }
-  } catch (e) { /* Bolagsverket source failed — try next */ }
+  } catch (e) { /* source failed */ }
 
-  // ── Source 2: Allabolag autocomplete ──
-  // Public autocomplete endpoint used by allabolag.se
+  // Source 2: Allabolag autocomplete
   if (results.length < 3) {
     try {
-      const aaUrl = `https://www.allabolag.se/what/${encodeURIComponent(query)}`;
-      const aaRes = await fetch(aaUrl, {
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (compatible; VCFO-Terminal/1.0)',
-        },
-      });
-      if (aaRes.ok) {
-        const contentType = aaRes.headers.get('content-type') || '';
-        if (contentType.includes('json')) {
-          const aaData = await aaRes.json();
-          const items = Array.isArray(aaData) ? aaData : (aaData.results || aaData.companies || []);
-          for (const item of items.slice(0, 6)) {
-            const orgNr = item.orgnr || item.orgNr || item.organisationsnummer || '';
-            const name  = item.name || item.company_name || item.namn || '';
-            if (orgNr && name) {
-              // Skip if we already have this company from Bolagsverket
-              const exists = results.some(r => r.orgNr.replace('-', '') === orgNr.replace('-', ''));
-              if (!exists) {
-                const formatted = orgNr.length === 10 && !orgNr.includes('-')
-                  ? orgNr.slice(0, 6) + '-' + orgNr.slice(6)
-                  : orgNr;
-                results.push({
-                  name,
-                  orgNr: formatted,
-                  legalForm: item.type || item.bolagsform || 'AB',
-                  industry: item.industry || item.sni_text || item.bransch || '',
-                  source: 'allabolag',
-                  confidence: 'high',
-                });
-              }
-            }
-          }
-        }
-      }
-    } catch (e) { /* allabolag source failed — continue */ }
-  }
-
-  // ── Source 3: Data.se / Open data portal ──
-  if (results.length < 2) {
-    try {
-      const dsUrl = `https://ssbtek.se/foretagssok/?q=${encodeURIComponent(query)}&format=json`;
-      const dsRes = await fetch(dsUrl, {
-        headers: { 'Accept': 'application/json', 'User-Agent': 'VCFO-Terminal/1.0' },
-      });
-      if (dsRes.ok) {
-        const dsData = await dsRes.json();
-        const items = Array.isArray(dsData) ? dsData : (dsData.results || []);
-        for (const item of items.slice(0, 4)) {
-          const orgNr = item.organisationsnummer || item.orgnr || '';
-          const name  = item.namn || item.name || '';
+      const url = `https://www.allabolag.se/what/${encodeURIComponent(query)}`;
+      const res = await serverFetch(url);
+      if (res.ok && res.contentType.includes('json')) {
+        const data = res.json();
+        const items = Array.isArray(data) ? data : (data?.results || data?.companies || []);
+        for (const item of items.slice(0, 6)) {
+          const orgNr = item.orgnr || item.orgNr || item.organisationsnummer || '';
+          const name  = item.name || item.company_name || item.namn || '';
           if (orgNr && name) {
-            const exists = results.some(r => r.orgNr.replace('-', '') === orgNr.replace('-', ''));
+            const exists = results.some(r => r.orgNr.replace(/-/g, '') === orgNr.replace(/-/g, ''));
             if (!exists) {
               const formatted = orgNr.length === 10 && !orgNr.includes('-')
-                ? orgNr.slice(0, 6) + '-' + orgNr.slice(6)
-                : orgNr;
-              results.push({
-                name,
-                orgNr: formatted,
-                legalForm: item.bolagsform || 'AB',
-                industry: item.bransch || '',
-                source: 'datase',
-                confidence: 'medium',
-              });
+                ? orgNr.slice(0, 6) + '-' + orgNr.slice(6) : orgNr;
+              results.push({ name, orgNr: formatted, legalForm: item.type || 'AB', industry: item.bransch || '', source: 'allabolag', confidence: 'high' });
             }
           }
         }
       }
-    } catch (e) { /* data.se source failed */ }
+    } catch (e) { /* source failed */ }
   }
 
-  // Deduplicate by orgNr
+  // Deduplicate
   const seen = new Set();
   const unique = results.filter(r => {
-    const key = r.orgNr.replace('-', '');
+    const key = r.orgNr.replace(/-/g, '');
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -144,10 +110,6 @@ exports.handler = async (event) => {
   return {
     statusCode: 200,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      query,
-      count: unique.length,
-      companies: unique.slice(0, 8),
-    }),
+    body: JSON.stringify({ query, count: unique.length, companies: unique.slice(0, 8) }),
   };
 };
