@@ -6,9 +6,14 @@
 const https = require('https');
 const http = require('http');
 
-function serverFetch(url, options = {}) {
+function serverFetch(url, options = {}, _redirectCount = 0) {
   return new Promise((resolve, reject) => {
-    const parsedUrl = new URL(url);
+    if (_redirectCount > 5) { reject(new Error('Too many redirects')); return; }
+
+    let parsedUrl;
+    try { parsedUrl = new URL(url); }
+    catch(e) { reject(new Error(`Invalid URL: ${url}`)); return; }
+
     const lib = parsedUrl.protocol === 'https:' ? https : http;
     const reqOptions = {
       hostname: parsedUrl.hostname,
@@ -17,16 +22,22 @@ function serverFetch(url, options = {}) {
       method: options.method || 'GET',
       headers: {
         'Accept': options.accept || 'text/html,application/json',
-        'User-Agent': 'Mozilla/5.0 (compatible; VCFO-Terminal/1.0)',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         ...(options.headers || {}),
       },
       timeout: 15000,
     };
 
     const req = lib.request(reqOptions, (res) => {
-      // Follow redirects
+      // Follow redirects — resolve relative URLs against the original
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        serverFetch(res.headers.location, options).then(resolve).catch(reject);
+        let redirectUrl;
+        try {
+          redirectUrl = new URL(res.headers.location, url).href;
+        } catch(e) {
+          redirectUrl = res.headers.location;
+        }
+        serverFetch(redirectUrl, options, _redirectCount + 1).then(resolve).catch(reject);
         return;
       }
       let body = '';
