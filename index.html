@@ -1895,7 +1895,18 @@ body::after {
     <div id="wlEmpty" class="wl-empty">
       <div class="icon">★</div>
       <div style="font-size:14px;font-weight:600;color:var(--text);">No companies pinned yet</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:4px;">Load a company and click the ★ Pin button next to the company name to save it here</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:6px;max-width:420px;line-height:1.6;">
+        Your watchlist lets you save and track companies across sessions.<br>
+        <strong>To add a company:</strong>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;text-align:left;max-width:380px;line-height:1.8;">
+        1. Search for a company using the search bar above<br>
+        2. Click the <span style="color:var(--amber);font-weight:600;">★ Pin</span> button next to the company name<br>
+        3. The company will appear here with its key metrics and M&A score
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:12px;max-width:380px;line-height:1.5;border-top:1px solid rgba(255,255,255,0.06);padding-top:8px;">
+        Pinned companies persist in your browser via localStorage. You can load them for full analysis, add them to Compare, or export the list as CSV.
+      </div>
     </div>
 
     <div id="wlGrid" class="wl-grid" style="display:none;">
@@ -3163,7 +3174,7 @@ function buildGenericDemo(orgNr) {
     type: 'Privat aktiebolag',
     industry: 'Tjänster',
     sni: '69100',
-    fiscalYear: '2023',
+    fiscalYear: String(new Date().getFullYear() - 1),
     netSales: 28_400_000,
     otherRevenue: 220_000,
     rawMaterials: 8_200_000,
@@ -3485,9 +3496,31 @@ async function loadCompanyByOrg(raw, knownName) {
   companyData = d;
   maScore     = null;
 
-  // Step 3 — Build year selector from doc list
+  // Step 3 — Build year selector from doc list or API available years
   if (docList && docList.length > 0) {
     availableYears = docList;
+  }
+  // If docList was fallback (no docId) and proxy returned available years, rebuild
+  if (window._bvAvailableYears && window._bvAvailableYears.length) {
+    const apiYears = window._bvAvailableYears
+      .map(y => ({ year: String(y), docId: null, label: String(y) }))
+      .sort((a, b) => parseInt(b.year) - parseInt(a.year));
+    if (apiYears.length > 0) availableYears = apiYears;
+  }
+  // Pre-populate historyData from proxy reports (multi-year data)
+  if (window._bvReports && window._bvReports.length) {
+    for (const report of window._bvReports) {
+      const yr = (report.financialYear || '').toString().slice(0, 4);
+      if (yr && !historyData[yr]) {
+        historyData[yr] = mapAPIResponse(report, clean);
+        historyData[yr]._isLive = true;
+      }
+    }
+    window._bvReports = null;
+  }
+  // Store current year in history
+  historyData[d.fiscalYear] = d;
+  if (availableYears.length > 0) {
     renderYearSelector(d.fiscalYear);
   }
 
@@ -3496,6 +3529,7 @@ async function loadCompanyByOrg(raw, knownName) {
   renderFinancialsTab(d);
   computeAndRenderDeterministicCFO(d);
   computeAndRenderDeterministicMA(d);
+  renderCashFlow();
 
   // Show content
   ['companyEmpty'].forEach(id => document.getElementById(id).style.display = 'none');
@@ -3618,11 +3652,12 @@ async function fetchDocumentList(cleanOrgNr) {
 
 // Fallback year list when API is unavailable
 function buildFallbackYearList(cleanOrgNr) {
-  // Check if we have demo data for multiple years
   const currentYear = new Date().getFullYear();
-  return ['2023','2022','2021','2020']
-    .filter(y => parseInt(y) <= currentYear - 1)
-    .map(y => ({ year: y, docId: null, label: y }));
+  const years = [];
+  for (let y = currentYear - 1; y >= currentYear - 4; y--) {
+    years.push({ year: String(y), docId: null, label: String(y) });
+  }
+  return years;
 }
 
 // ============================================================
@@ -3742,6 +3777,7 @@ function renderYearView(d, year) {
   renderFinancialsTab(d);
   computeAndRenderDeterministicCFO(d);
   computeAndRenderDeterministicMA(d);
+  renderCashFlow();
   renderYearSelector(year);
 
   // Show estimated badge if needed
@@ -3891,7 +3927,7 @@ function mapAPIResponse(api, clean) {
     type: api.legalForm || 'Aktiebolag',
     industry: api.industry || '—',
     sni: api.sni || '—',
-    fiscalYear: (api.reportPeriod || '2023').slice(0,4),
+    fiscalYear: (api.reportPeriod || api.financialYear || String(new Date().getFullYear() - 1)).slice(0,4),
     netSales: api.netSales || api.revenues || 0,
     opProfit: api.operatingProfit || api.ebit || 0,
     netProfit: api.netIncome || api.profitForYear || 0,
@@ -4013,31 +4049,58 @@ function buildFieldRows(rows) {
 // ============================================================
 function renderFinancialsTab(d) {
   const ros = d.netSales ? (d.opProfit / d.netSales * 100) : 0;
-  const prevROS = d.prevROS || 0;
+
+  // Find prior year data from historyData
+  const currentYr = parseInt(d.fiscalYear);
+  const priorYrKey = String(currentYr - 1);
+  const prev = historyData[priorYrKey] || null;
+
+  const prevNetSales  = prev ? prev.netSales  : (d.prevNetSales || 0);
+  const prevOpProfit  = prev ? prev.opProfit   : (d.prevOpProfit || 0);
+  const prevNetProfit = prev ? prev.netProfit  : (d.prevNetProfit || 0);
+  const prevROS       = prev && prev.netSales ? (prev.opProfit / prev.netSales * 100) : (d.prevROS || 0);
+  const prevDividends = prev ? (prev.dividendsPaid || 0) : 0;
+
+  function yoyPct(curr, prior) {
+    if (!prior || prior === 0) return '—';
+    const pct = ((curr - prior) / Math.abs(prior) * 100);
+    const sign = pct > 0 ? '+' : '';
+    const cls = pct > 0 ? 'pos' : pct < 0 ? 'neg' : '';
+    return `<span class="${cls}">${sign}${pct.toFixed(1)}%</span>`;
+  }
+
+  const priorYrLabel = prev ? `FY${priorYrKey}` : 'Prior Year';
 
   document.getElementById('finIncome').innerHTML = `
     <table class="data-table">
-      <thead><tr><th>Line Item</th><th style="text-align:right">FY${d.fiscalYear}</th><th style="text-align:right">Prior Year</th></tr></thead>
+      <thead><tr><th>Line Item</th><th style="text-align:right">FY${d.fiscalYear}</th><th style="text-align:right">${priorYrLabel}</th><th style="text-align:right">YoY Δ</th></tr></thead>
       <tbody>
-        <tr><td>Net Sales</td><td style="text-align:right">${fmtSEK(d.netSales)}</td><td style="text-align:right">${fmtSEK(d.prevNetSales)}</td></tr>
-        <tr><td>Operating Profit</td><td style="text-align:right" class="${d.opProfit>0?'pos':'neg'}">${fmtSEK(d.opProfit)}</td><td style="text-align:right">${fmtSEK(d.prevOpProfit)}</td></tr>
-        <tr><td>Net Profit</td><td style="text-align:right" class="${d.netProfit>0?'pos':'neg'}">${fmtSEK(d.netProfit)}</td><td style="text-align:right">${fmtSEK(d.prevNetProfit)}</td></tr>
-        <tr><td>ROS</td><td style="text-align:right" class="${ros>10?'pos':ros>5?'amb':'neg'}">${fmtPct(ros)}</td><td style="text-align:right">${fmtPct(prevROS)}</td></tr>
-        <tr><td>Dividends Paid</td><td style="text-align:right" class="${d.dividendsPaid>d.netProfit?'neg':'amb'}">${fmtSEK(d.dividendsPaid)}</td><td style="text-align:right">—</td></tr>
+        <tr><td>Net Sales</td><td style="text-align:right">${fmtSEK(d.netSales)}</td><td style="text-align:right">${fmtSEK(prevNetSales)}</td><td style="text-align:right">${yoyPct(d.netSales, prevNetSales)}</td></tr>
+        <tr><td>Operating Profit</td><td style="text-align:right" class="${d.opProfit>0?'pos':'neg'}">${fmtSEK(d.opProfit)}</td><td style="text-align:right">${fmtSEK(prevOpProfit)}</td><td style="text-align:right">${yoyPct(d.opProfit, prevOpProfit)}</td></tr>
+        <tr><td>Net Profit</td><td style="text-align:right" class="${d.netProfit>0?'pos':'neg'}">${fmtSEK(d.netProfit)}</td><td style="text-align:right">${fmtSEK(prevNetProfit)}</td><td style="text-align:right">${yoyPct(d.netProfit, prevNetProfit)}</td></tr>
+        <tr><td>ROS</td><td style="text-align:right" class="${ros>10?'pos':ros>5?'amb':'neg'}">${fmtPct(ros)}</td><td style="text-align:right">${fmtPct(prevROS)}</td><td style="text-align:right">${yoyPct(ros, prevROS)}</td></tr>
+        <tr><td>Dividends Paid</td><td style="text-align:right" class="${d.dividendsPaid>d.netProfit?'neg':'amb'}">${fmtSEK(d.dividendsPaid)}</td><td style="text-align:right">${prevDividends ? fmtSEK(prevDividends) : '—'}</td><td style="text-align:right">${prevDividends ? yoyPct(d.dividendsPaid, prevDividends) : '—'}</td></tr>
       </tbody>
     </table>`;
 
+  // Balance sheet — prior year values
+  const prevFixedAssets      = prev ? (prev.totalFixedAssets || 0) : 0;
+  const prevCurrentAssets    = prev ? (prev.totalCurrentAssets || 0) : 0;
+  const prevTotalAssets      = prev ? (prev.totalAssets || 0) : 0;
+  const prevEquity           = prev ? (prev.equity || 0) : 0;
+  const prevLongTermDebt     = prev ? (prev.longTermDebt || 0) : 0;
+  const prevCurrentLiab      = prev ? (prev.currentLiabilities || 0) : 0;
+
   document.getElementById('finBalance').innerHTML = `
     <table class="data-table">
-      <thead><tr><th>Item</th><th style="text-align:right">Value</th></tr></thead>
+      <thead><tr><th>Item</th><th style="text-align:right">FY${d.fiscalYear}</th><th style="text-align:right">${priorYrLabel}</th><th style="text-align:right">YoY Δ</th></tr></thead>
       <tbody>
-        <tr><td>Fixed Assets</td><td style="text-align:right">${fmtSEK(d.totalFixedAssets)}</td></tr>
-        <tr><td>Current Assets</td><td style="text-align:right">${fmtSEK(d.totalCurrentAssets)}</td></tr>
-        <tr><td>Total Assets</td><td style="text-align:right">${fmtSEK(d.totalAssets)}</td></tr>
-        <tr><td>Equity</td><td style="text-align:right" class="pos">${fmtSEK(d.equity)}</td></tr>
-        <tr><td>Long-term Debt</td><td style="text-align:right">${fmtSEK(d.longTermDebt)}</td></tr>
-        <tr><td>&nbsp;— Due >5 years</td><td style="text-align:right" class="${d.longTermDebtOver5y > d.equity*0.5 ? 'neg':'amb'}">${fmtSEK(d.longTermDebtOver5y)}</td></tr>
-        <tr><td>Current Liabilities</td><td style="text-align:right">${fmtSEK(d.currentLiabilities)}</td></tr>
+        <tr><td>Fixed Assets</td><td style="text-align:right">${fmtSEK(d.totalFixedAssets)}</td><td style="text-align:right">${fmtSEK(prevFixedAssets)}</td><td style="text-align:right">${yoyPct(d.totalFixedAssets, prevFixedAssets)}</td></tr>
+        <tr><td>Current Assets</td><td style="text-align:right">${fmtSEK(d.totalCurrentAssets)}</td><td style="text-align:right">${fmtSEK(prevCurrentAssets)}</td><td style="text-align:right">${yoyPct(d.totalCurrentAssets, prevCurrentAssets)}</td></tr>
+        <tr><td>Total Assets</td><td style="text-align:right">${fmtSEK(d.totalAssets)}</td><td style="text-align:right">${fmtSEK(prevTotalAssets)}</td><td style="text-align:right">${yoyPct(d.totalAssets, prevTotalAssets)}</td></tr>
+        <tr><td>Equity</td><td style="text-align:right" class="pos">${fmtSEK(d.equity)}</td><td style="text-align:right">${fmtSEK(prevEquity)}</td><td style="text-align:right">${yoyPct(d.equity, prevEquity)}</td></tr>
+        <tr><td>Long-term Debt</td><td style="text-align:right">${fmtSEK(d.longTermDebt)}</td><td style="text-align:right">${fmtSEK(prevLongTermDebt)}</td><td style="text-align:right">${yoyPct(d.longTermDebt, prevLongTermDebt)}</td></tr>
+        <tr><td>Current Liabilities</td><td style="text-align:right">${fmtSEK(d.currentLiabilities)}</td><td style="text-align:right">${fmtSEK(prevCurrentLiab)}</td><td style="text-align:right">${yoyPct(d.currentLiabilities, prevCurrentLiab)}</td></tr>
       </tbody>
     </table>`;
 
@@ -6897,14 +6960,25 @@ function computeCashFlow(d) {
 
   // Working capital: (Current Assets - Cash) - Current Liabilities
   const wcCurrent      = (d.totalCurrentAssets || 0) - (d.cashEquivalents || 0) - (d.currentLiabilities || 0);
-  // Prior year estimate: use 95% of current as rough delta proxy
-  const wcPrior        = wcCurrent * 0.95;
-  const deltaWC        = wcCurrent - wcPrior;
+
+  // Try to get actual prior year WC from historyData
+  const currentYr  = parseInt(d.fiscalYear);
+  const priorYrKey = String(currentYr - 1);
+  const prev       = historyData[priorYrKey] || null;
+
+  let wcPrior;
+  if (prev) {
+    wcPrior = (prev.totalCurrentAssets || 0) - (prev.cashEquivalents || 0) - (prev.currentLiabilities || 0);
+  } else {
+    // Fallback: estimate 95% of current as rough delta proxy
+    wcPrior = wcCurrent * 0.95;
+  }
+  const deltaWC = wcCurrent - wcPrior;
 
   // CapEx estimate: ~1.2x depreciation (replacement + modest growth)
-  const capex          = Math.round(depreciation * 1.2);
+  const capex = Math.round(depreciation * 1.2);
 
-  const fcf            = netProfit + depreciation - deltaWC - capex;
+  const fcf = netProfit + depreciation - deltaWC - capex;
 
   // Conversion metrics
   const cashConversion = netProfit !== 0 ? (fcf / netProfit * 100) : null;
