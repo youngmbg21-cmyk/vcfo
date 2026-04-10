@@ -11,3 +11,8 @@
   from = "/api/company-search"
   to = "/.netlify/functions/company-search"
   status = 200
+
+[[redirects]]
+  from = "/api/bolagsverket"
+  to = "/.netlify/functions/bolagsverket-proxy"
+  status = 200

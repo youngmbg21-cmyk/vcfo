@@ -2994,11 +2994,38 @@ async function callAnthropic(body, apiKey) {
 
 async function fetchBolagsverket(orgNum) {
   const clean = orgNum.replace(/[^0-9]/g, '');
-  
+
   setStatusBar(t('status_fetching_bv'), 'loading');
   document.getElementById('bvDot').className  = 'api-dot na';
   document.getElementById('bvText').textContent = 'Bolagsverket: Fetching…';
 
+  // Tier 1: Netlify Function proxy (server-side, no CORS)
+  const netlifyUrl = getBolagsverketProxyUrl();
+  if (netlifyUrl) {
+    try {
+      const ctrl  = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 15000);
+      const res   = await fetch(`${netlifyUrl}?orgNr=${clean}`, { signal: ctrl.signal });
+      clearTimeout(timer);
+
+      if (res.ok) {
+        const wrapper = await res.json();
+        if (wrapper.latestReport) {
+          document.getElementById('bvDot').className   = 'api-dot ok';
+          document.getElementById('bvText').textContent = `Bolagsverket: Connected (${wrapper.source || 'live'})`;
+          // Store reports list for year selector
+          if (wrapper.reports && wrapper.reports.length) {
+            window._bvReports = wrapper.reports;
+          }
+          return wrapper.latestReport;
+        }
+      }
+    } catch(e) {
+      console.warn('Netlify BV proxy failed:', e.message);
+    }
+  }
+
+  // Tier 2: Direct fetch with CORS proxy chain (browser-side)
   const targets = [
     `https://xbrl.bolagsverket.se/api/v1/reports?registrationNumber=${clean}&top=1`,
     `https://api.bolagsverket.se/v1/arenden/${clean}`,
@@ -3011,7 +3038,7 @@ async function fetchBolagsverket(orgNum) {
         const data = await res.json().catch(() => null);
         if (data) {
           document.getElementById('bvDot').className   = 'api-dot ok';
-          document.getElementById('bvText').textContent = 'Bolagsverket: Connected';
+          document.getElementById('bvText').textContent = 'Bolagsverket: Connected (proxy)';
           return data;
         }
       }
@@ -3020,6 +3047,18 @@ async function fetchBolagsverket(orgNum) {
 
   document.getElementById('bvDot').className   = 'api-dot err';
   document.getElementById('bvText').textContent = 'Bolagsverket: CORS blocked — using structured demo';
+  return null;
+}
+
+// Auto-detect Netlify Bolagsverket proxy URL
+function getBolagsverketProxyUrl() {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host.includes('netlify.app') || host.includes('netlify.com') ||
+        (host === 'localhost' && window.location.port === '8888')) {
+      return '/api/bolagsverket';
+    }
+  }
   return null;
 }
 
@@ -3576,6 +3615,48 @@ function loadDemo(orgNr) {
 // BOLAGSVERKET DOCUMENT LIST — fetch all available years
 // ============================================================
 async function fetchDocumentList(cleanOrgNr) {
+  // Tier 1: Check if fetchBolagsverket already got reports via Netlify proxy
+  if (window._bvReports && window._bvReports.length > 0) {
+    const docs = window._bvReports;
+    window._bvReports = null; // consume once
+    const mapped = docs
+      .map(d => ({
+        year:  (d.financialYear || d.rakenskapsAr || d.reportPeriod || d.year || '').toString().slice(0, 4),
+        docId: d.documentId || d.id || null,
+        label: d.financialYear || d.rakenskapsAr || d.reportPeriod || d.year || '—',
+      }))
+      .filter(d => d.year && parseInt(d.year) >= 2020)
+      .sort((a, b) => parseInt(b.year) - parseInt(a.year));
+    if (mapped.length > 0) return mapped;
+  }
+
+  // Tier 2: Netlify proxy for document list
+  const netlifyUrl = getBolagsverketProxyUrl();
+  if (netlifyUrl) {
+    try {
+      const ctrl  = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 10000);
+      const res   = await fetch(`${netlifyUrl}?orgNr=${cleanOrgNr}`, { signal: ctrl.signal });
+      clearTimeout(timer);
+      if (res.ok) {
+        const wrapper = await res.json();
+        const docs = wrapper.reports || [];
+        if (docs.length > 0) {
+          const mapped = docs
+            .map(d => ({
+              year:  (d.financialYear || d.rakenskapsAr || d.reportPeriod || d.year || '').toString().slice(0, 4),
+              docId: d.documentId || d.id || null,
+              label: d.financialYear || d.rakenskapsAr || d.reportPeriod || d.year || '—',
+            }))
+            .filter(d => d.year && parseInt(d.year) >= 2020)
+            .sort((a, b) => parseInt(b.year) - parseInt(a.year));
+          if (mapped.length > 0) return mapped;
+        }
+      }
+    } catch(e) { /* Netlify proxy failed, try direct */ }
+  }
+
+  // Tier 3: Direct with CORS proxy chain
   const url = `https://api.bolagsverket.se/vardefulladatamangder/v1/organisationer/${cleanOrgNr}/dokument`;
   try {
     const res = await fetchWithProxy(url, { headers: { 'Accept': 'application/json' } }, 8000);
@@ -3656,14 +3737,31 @@ async function switchToYear(year, docId) {
 }
 
 async function fetchYearByDocId(docId, orgNr, year) {
-  // Bolagsverket document fetch — returns iXBRL zip
-  // In CORS-blocked browser context this won't work directly
-  // but we try and fall back gracefully
+  const clean = orgNr.replace(/[^0-9]/g,'');
+
+  // Tier 1: Netlify proxy
+  const netlifyUrl = getBolagsverketProxyUrl();
+  if (netlifyUrl) {
+    try {
+      const params = docId ? `orgNr=${clean}&docId=${docId}` : `orgNr=${clean}&year=${year}`;
+      const res = await fetch(`${netlifyUrl}?${params}`);
+      if (res.ok) {
+        const wrapper = await res.json();
+        if (wrapper.latestReport) {
+          const data = wrapper.latestReport;
+          if (data.netSales || data.revenues || data.name || data.companyName) {
+            return mapAPIResponse(data, clean);
+          }
+        }
+      }
+    } catch(e) { /* proxy failed, try direct */ }
+  }
+
+  // Tier 2: Direct fetch (will CORS-fail on Netlify, but works in some contexts)
   try {
-    const clean = orgNr.replace(/[^0-9]/g,'');
-    const url   = `https://api.bolagsverket.se/vardefulladatamangder/v1/dokument/${docId}`;
-    const res   = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    const data  = await res.json().catch(() => null);
+    const url = `https://api.bolagsverket.se/vardefulladatamangder/v1/dokument/${docId}`;
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const data = await res.json().catch(() => null);
     if (data && (data.netSales || data.revenues)) {
       return mapAPIResponse(data, clean);
     }
