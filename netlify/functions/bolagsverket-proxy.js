@@ -59,6 +59,19 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers: corsHeaders, body: '' };
   }
 
+  // Health check — visit /api/bolagsverket?health=1 to verify which version is deployed
+  if (event.queryStringParameters?.health) {
+    return {
+      statusCode: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        version: 'v3-https-module',
+        nodeVersion: process.version,
+        timestamp: new Date().toISOString(),
+      }),
+    };
+  }
+
   const orgNr = (event.queryStringParameters?.orgNr || '').replace(/[^0-9]/g, '');
   if (!orgNr || orgNr.length < 10) {
     return {
