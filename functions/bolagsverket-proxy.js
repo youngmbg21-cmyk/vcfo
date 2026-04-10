@@ -59,16 +59,47 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers: corsHeaders, body: '' };
   }
 
-  // Health check — visit /api/bolagsverket?health=1 to verify which version is deployed
+  // Health check + connectivity test
   if (event.queryStringParameters?.health) {
+    const diagnostics = {
+      version: 'v4-debug',
+      nodeVersion: process.version,
+      timestamp: new Date().toISOString(),
+      hasFetch: typeof fetch !== 'undefined',
+      tests: {},
+    };
+
+    // Test 1: https module request
+    try {
+      const res = await serverFetch('https://httpbin.org/get');
+      diagnostics.tests.httpsModule = { ok: res.ok, status: res.status };
+    } catch(e) {
+      diagnostics.tests.httpsModule = { error: e.message };
+    }
+
+    // Test 2: Bolagsverket XBRL API directly
+    try {
+      const res = await serverFetch('https://xbrl.bolagsverket.se/api/v1/reports?registrationNumber=5560004615&top=1');
+      diagnostics.tests.bolagsverketXbrl = { ok: res.ok, status: res.status, bodyPreview: (await res.text()).slice(0, 300) };
+    } catch(e) {
+      diagnostics.tests.bolagsverketXbrl = { error: e.message, code: e.code };
+    }
+
+    // Test 3: Native fetch (Node 18+)
+    if (typeof fetch !== 'undefined') {
+      try {
+        const res = await fetch('https://xbrl.bolagsverket.se/api/v1/reports?registrationNumber=5560004615&top=1');
+        const text = await res.text();
+        diagnostics.tests.nativeFetch = { ok: res.ok, status: res.status, bodyPreview: text.slice(0, 300) };
+      } catch(e) {
+        diagnostics.tests.nativeFetch = { error: e.message };
+      }
+    }
+
     return {
       statusCode: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        version: 'v3-https-module',
-        nodeVersion: process.version,
-        timestamp: new Date().toISOString(),
-      }),
+      body: JSON.stringify(diagnostics, null, 2),
     };
   }
 
@@ -156,7 +187,7 @@ exports.handler = async (event) => {
       results.errors.push(`xbrl: HTTP ${res.status} — ${body.slice(0, 200)}`);
     }
   } catch (e) {
-    results.errors.push(`xbrl: ${e.message}`);
+    results.errors.push(`xbrl: ${e.message} | stack: ${(e.stack || '').split('\n').slice(0,3).join(' > ')}`);
   }
 
   // ══════════════════════════════════════════════════════════════
