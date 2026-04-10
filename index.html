@@ -1212,6 +1212,143 @@ body::after {
 .flag-dot.warn     { background: var(--amber); }
 .flag-dot.critical { background: var(--red);   }
 .flag-dot.na       { background: var(--text3); opacity: 0.4; }
+
+/* ===== CASH FLOW TAB ===== */
+.cf-waterfall-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.cf-summary-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+}
+.cf-summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(26,45,66,0.4);
+  font-size: 11px;
+}
+.cf-summary-item:last-child { border-bottom: none; }
+.cf-summary-label { color: var(--text3); }
+.cf-summary-value { font-weight: 600; }
+.cf-fcf-box {
+  background: linear-gradient(135deg, var(--green-dim), rgba(0,255,136,0.04));
+  border: 1px solid rgba(0,255,136,0.3);
+  border-radius: 5px;
+  padding: 12px 14px;
+  margin-top: 12px;
+  text-align: center;
+}
+.cf-fcf-label {
+  font-size: 9px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--green);
+  margin-bottom: 4px;
+}
+.cf-fcf-val {
+  font-size: 22px; font-weight: 800;
+  font-family: 'Syne', sans-serif;
+}
+
+/* ===== WATCHLIST TAB ===== */
+.wl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+.wl-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s;
+}
+.wl-card:hover { border-color: var(--amber); }
+.wl-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.wl-card-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  flex: 1;
+}
+.wl-card-meta { font-size: 10px; color: var(--text3); }
+.wl-card-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+}
+.wl-card-row .label { color: var(--text3); }
+.wl-card-row .value { font-weight: 600; }
+.wl-card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+}
+.wl-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: var(--text3);
+  font-size: 12px;
+  gap: 10px;
+}
+.wl-empty .icon { font-size: 40px; opacity: 0.4; }
+
+/* ===== PIN BUTTON ===== */
+.btn-pin {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 4px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn-pin:hover { border-color: var(--amber); color: var(--amber); }
+.btn-pin.pinned {
+  background: var(--amber-dim);
+  border-color: rgba(255,184,0,0.4);
+  color: var(--amber);
+  font-weight: 700;
+}
+
+/* ===== COPY BUTTON ===== */
+.btn-copy {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 5px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-copy:hover { border-color: var(--green); color: var(--green); }
+.btn-copy.copied {
+  background: var(--green-dim);
+  border-color: rgba(0,255,136,0.4);
+  color: var(--green);
+}
 </style>
 </head>
 <body>
@@ -1317,8 +1454,10 @@ body::after {
   <div class="tab" id="tab-cfo-btn"              onclick="switchTab('cfo')" data-i18n="tab_cfo">📊 CFO Audit</div>
   <div class="tab" id="tab-ma-btn"               onclick="switchTab('ma')" data-i18n="tab_ma">🎯 M&A Screener</div>
   <div class="tab" id="tab-financials-btn"       onclick="switchTab('financials')" data-i18n="tab_financials">📋 Financials</div>
+  <div class="tab" id="tab-cashflow-btn"         onclick="switchTab('cashflow')" data-i18n="tab_cashflow">💧 Cash Flow</div>
   <div class="tab" id="tab-compare-btn"          onclick="switchTab('compare')" data-i18n="tab_compare">⚖ Compare</div>
   <div class="tab" id="tab-benchmarks-btn"       onclick="switchTab('benchmarks')" data-i18n="tab_benchmarks">📡 Benchmarks</div>
+  <div class="tab" id="tab-watchlist-btn"        onclick="switchTab('watchlist')" data-i18n="tab_watchlist">★ Watchlist</div>
   <div class="tab" id="tab-guide-btn"            onclick="switchTab('guide')" style="margin-left:auto;" data-i18n="tab_guide">📖 Guide</div>
 </div>
 
@@ -1383,6 +1522,7 @@ body::after {
               🎯 Screen for M&A
             </button>
             <button class="btn-secondary" onclick="addToCompareFromMain()" title="Add this company to the Compare tab" data-i18n="btn_add_compare">⚖ Add to Compare</button>
+            <button class="btn-pin" id="btnPinCompany" onclick="togglePinCompany()" title="Pin to Watchlist">★ Pin</button>
           </div>
         </div>
 
@@ -1545,6 +1685,7 @@ body::after {
             <div class="ai-output-header">
               <div class="ai-output-title" data-i18n="card_cfo_ai">🤖 AI CFO Analysis — 3 Operational Concerns</div>
               <div style="display:flex;gap:6px;">
+                <button class="btn-copy" onclick="copyAIOutput('cfoAIOutput', this)" title="Copy to clipboard">📋 Copy</button>
                 <button class="btn-secondary" onclick="askAboutAnalysis('cfo')" style="font-size:10px;" data-i18n="btn_ask_ai">💬 Ask AI</button>
                 <button class="btn-analyze" onclick="runCFOAudit()" id="btnCFOAI" data-i18n="btn_run_cfo_ai">
                   Run AI Audit
@@ -1629,6 +1770,7 @@ body::after {
             <div class="ai-output-header">
               <div class="ai-output-title" data-i18n="card_ma_ai">🤖 AI M&A Recommendation — Buy / Pass</div>
               <div style="display:flex;gap:6px;">
+                <button class="btn-copy" onclick="copyAIOutput('maAIOutput', this)" title="Copy to clipboard">📋 Copy</button>
                 <button class="btn-secondary" onclick="askAboutAnalysis('ma')" style="font-size:10px;" data-i18n="btn_ask_ai">💬 Ask AI</button>
                 <button class="btn-analyze" onclick="runMAScreen()" id="btnMAAI" data-i18n="btn_run_ma_ai">
                   Run AI Screen
@@ -1670,6 +1812,81 @@ body::after {
           <div id="finAuditor">—</div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ===== CASH FLOW TAB ===== -->
+  <div id="tab-cashflow" style="display:none;">
+    <div id="cfEmpty" class="empty-state">
+      <div class="icon">💧</div>
+      <div>Load a company to view the Cash Flow waterfall</div>
+    </div>
+    <div id="cfContent" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--green);" id="cfCompanyTitle">Cash Flow Bridge</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;" id="cfSubtitle">Net Profit to Free Cash Flow waterfall</div>
+        </div>
+        <button class="btn-secondary" onclick="renderCashFlow()" data-i18n="btn_refresh_cf">↺ Refresh</button>
+      </div>
+
+      <div class="cf-waterfall-grid">
+        <!-- Left: summary -->
+        <div>
+          <div class="cf-summary-card">
+            <div class="card-title">Cash Flow Components <span style="color:var(--green);">BRIDGE</span></div>
+            <div id="cfSummaryRows">
+              <div style="color:var(--text3);font-size:11px;">Computing...</div>
+            </div>
+            <div class="cf-fcf-box" id="cfFCFBox">
+              <div class="cf-fcf-label">Free Cash Flow</div>
+              <div class="cf-fcf-val" id="cfFCFVal">—</div>
+            </div>
+          </div>
+
+          <div class="cf-summary-card" style="margin-top:12px;">
+            <div class="card-title">Cash Conversion Metrics</div>
+            <div id="cfMetrics">
+              <div style="color:var(--text3);font-size:11px;">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: chart -->
+        <div class="card">
+          <div class="card-title">Waterfall Chart <span style="color:var(--green);">NET PROFIT → FCF</span></div>
+          <canvas id="cfWaterfallChart" style="max-height:320px;"></canvas>
+          <div style="margin-top:12px;font-size:9px;color:var(--text3);line-height:1.6;">
+            FCF = Net Profit + Depreciation − Change in Working Capital − CapEx.<br>
+            Working Capital = (Current Assets − Cash) − Current Liabilities.<br>
+            CapEx is estimated from depreciation charge (approx. replacement cost).
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== WATCHLIST TAB ===== -->
+  <div id="tab-watchlist" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--amber);">★ Watchlist Portfolio</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">Pinned companies persist across sessions via localStorage</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-secondary" onclick="clearWatchlist()" data-i18n="btn_clear_watchlist">✕ Clear All</button>
+        <button class="btn-secondary" onclick="exportWatchlistCSV()" data-i18n="btn_export_watchlist">⬇ Export CSV</button>
+      </div>
+    </div>
+
+    <div id="wlEmpty" class="wl-empty">
+      <div class="icon">★</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);">No companies pinned yet</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px;">Load a company and click the ★ Pin button next to the company name to save it here</div>
+    </div>
+
+    <div id="wlGrid" class="wl-grid" style="display:none;">
+      <!-- Rendered by JS -->
     </div>
   </div>
 
@@ -1806,7 +2023,10 @@ body::after {
       <div class="ai-output-wrap" id="compareAIWrap" style="display:none;">
         <div class="ai-output-header">
           <div class="ai-output-title" style="color:var(--blue);">🤖 AI Comparative Analysis</div>
-          <button class="btn-secondary" onclick="runCompareAI()">↺ Refresh</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-copy" onclick="copyAIOutput('compareAIOutput', this)" title="Copy to clipboard">📋 Copy</button>
+            <button class="btn-secondary" onclick="runCompareAI()">↺ Refresh</button>
+          </div>
         </div>
         <div class="ai-output-body" id="compareAIOutput"></div>
         <div class="progress-bar" style="margin:0 16px 12px;"><div class="progress-fill" id="compareProgress" style="width:0%;background:linear-gradient(90deg,var(--blue),var(--green));"></div></div>
@@ -2022,8 +2242,10 @@ const STRINGS = {
     tab_cfo:            '📊 CFO Audit',
     tab_ma:             '🎯 M&A Screener',
     tab_financials:     '📋 Financials',
+    tab_cashflow:       '💧 Cash Flow',
     tab_compare:        '⚖ Compare',
     tab_benchmarks:     '📡 Benchmarks',
+    tab_watchlist:      '★ Watchlist',
     tab_guide:          '📖 Guide',
 
     // Company empty state
@@ -2201,8 +2423,10 @@ const STRINGS = {
     tab_cfo:            '📊 CFO-analys',
     tab_ma:             '🎯 Förvärvsscreening',
     tab_financials:     '📋 Finanser',
+    tab_cashflow:       '💧 Kassaflöde',
     tab_compare:        '⚖ Jämför',
     tab_benchmarks:     '📡 Nyckeltal',
+    tab_watchlist:      '★ Bevakningslista',
     tab_guide:          '📖 Guide',
 
     // Company empty state
@@ -2476,12 +2700,14 @@ let activeTab = 'company';
 
 function switchTab(name) {
   activeTab = name;
-  ['company','cfo','ma','financials','compare','benchmarks','guide'].forEach(t => {
+  ['company','cfo','ma','financials','cashflow','compare','benchmarks','watchlist','guide'].forEach(t => {
     document.getElementById('tab-' + t).style.display = (t === name) ? 'block' : 'none';
     document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === name);
   });
   if (name === 'compare')    renderCompareTab();
   if (name === 'benchmarks') initBenchmarksTab();
+  if (name === 'cashflow')   renderCashFlow();
+  if (name === 'watchlist')  renderWatchlistTab();
   updateChatPills();
   updateChatSuggestions();
 }
@@ -3175,12 +3401,15 @@ async function loadCompanyByOrg(raw, knownName) {
 
   // Show content
   ['companyEmpty'].forEach(id => document.getElementById(id).style.display = 'none');
-  ['companyContent','cfoContent','maContent','finContent'].forEach(id => {
+  ['companyContent','cfoContent','maContent','finContent','cfContent'].forEach(id => {
     document.getElementById(id).style.display = 'block';
   });
-  ['cfoEmpty','maEmpty','finEmpty'].forEach(id => {
+  ['cfoEmpty','maEmpty','finEmpty','cfEmpty'].forEach(id => {
     document.getElementById(id).style.display = 'none';
   });
+
+  // Update pin button state
+  updatePinButton(isCompanyPinned(d.orgNr));
 
   setStatusBar(`${t('status_loaded')}: ${d.name} · FY${d.fiscalYear}`, 'ok');
   document.getElementById('lastFetch').textContent = 'Last fetch: ' + new Date().toLocaleTimeString('sv-SE');
@@ -3222,6 +3451,7 @@ async function fetchDocumentList(cleanOrgNr) {
   try {
     const res = await fetchWithProxy(url, { headers: { 'Accept': 'application/json' } }, 8000);
     if (!res) return buildFallbackYearList(cleanOrgNr);
+    const data = await res.json().catch(() => null);
     if (!data) return buildFallbackYearList(cleanOrgNr);
 
     const docs = (data.dokument || data.documents || data || []);
@@ -3304,6 +3534,7 @@ async function fetchYearByDocId(docId, orgNr, year) {
     const clean = orgNr.replace(/[^0-9]/g,'');
     const url   = `https://api.bolagsverket.se/vardefulladatamangder/v1/dokument/${docId}`;
     const res   = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const data  = await res.json().catch(() => null);
     if (data && (data.netSales || data.revenues)) {
       return mapAPIResponse(data, clean);
     }
@@ -5902,8 +6133,10 @@ function buildChatContext() {
     cfo:        { name:'CFO Audit',            desc:'Internal financial health audit. Shows rule-based flags for Revenue Quality, Efficiency Drift (ROS trend), and Aggressive Payouts. The AI Audit button generates a 3-concern narrative using Claude.' },
     ma:         { name:'M&A Screener',         desc:'Acquisition due diligence. Shows a 0–100 Buy/Pass score based on 4 dimensions: Profitability (25pts), Compliance (25pts), Balance Sheet (25pts), Asset Quality (25pts). Also checks the auditor Anmärkning, asset depreciation, and debt maturity.' },
     financials: { name:'Financials',           desc:'Full income statement, balance sheet summary, key ratio table with thresholds, and auditor notes for the loaded company.' },
+    cashflow:   { name:'Cash Flow',            desc:'Waterfall bridge from Net Profit to Free Cash Flow. Shows depreciation add-back, working capital change, and CapEx deduction. Includes cash conversion, FCF margin, and FCF yield metrics.' },
     compare:    { name:'Compare & Benchmark',  desc:'Load up to 5 companies side-by-side. Shows a radar chart, M&A score bar chart, metrics table with best/worst highlighting, and a risk flag matrix. Benchmarks against the selected SNI sector median.' },
     benchmarks: { name:'Benchmarks (SCB Live)',desc:'Pulls official sector median ratios from Statistics Sweden (SCB) via their free PxWeb API. Once fetched, these real numbers replace the built-in estimates in the Compare tab. Select sectors, year, and company size, then click Fetch.' },
+    watchlist:  { name:'Watchlist Portfolio',   desc:'Pinned companies persist across sessions in localStorage. Shows M&A score, key ratios, and verdict for each saved company. Load or compare directly from here.' },
     guide:      { name:'Guide',                desc:'Reference documentation for formulas, API configuration, and scoring methodology.' },
   };
 
@@ -6161,8 +6394,8 @@ function updateChatPills() {
   // Always show current tab
   const TAB_LABELS = {
     company:'🏢 Company', cfo:'📊 CFO Audit', ma:'🎯 M&A Screener',
-    financials:'📋 Financials', compare:'⚖ Compare',
-    benchmarks:'📡 Benchmarks', guide:'📖 Guide'
+    financials:'📋 Financials', cashflow:'💧 Cash Flow', compare:'⚖ Compare',
+    benchmarks:'📡 Benchmarks', watchlist:'★ Watchlist', guide:'📖 Guide'
   };
   pills.push(TAB_LABELS[activeTab] || activeTab);
 
@@ -6194,7 +6427,17 @@ function updateChatSuggestions() {
 
   let suggestions = [];
 
-  if (activeTab === 'benchmarks') {
+  if (activeTab === 'cashflow') {
+    suggestions = companyData
+      ? ['What does the Cash Flow waterfall show?', 'Is the free cash flow healthy?', 'What is cash conversion?']
+      : ['What is this tab for?', 'How do I load a company?'];
+  } else if (activeTab === 'watchlist') {
+    suggestions = [
+      'How do I pin a company?',
+      'What is the Watchlist for?',
+      'Can I compare watchlist companies?',
+    ];
+  } else if (activeTab === 'benchmarks') {
     suggestions = [
       'What is this tab for?',
       'How do I use the benchmark data in Compare?',
@@ -6401,6 +6644,440 @@ function askAboutAnalysis(tab) {
     input.focus();
   }, 200);
 }
+
+// ============================================================
+// COPY AI OUTPUT TO CLIPBOARD
+// ============================================================
+function copyAIOutput(elementId, btn) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  const text = el.innerText || el.textContent || '';
+  if (!text || text.length < 20) {
+    showToast('⚠ No AI output to copy — run the analysis first');
+    return;
+  }
+  navigator.clipboard.writeText(text).then(() => {
+    btn.classList.add('copied');
+    btn.textContent = '✓ Copied';
+    showToast('✓ Copied to clipboard');
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.textContent = '📋 Copy';
+    }, 2000);
+  }).catch(() => {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.classList.add('copied');
+    btn.textContent = '✓ Copied';
+    showToast('✓ Copied to clipboard');
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.textContent = '📋 Copy';
+    }, 2000);
+  });
+}
+
+// ============================================================
+// CASH FLOW WATERFALL
+// ============================================================
+let cfWaterfallChartInst = null;
+
+function computeCashFlow(d) {
+  if (!d) return null;
+  const netProfit      = d.netProfit || 0;
+  const depreciation   = d.depreciation || 0;
+
+  // Working capital: (Current Assets - Cash) - Current Liabilities
+  const wcCurrent      = (d.totalCurrentAssets || 0) - (d.cashEquivalents || 0) - (d.currentLiabilities || 0);
+  // Prior year estimate: use 95% of current as rough delta proxy
+  const wcPrior        = wcCurrent * 0.95;
+  const deltaWC        = wcCurrent - wcPrior;
+
+  // CapEx estimate: ~1.2x depreciation (replacement + modest growth)
+  const capex          = Math.round(depreciation * 1.2);
+
+  const fcf            = netProfit + depreciation - deltaWC - capex;
+
+  // Conversion metrics
+  const cashConversion = netProfit !== 0 ? (fcf / netProfit * 100) : null;
+  const fcfMargin      = d.netSales > 0 ? (fcf / d.netSales * 100) : null;
+  const fcfYield       = d.totalAssets > 0 ? (fcf / d.totalAssets * 100) : null;
+
+  return {
+    netProfit, depreciation, deltaWC, capex, fcf,
+    cashConversion, fcfMargin, fcfYield,
+  };
+}
+
+function renderCashFlow() {
+  if (!companyData) return;
+  const d   = companyData;
+  const cf  = computeCashFlow(d);
+  if (!cf) return;
+
+  // Show content
+  document.getElementById('cfEmpty').style.display   = 'none';
+  document.getElementById('cfContent').style.display = 'block';
+  document.getElementById('cfCompanyTitle').textContent = `Cash Flow Bridge — ${d.name}`;
+  document.getElementById('cfSubtitle').textContent    = `FY${d.fiscalYear} · Net Profit to Free Cash Flow waterfall`;
+
+  // Summary rows
+  document.getElementById('cfSummaryRows').innerHTML = [
+    ['Net Profit',              cf.netProfit,     cf.netProfit >= 0 ? 'pos' : 'neg'],
+    ['(+) Depreciation',        cf.depreciation,  ''],
+    ['(-) Change in WC',        cf.deltaWC,       cf.deltaWC > 0 ? 'neg' : 'pos'],
+    ['(-) CapEx (est.)',        cf.capex,         'neg'],
+  ].map(([label, val, cls]) => `
+    <div class="cf-summary-item">
+      <span class="cf-summary-label">${label}</span>
+      <span class="cf-summary-value ${cls}">${fmtSEK(val)}</span>
+    </div>`).join('') + '<div class="separator"></div>';
+
+  // FCF box
+  const fcfEl = document.getElementById('cfFCFVal');
+  fcfEl.textContent = fmtSEK(cf.fcf);
+  fcfEl.className = `cf-fcf-val ${cf.fcf >= 0 ? 'pos' : 'neg'}`;
+
+  const fcfBox = document.getElementById('cfFCFBox');
+  if (cf.fcf < 0) {
+    fcfBox.style.background    = 'linear-gradient(135deg, var(--red-dim), rgba(255,69,96,0.04))';
+    fcfBox.style.borderColor   = 'rgba(255,69,96,0.3)';
+    fcfBox.querySelector('.cf-fcf-label').style.color = 'var(--red)';
+  } else {
+    fcfBox.style.background    = '';
+    fcfBox.style.borderColor   = '';
+    fcfBox.querySelector('.cf-fcf-label').style.color = '';
+  }
+
+  // Metrics
+  document.getElementById('cfMetrics').innerHTML = [
+    ['Cash Conversion',  cf.cashConversion !== null ? cf.cashConversion.toFixed(0) + '%' : '—',
+      cf.cashConversion !== null ? (cf.cashConversion > 80 ? 'pos' : cf.cashConversion > 50 ? 'amb' : 'neg') : ''],
+    ['FCF Margin',       cf.fcfMargin !== null ? cf.fcfMargin.toFixed(1) + '%' : '—',
+      cf.fcfMargin !== null ? (cf.fcfMargin > 8 ? 'pos' : cf.fcfMargin > 3 ? 'amb' : 'neg') : ''],
+    ['FCF / Total Assets', cf.fcfYield !== null ? cf.fcfYield.toFixed(1) + '%' : '—',
+      cf.fcfYield !== null ? (cf.fcfYield > 5 ? 'pos' : cf.fcfYield > 2 ? 'amb' : 'neg') : ''],
+    ['Dividends / FCF',  cf.fcf > 0 ? ((d.dividendsPaid / cf.fcf * 100).toFixed(0) + '%') : '—',
+      cf.fcf > 0 ? (d.dividendsPaid / cf.fcf > 1 ? 'neg' : d.dividendsPaid / cf.fcf > 0.7 ? 'amb' : 'pos') : ''],
+  ].map(([label, val, cls]) => `
+    <div class="cf-summary-item">
+      <span class="cf-summary-label">${label}</span>
+      <span class="cf-summary-value ${cls}">${val}</span>
+    </div>`).join('');
+
+  // Waterfall chart
+  renderWaterfallChart(cf);
+}
+
+function renderWaterfallChart(cf) {
+  const canvas = document.getElementById('cfWaterfallChart');
+  if (!canvas) return;
+
+  const labels = ['Net Profit', '+ Deprec.', '- Δ Work. Cap.', '- CapEx', 'Free Cash Flow'];
+  // Running total for waterfall effect
+  const running = [0, cf.netProfit, cf.netProfit + cf.depreciation,
+    cf.netProfit + cf.depreciation - cf.deltaWC, 0];
+  const values  = [cf.netProfit, cf.depreciation, -cf.deltaWC, -cf.capex, cf.fcf];
+
+  // For waterfall: invisible base bars + colored segment bars
+  const base    = [0, cf.netProfit, cf.netProfit + cf.depreciation,
+    cf.netProfit + cf.depreciation - cf.deltaWC, 0];
+  const segment = values.map(v => Math.abs(v));
+
+  // For negative segments, adjust the base down
+  const adjBase = values.map((v, i) => {
+    if (i === 0 || i === 4) return 0; // start & end bars start from 0
+    return v >= 0 ? base[i] : base[i] + v;
+  });
+
+  const colors = values.map((v, i) => {
+    if (i === 4) return cf.fcf >= 0 ? 'rgba(0,255,136,0.7)' : 'rgba(255,69,96,0.7)'; // FCF
+    if (i === 0) return 'rgba(0,200,255,0.7)'; // Net Profit
+    return v >= 0 ? 'rgba(0,255,136,0.5)' : 'rgba(255,69,96,0.5)';
+  });
+
+  const borderColors = values.map((v, i) => {
+    if (i === 4) return cf.fcf >= 0 ? 'var(--green)' : 'var(--red)';
+    if (i === 0) return 'var(--blue)';
+    return v >= 0 ? 'var(--green)' : 'var(--red)';
+  });
+
+  const draw = () => {
+    if (cfWaterfallChartInst) cfWaterfallChartInst.destroy();
+    cfWaterfallChartInst = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Base',
+            data: adjBase,
+            backgroundColor: 'transparent',
+            borderWidth: 0,
+            barPercentage: 0.6,
+          },
+          {
+            label: 'Amount',
+            data: segment,
+            backgroundColor: colors,
+            borderColor: borderColors,
+            borderWidth: 1,
+            borderRadius: 3,
+            barPercentage: 0.6,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          x: {
+            stacked: true,
+            ticks: { color: '#8FA3BC', font: { size: 10, family: 'JetBrains Mono' } },
+            grid: { display: false }
+          },
+          y: {
+            stacked: true,
+            ticks: {
+              color: '#8FA3BC',
+              font: { size: 9, family: 'JetBrains Mono' },
+              callback: v => {
+                const abs = Math.abs(v);
+                if (abs >= 1e6) return (v / 1e6).toFixed(0) + 'M';
+                if (abs >= 1e3) return (v / 1e3).toFixed(0) + 'k';
+                return v;
+              }
+            },
+            grid: { color: 'rgba(255,255,255,0.04)' }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                if (ctx.datasetIndex === 0) return ''; // hide base
+                const idx = ctx.dataIndex;
+                return `${labels[idx]}: ${fmtSEK(values[idx])}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  };
+
+  if (typeof Chart === 'undefined') { loadChartJS(draw); } else { draw(); }
+}
+
+// ============================================================
+// WATCHLIST — PERSISTENT PORTFOLIO
+// ============================================================
+const WL_STORAGE_KEY = 'vcfo_watchlist';
+
+function wlLoad() {
+  try {
+    const raw = localStorage.getItem(WL_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function wlSave(list) {
+  try { localStorage.setItem(WL_STORAGE_KEY, JSON.stringify(list)); } catch(e) {}
+}
+
+function isCompanyPinned(orgNr) {
+  if (!orgNr) return false;
+  const list = wlLoad();
+  return list.some(w => w.orgNr === orgNr);
+}
+
+function togglePinCompany() {
+  if (!companyData) { showToast(t('toast_no_company')); return; }
+  const list  = wlLoad();
+  const orgNr = companyData.orgNr;
+  const idx   = list.findIndex(w => w.orgNr === orgNr);
+
+  if (idx >= 0) {
+    // Unpin
+    list.splice(idx, 1);
+    wlSave(list);
+    updatePinButton(false);
+    showToast(`★ Removed ${companyData.name} from Watchlist`);
+  } else {
+    // Pin — save a snapshot
+    const d = companyData;
+    const m = deriveMetrics(d);
+    const score = computeMAScore(d);
+    list.push({
+      orgNr:      d.orgNr,
+      name:       d.name,
+      industry:   d.industry,
+      sni:        d.sni,
+      fiscalYear: d.fiscalYear,
+      netSales:   d.netSales,
+      netProfit:  d.netProfit,
+      opProfit:   d.opProfit,
+      equity:     d.equity,
+      ros:        m.ros,
+      roe:        m.roe,
+      de:         m.de,
+      cr:         m.cr,
+      maScore:    score,
+      auditorRemark: d.auditorRemark,
+      pinnedAt:   new Date().toISOString(),
+    });
+    wlSave(list);
+    updatePinButton(true);
+    showToast(`★ Pinned ${companyData.name} to Watchlist`);
+  }
+  // Refresh watchlist tab if visible
+  if (activeTab === 'watchlist') renderWatchlistTab();
+}
+
+function updatePinButton(isPinned) {
+  const btn = document.getElementById('btnPinCompany');
+  if (!btn) return;
+  if (isPinned) {
+    btn.classList.add('pinned');
+    btn.textContent = '★ Pinned';
+  } else {
+    btn.classList.remove('pinned');
+    btn.textContent = '★ Pin';
+  }
+}
+
+function renderWatchlistTab() {
+  const list   = wlLoad();
+  const emptyEl = document.getElementById('wlEmpty');
+  const gridEl  = document.getElementById('wlGrid');
+
+  if (list.length === 0) {
+    emptyEl.style.display = 'flex';
+    gridEl.style.display  = 'none';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  gridEl.style.display  = 'grid';
+
+  gridEl.innerHTML = list.map((w, i) => {
+    const scoreColor = w.maScore >= 65 ? 'var(--green)' : w.maScore >= 40 ? 'var(--amber)' : 'var(--red)';
+    const verdict    = w.maScore >= 65 ? 'BUY' : w.maScore >= 40 ? 'HOLD' : 'PASS';
+    const rosClass   = w.ros !== null ? (w.ros > 10 ? 'pos' : w.ros > 5 ? 'amb' : 'neg') : '';
+    const remarkBadge = w.auditorRemark
+      ? '<span style="font-size:8px;background:rgba(255,69,96,0.15);color:var(--red);padding:1px 6px;border-radius:2px;">REMARK</span>'
+      : '<span style="font-size:8px;background:rgba(0,255,136,0.1);color:var(--green);padding:1px 6px;border-radius:2px;">CLEAN</span>';
+    const pinnedDate = w.pinnedAt ? new Date(w.pinnedAt).toLocaleDateString('sv-SE') : '—';
+
+    return `<div class="wl-card">
+      <div class="wl-card-header">
+        <div>
+          <div class="wl-card-name">${w.name}</div>
+          <div class="wl-card-meta">${w.orgNr} · ${w.industry || '—'} · FY${w.fiscalYear} ${remarkBadge}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:22px;font-weight:800;font-family:'Syne',sans-serif;color:${scoreColor};">${w.maScore}</div>
+          <div style="font-size:9px;font-weight:700;color:${scoreColor};letter-spacing:0.1em;">${verdict}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+        <div class="wl-card-row"><span class="label">Net Sales</span><span class="value">${fmtSEK(w.netSales)}</span></div>
+        <div class="wl-card-row"><span class="label">Net Profit</span><span class="value ${w.netProfit >= 0 ? 'pos' : 'neg'}">${fmtSEK(w.netProfit)}</span></div>
+        <div class="wl-card-row"><span class="label">ROS</span><span class="value ${rosClass}">${w.ros !== null ? w.ros.toFixed(1) + '%' : '—'}</span></div>
+        <div class="wl-card-row"><span class="label">D/E</span><span class="value">${w.de !== null ? w.de.toFixed(2) + 'x' : '—'}</span></div>
+        <div class="wl-card-row"><span class="label">Curr. Ratio</span><span class="value">${w.cr !== null ? w.cr.toFixed(2) + 'x' : '—'}</span></div>
+        <div class="wl-card-row"><span class="label">ROE</span><span class="value">${w.roe !== null ? w.roe.toFixed(1) + '%' : '—'}</span></div>
+      </div>
+      <div style="font-size:9px;color:var(--text3);">Pinned: ${pinnedDate}</div>
+      <div class="wl-card-actions">
+        <button class="btn-secondary" style="flex:1;font-size:9px;" onclick="loadFromWatchlist('${w.orgNr}')">Load</button>
+        <button class="btn-secondary" style="flex:1;font-size:9px;" onclick="addWatchlistToCompare(${i})">⚖ Compare</button>
+        <button class="btn-secondary" style="font-size:9px;padding:4px 8px;" onclick="removeFromWatchlist(${i})" title="Remove">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function loadFromWatchlist(orgNr) {
+  document.getElementById('orgInput').value = orgNr;
+  searchMode = 'org';
+  updateSearchModeUI();
+  loadCompanyByOrg(orgNr);
+  switchTab('company');
+}
+
+function addWatchlistToCompare(idx) {
+  const list = wlLoad();
+  const w    = list[idx];
+  if (!w) return;
+  // Build a minimal companyData-compatible object and add to compare
+  const emptySlot = compareSlots.findIndex(s => s === null);
+  if (emptySlot === -1) { showToast(t('toast_slots_full')); return; }
+  if (compareSlots.some(s => s && s.orgNr === w.orgNr)) {
+    showToast(t('toast_already_in_compare'));
+    return;
+  }
+  // Load the company into the compare slot
+  loadCompanyByOrg(w.orgNr).then(() => {
+    if (companyData) {
+      compareSlots[emptySlot] = { ...companyData };
+      renderCompareTab();
+      showToast(`✓ Added ${w.name} to Compare slot ${emptySlot + 1}`);
+    }
+  });
+}
+
+function removeFromWatchlist(idx) {
+  const list = wlLoad();
+  const removed = list.splice(idx, 1);
+  wlSave(list);
+  renderWatchlistTab();
+  if (companyData && removed[0] && removed[0].orgNr === companyData.orgNr) {
+    updatePinButton(false);
+  }
+  showToast('★ Removed from Watchlist');
+}
+
+function clearWatchlist() {
+  wlSave([]);
+  renderWatchlistTab();
+  if (companyData) updatePinButton(false);
+  showToast('★ Watchlist cleared');
+}
+
+function exportWatchlistCSV() {
+  const list = wlLoad();
+  if (list.length === 0) { showToast('⚠ Watchlist is empty'); return; }
+  const headers = ['Name','Org Nr','Industry','FY','Net Sales','Net Profit','ROS %','ROE %','D/E','Curr Ratio','M&A Score','Verdict','Auditor Remark','Pinned'];
+  const rows = list.map(w => [
+    w.name, w.orgNr, w.industry, w.fiscalYear,
+    w.netSales, w.netProfit,
+    w.ros !== null ? w.ros.toFixed(1) : '',
+    w.roe !== null ? w.roe.toFixed(1) : '',
+    w.de !== null ? w.de.toFixed(2) : '',
+    w.cr !== null ? w.cr.toFixed(2) : '',
+    w.maScore,
+    w.maScore >= 65 ? 'BUY' : w.maScore >= 40 ? 'HOLD' : 'PASS',
+    w.auditorRemark ? 'YES' : 'NO',
+    w.pinnedAt || '',
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'vcfo_watchlist.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showToast(t('toast_csv_exported'));
+}
+
 </script>
 </body>
 </html>
