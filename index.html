@@ -3295,45 +3295,99 @@ function handleSearchLoad() {
   }
 }
 
-// ── Search by name using Claude AI ──
+// ── Search by name — server-side registry lookup with AI fallback ──
 async function searchByName(query) {
-  if (!anthropicKey) {
-    // Fallback: show manual entry prompt
-    showSearchDropdown([{
-      type: 'info',
-      message: 'Set your Anthropic API key in ⚙ Settings to enable name search. Or enter the org. number directly.',
-    }]);
+  showSearchDropdown([{ type: 'loading', message: `Searching for "${query}"…` }]);
+
+  // Tier 1: Server-side search via Netlify Function (real registry data)
+  const serverResults = await searchByNameServer(query);
+  if (serverResults && serverResults.length > 0) {
+    showSearchDropdown(serverResults.map(c => ({ type: 'result', ...c })));
     return;
   }
 
-  showSearchDropdown([{ type: 'loading', message: `Searching for "${query}"…` }]);
+  // Tier 2: AI-assisted search (fallback)
+  if (anthropicKey) {
+    await searchByNameAI(query);
+    return;
+  }
+
+  // Tier 3: No results, no AI key
+  showSearchDropdown([{
+    type: 'info',
+    message: `No registry results for "${query}". Set your Anthropic API key in ⚙ Settings for AI-assisted search, or enter the org. number directly.`,
+  }]);
+}
+
+// ── Server-side registry search (Netlify Function) ──
+async function searchByNameServer(query) {
+  // Determine the search URL — works on Netlify, localhost:8888 (netlify dev), or with proxy
+  let searchUrl = null;
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host.includes('netlify.app') || host.includes('netlify.com') ||
+        (host === 'localhost' && window.location.port === '8888')) {
+      searchUrl = `/api/company-search?q=${encodeURIComponent(query)}`;
+    }
+  }
+  if (!searchUrl) return null; // Not on Netlify — skip server search
+
+  try {
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+    const res   = await fetch(searchUrl, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    if (data.companies && data.companies.length > 0) {
+      return data.companies.map(c => ({
+        name:       c.name,
+        orgNr:      c.orgNr,
+        legalForm:  c.legalForm || 'AB',
+        industry:   c.industry || '',
+        confidence: c.confidence || 'high',
+        source:     c.source || 'registry',
+      }));
+    }
+    return null;
+  } catch(e) {
+    console.warn('Server search failed:', e.message);
+    return null;
+  }
+}
+
+// ── AI-assisted search (fallback when server search returns nothing) ──
+async function searchByNameAI(query) {
+  showSearchDropdown([{ type: 'loading', message: `AI searching for "${query}"…` }]);
 
   try {
     const data = await callAnthropic({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 400,
+        max_tokens: 500,
         messages: [{
           role: 'user',
-          content: `You are a Swedish company registry assistant. The user searched for: "${query}"
+          content: `You are a Swedish company registry lookup tool. The user searched for: "${query}"
 
-Return the top 1-4 matching Swedish companies from Bolagsverket. For each company you know, provide:
-- Exact registered Swedish company name
-- Swedish organisation number (10 digits, format XXXXXX-XXXX)
-- Legal form (AB, HB, KB, etc.)
-- Industry/sector
+CRITICAL: You MUST provide the real Swedish organisationsnummer (10 digits, format XXXXXX-XXXX) for each company.
+If you do not know the EXACT org number for a company, DO NOT include that company in the results.
+Only return companies where you are certain of the org number.
+
+For well-known Swedish companies, here are formatting rules:
+- Org numbers are always 10 digits: 6 digits, dash, 4 digits (e.g. 556000-4615 for Volvo)
+- The first digit is usually 5 for aktiebolag
 
 Return ONLY a JSON array, no other text:
 [
   {
-    "name": "Exact registered name",
+    "name": "Exact registered Swedish company name",
     "orgNr": "XXXXXX-XXXX",
     "legalForm": "AB",
-    "industry": "Industri/sektor",
-    "confidence": "high|medium|low"
+    "industry": "Industry sector in Swedish or English"
   }
 ]
 
-Only include companies you are confident about. If unsure of the exact org number, set it to null. Swedish companies only.`
+If you cannot confidently provide any org numbers for "${query}", return an empty array: []`
         }]
       }, anthropicKey);
 
@@ -3341,12 +3395,18 @@ Only include companies you are confident about. If unsure of the exact org numbe
     const clean = text.replace(/```json|```/g, '').trim();
     const companies = JSON.parse(clean);
 
-    if (!companies.length) {
-      showSearchDropdown([{ type: 'empty', message: `No results found for "${query}"` }]);
+    // Filter out any results where AI still returned null/empty org numbers
+    const valid = companies.filter(c => c.orgNr && c.orgNr.length >= 10);
+
+    if (!valid.length) {
+      showSearchDropdown([{
+        type: 'info',
+        message: `Could not find a verified org. number for "${query}". Try entering the 10-digit org. number directly (format: 556000-1234).`,
+      }]);
       return;
     }
 
-    showSearchDropdown(companies.map(c => ({ type: 'result', ...c })));
+    showSearchDropdown(valid.map(c => ({ type: 'result', ...c, confidence: 'medium' })));
 
   } catch(e) {
     showSearchDropdown([{ type: 'error', message: `Search error: ${e.message}` }]);

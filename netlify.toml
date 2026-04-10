@@ -6,3 +6,8 @@
   from = "/api/anthropic"
   to = "/.netlify/functions/anthropic-proxy"
   status = 200
+
+[[redirects]]
+  from = "/api/company-search"
+  to = "/.netlify/functions/company-search"
+  status = 200
