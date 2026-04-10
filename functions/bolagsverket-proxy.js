@@ -181,53 +181,74 @@ exports.handler = async (event) => {
 // ══════════════════════════════════════════════════════════════
 
 function parseAllabolagFinancials(html, orgNr, companyName) {
-  // Allabolag.se shows financial data in tables and structured elements
-  // We extract key metrics by searching for known Swedish financial terms
-
   const data = {
     name: companyName || `Company ${orgNr}`,
     registrationNumber: orgNr,
     companyName: companyName || `Company ${orgNr}`,
   };
 
-  // Helper: extract a number near a label
-  function findValue(label, text) {
-    // Look for patterns like "Nettoomsättning\n123 456" or "Nettoomsättning</td><td>123 456"
-    const patterns = [
-      new RegExp(label + '[^\\d-]*?([\\-]?[\\d\\s]+(?:\\s\\d{3})*)', 'i'),
-      new RegExp(label + '[^>]*>[^>]*>([\\-]?[\\d\\s,.]+)<', 'i'),
-      new RegExp(label + '</(?:td|th|dt|div|span)>\\s*<(?:td|dd|div|span)[^>]*>\\s*([\\-]?[\\d\\s,.]+)', 'i'),
-    ];
-    for (const re of patterns) {
-      const m = text.match(re);
-      if (m) {
-        const cleaned = m[1].replace(/\s/g, '').replace(/,/g, '.');
-        const num = parseFloat(cleaned);
-        if (!isNaN(num)) return num;
+  // Strategy: extract numbers from table rows in the HTML.
+  // Allabolag.se puts financials in <tr> rows with label in one <td> and value in next <td>.
+  // Values can be in tkr (thousands) or full SEK depending on company size.
+
+  // Step 1: Find all table rows and extract label-value pairs
+  const pairs = {};
+  const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let trMatch;
+  while ((trMatch = trRegex.exec(html)) !== null) {
+    const row = trMatch[1];
+    // Extract all td contents
+    const tds = [];
+    const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+    let tdMatch;
+    while ((tdMatch = tdRegex.exec(row)) !== null) {
+      tds.push(tdMatch[1].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim());
+    }
+    if (tds.length >= 2) {
+      const label = tds[0].toLowerCase().replace(/\s+/g, ' ').trim();
+      // Take the first numeric value column (skip label column)
+      for (let i = 1; i < tds.length; i++) {
+        const raw = tds[i].replace(/\u00a0/g, '').replace(/\s/g, '').replace(/,/g, '.');
+        // Match numbers like: 123456, -123456, 123.456
+        const numMatch = raw.match(/^-?\d+\.?\d*$/);
+        if (numMatch) {
+          pairs[label] = parseFloat(numMatch[0]);
+          break;
+        }
+      }
+    }
+  }
+
+  // Step 2: Also try extracting from definition lists and divs
+  const stripped = html.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"');
+
+  // Step 3: Map Swedish labels to our fields
+  function findInPairs(keywords) {
+    for (const [label, val] of Object.entries(pairs)) {
+      for (const kw of keywords) {
+        if (label.includes(kw.toLowerCase())) return val;
       }
     }
     return null;
   }
 
-  // Strip HTML tags for easier number extraction
-  const stripped = html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
+  const netSales    = findInPairs(['nettoomsättning', 'nettoomstning', 'omsättning', 'net sales']);
+  const opProfit    = findInPairs(['rörelseresultat', 'rrelseresultat', 'operating profit']);
+  const netProfit   = findInPairs(['resultat efter finansiella', 'resultat e. finansiella', 'årets resultat', 'resultat före skatt']);
+  const totalAssets = findInPairs(['summa tillgångar', 'summa tillgngar', 'balansomslutning']);
+  const equity      = findInPairs(['summa eget kapital', 'eget kapital']);
+  const employees   = findInPairs(['antal anställda', 'anställda', 'medelantal']);
 
-  // Key financial fields (Swedish terms from annual reports)
-  // Values on allabolag are typically in tkr (thousands SEK)
-  const netSales = findValue('(?:Nettoomsättning|Nettoomstning|Net sales)', stripped);
-  const opProfit = findValue('(?:Rörelseresultat|Rrelseresultat|Operating profit)', stripped);
-  const netProfit = findValue('(?:Resultat efter finansiella poster|Årets resultat|Resultat före skatt)', stripped);
-  const totalAssets = findValue('(?:Summa tillgångar|Summa tillgngar|Balansomslutning|Total assets)', stripped);
-  const equity = findValue('(?:Eget kapital|Summa eget kapital)', stripped);
-  const employees = findValue('(?:Antal anställda|Anställda|Medelantal anstllda)', stripped);
-
-  // Check if we got meaningful data (at least revenue or assets)
+  // Check if we found anything
   if (netSales === null && totalAssets === null && equity === null) {
-    return null; // No financial data found on page
+    // If table parsing failed, try a simpler line-by-line approach on stripped text
+    return parseAllabolagSimple(stripped, orgNr, companyName, html);
   }
 
-  // Allabolag typically shows values in tkr (thousands)
-  const scale = 1000; // Convert tkr to kr
+  // Allabolag shows values in tkr (thousands SEK) for most companies
+  // Detect if values seem to already be in full SEK (very large numbers)
+  const maxVal = Math.max(Math.abs(netSales || 0), Math.abs(totalAssets || 0), Math.abs(equity || 0));
+  const scale = maxVal > 100000000 ? 1 : 1000; // If already > 100M, don't multiply
 
   data.netSales = netSales !== null ? netSales * scale : 0;
   data.revenues = data.netSales;
@@ -258,6 +279,71 @@ function parseAllabolagFinancials(html, orgNr, companyName) {
   if (data.financialYear && !data._availableYears.includes(data.financialYear)) {
     data._availableYears.unshift(data.financialYear);
   }
+
+  return data;
+}
+
+// Simpler line-by-line parser as fallback
+function parseAllabolagSimple(stripped, orgNr, companyName, html) {
+  const data = {
+    name: companyName || `Company ${orgNr}`,
+    registrationNumber: orgNr,
+    companyName: companyName || `Company ${orgNr}`,
+  };
+
+  // Look for "label ... number" patterns in the text, limiting number to reasonable length
+  function findNearLabel(text, keywords) {
+    for (const kw of keywords) {
+      // Find keyword, then look for a number within 100 chars after it
+      const idx = text.toLowerCase().indexOf(kw.toLowerCase());
+      if (idx >= 0) {
+        const after = text.slice(idx + kw.length, idx + kw.length + 100);
+        // Match a number: optional minus, 1-12 digits (with optional spaces as thousands sep)
+        const m = after.match(/(-?\d[\d\s]{0,15}\d|\d)/);
+        if (m) {
+          const cleaned = m[0].replace(/\s/g, '');
+          if (cleaned.length <= 12) { // Sanity: max ~999 billion
+            const val = parseInt(cleaned, 10);
+            if (!isNaN(val)) return val;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  const netSales    = findNearLabel(stripped, ['Nettoomsättning', 'Nettoomstning']);
+  const opProfit    = findNearLabel(stripped, ['Rörelseresultat', 'Rrelseresultat']);
+  const netProfit   = findNearLabel(stripped, ['Resultat efter finansiella', 'Årets resultat']);
+  const totalAssets = findNearLabel(stripped, ['Summa tillgångar', 'Balansomslutning']);
+  const equity      = findNearLabel(stripped, ['Summa eget kapital', 'Eget kapital']);
+
+  if (netSales === null && totalAssets === null) return null;
+
+  // Auto-detect scale
+  const maxVal = Math.max(Math.abs(netSales || 0), Math.abs(totalAssets || 0));
+  const scale = maxVal > 100000000 ? 1 : 1000;
+
+  data.netSales = netSales !== null ? netSales * scale : 0;
+  data.revenues = data.netSales;
+  data.operatingProfit = opProfit !== null ? opProfit * scale : 0;
+  data.netIncome = netProfit !== null ? netProfit * scale : 0;
+  data.totalAssets = totalAssets !== null ? totalAssets * scale : 0;
+  data.equity = equity !== null ? equity * scale : 0;
+  data.totalEquity = data.equity;
+
+  const yearMatch = html.match(/bokslut\/(\d{4})/) || html.match(/(\d{4})-(?:01|12)-\d{2}/);
+  data.financialYear = yearMatch ? yearMatch[1] : new Date().getFullYear().toString();
+  data.reportPeriod = data.financialYear;
+
+  const sniMatch = html.match(/SNI[:\s-]*(\d{2,5})/i);
+  data.sni = sniMatch ? sniMatch[1].trim() : '';
+
+  const legalMatch = html.match(/(Aktiebolag|Handelsbolag|Publikt aktiebolag)/i);
+  data.legalForm = legalMatch ? legalMatch[1] : 'Aktiebolag';
+
+  const yearLinks = html.match(/bokslut\/(\d{4})/g) || [];
+  data._availableYears = [...new Set(yearLinks.map(y => y.replace('bokslut/', '')))].sort((a,b) => b-a);
 
   return data;
 }
