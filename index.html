@@ -4646,17 +4646,37 @@ async function runMAScreen() {
   btn.innerHTML = `<span class="loading-dots"><span></span><span></span><span></span></span> Screening`;
 
   const d = companyData;
-  const score = maScore || '—';
+  const score = maScore || 0;
+  const verdict = score >= 65 ? 'BUY' : score >= 40 ? 'HOLD' : 'PASS';
   const ros = d.netSales ? (d.opProfit/d.netSales*100).toFixed(2) : 0;
   const assetDeprec = d.inventarierAcqCost > 0 ? ((1-d.inventarierBV/d.inventarierAcqCost)*100).toFixed(0) : 'N/A';
 
+  // Compute score breakdown for the prompt
+  const roe = d.equity ? (d.netProfit/d.equity*100) : 0;
+  let _profScore = 0, _compScore = 0, _bsScore = 0, _effScore = 0;
+  if (ros > 15) _profScore += 15; else if (ros > 8) _profScore += 10; else if (ros > 3) _profScore += 5;
+  if (roe > 15) _profScore += 10; else if (roe > 8) _profScore += 6; else if (roe > 3) _profScore += 3;
+  if (!d.auditorRemark) _compScore += 20; else _compScore += 5;
+  const _payout = d.netProfit > 0 ? d.dividendsPaid/d.netProfit*100 : 999;
+  if (_payout < 60) _compScore += 5; else if (_payout < 100) _compScore += 2;
+  const _cr = d.currentLiabilities > 0 ? d.totalCurrentAssets/d.currentLiabilities : 0;
+  const _de = d.equity > 0 ? (d.longTermDebt+d.currentLiabilities)/d.equity : 99;
+  if (_cr > 1.8) _bsScore += 10; else if (_cr > 1.2) _bsScore += 6; else if (_cr > 0.8) _bsScore += 3;
+  if (_de < 1.0) _bsScore += 10; else if (_de < 2.0) _bsScore += 6; else if (_de < 3.5) _bsScore += 3;
+  const _ltdPct = d.equity > 0 ? d.longTermDebtOver5y/d.equity*100 : 100;
+  if (_ltdPct < 20) _bsScore += 5; else if (_ltdPct < 50) _bsScore += 3;
+  const _ad = d.inventarierAcqCost > 0 ? (1 - d.inventarierBV/d.inventarierAcqCost)*100 : 0;
+  if (_ad < 70) _effScore += 15; else if (_ad < 90) _effScore += 8; else _effScore += 2;
+  const _rg = d.prevNetSales > 0 ? (d.netSales - d.prevNetSales)/d.prevNetSales*100 : 0;
+  if (_rg > 10) _effScore += 10; else if (_rg > 3) _effScore += 7; else if (_rg > 0) _effScore += 4;
+
   animateProgress('maProgress', 80, 12000);
 
-  const prompt = `You are a Senior M&A Analyst at a Nordic private equity firm. You are conducting acquisition due diligence on ${d.name} (org. nr. ${d.orgNr}), a Swedish ${d.type} in ${d.industry}. Fiscal year: ${d.fiscalYear}. 
+  const prompt = `You are a Senior M&A Analyst at a Nordic private equity firm. You are conducting acquisition due diligence on ${d.name} (org. nr. ${d.orgNr}), a Swedish ${d.type} in ${d.industry}. Fiscal year: ${d.fiscalYear}.
 
 FINANCIAL PROFILE:
 - Net Sales: ${fmtSEK(d.netSales)} | Op. Profit: ${fmtSEK(d.opProfit)} | Net Profit: ${fmtSEK(d.netProfit)}
-- ROS: ${ros}% | Total Assets: ${fmtSEK(d.totalAssets)} | Equity: ${fmtSEK(d.equity)}
+- ROS: ${ros}% | ROE: ${roe.toFixed(2)}% | Total Assets: ${fmtSEK(d.totalAssets)} | Equity: ${fmtSEK(d.equity)}
 - Long-term Debt: ${fmtSEK(d.longTermDebt)} | Due >5 years: ${fmtSEK(d.longTermDebtOver5y)}
 - Current Ratio: ${d.currentLiabilities > 0 ? (d.totalCurrentAssets/d.currentLiabilities).toFixed(2) : 'N/A'}x
 - Dividends: ${fmtSEK(d.dividendsPaid)} (${d.netProfit > 0 ? (d.dividendsPaid/d.netProfit*100).toFixed(0) : 'N/A'}% payout)
@@ -4665,12 +4685,20 @@ DUE DILIGENCE FINDINGS:
 - Auditor Remark (Anmärkning ABL 7:10): ${d.auditorRemark ? 'YES — '+d.auditorRemarkDetail : 'NO'}
 - Asset Depreciation Level: ${assetDeprec}% of acquisition cost (Book Value: ${fmtSEK(d.inventarierBV)})
 - Long-term Debt >5yr as % of Equity: ${d.equity > 0 ? (d.longTermDebtOver5y/d.equity*100).toFixed(1) : 'N/A'}%
-- Algorithmic Fit Score: ${score}/100
+
+ALGORITHMIC ACQUISITION FIT SCORE: ${score}/100 → ${verdict}
+Score Breakdown:
+  - Profitability:  ${_profScore}/25 (ROS ${ros}%, ROE ${roe.toFixed(1)}%)
+  - Compliance:     ${_compScore}/25 (Auditor remark: ${d.auditorRemark ? 'YES' : 'NO'}, Payout: ${_payout < 999 ? _payout.toFixed(0)+'%' : 'N/A'})
+  - Balance Sheet:  ${_bsScore}/25 (CR: ${_cr.toFixed(2)}x, D/E: ${_de.toFixed(2)}x)
+  - Asset Quality:  ${_effScore}/25 (Depreciation: ${assetDeprec}%, Rev. Growth: ${_rg.toFixed(1)}%)
+
+IMPORTANT: The algorithmic verdict is ${verdict}. Your verdict MUST be "${verdict}" to stay consistent with the score-based recommendation shown to the user. Your role is to EXPLAIN and JUSTIFY this verdict with qualitative due diligence analysis, not to override it. Focus your analysis on the reasoning behind each score component.
 
 Return ONLY a JSON object:
 {
-  "verdict": "BUY" | "HOLD" | "PASS",
-  "verdictRationale": "1-sentence headline rationale",
+  "verdict": "${verdict}",
+  "verdictRationale": "1-sentence headline rationale explaining why ${verdict} is correct given the score breakdown",
   "findings": [
     {
       "area": "Compliance Due Diligence",
@@ -4714,6 +4742,8 @@ Return ONLY a JSON object:
     const raw = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
     const clean = raw.replace(/```json|```/g,'').trim();
     const parsed = JSON.parse(clean);
+    // Enforce algorithmic verdict — never let AI override the score-based recommendation
+    parsed.verdict = verdict;
     renderMAOutput(parsed);
   } catch(e) {
     document.getElementById('maAIOutput').innerHTML = `<div style="color:var(--red);font-size:11px;">⚠ API Error: ${e.message}<br><span style="color:var(--text3);">The deterministic score above is still valid. Check your API key in ⚙ Settings.</span></div>`;
