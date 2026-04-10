@@ -1405,6 +1405,17 @@ body::after {
       <span id="searchModeLabel" style="font-size:9px;color:var(--text3);white-space:nowrap;letter-spacing:0.08em;">NAME</span>
     </div>
     <button class="btn-load" onclick="handleSearchLoad()">SEARCH</button>
+    <div id="fetchYearPicker" style="display:flex;align-items:center;gap:4px;">
+      <span style="font-size:9px;color:var(--text3);letter-spacing:0.08em;white-space:nowrap;">FY:</span>
+      <select id="fetchYearSelect" style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:4px 6px;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;outline:none;cursor:pointer;appearance:auto;min-width:65px;">
+        <option value="latest">Latest</option>
+        <option value="2024">2024</option>
+        <option value="2023" selected>2023</option>
+        <option value="2022">2022</option>
+        <option value="2021">2021</option>
+        <option value="2020">2020</option>
+      </select>
+    </div>
     <div style="font-size:10px;color:var(--text3);" id="apiHint">SE Registry · Bolagsverket iXBRL</div>
     <!-- Search results dropdown -->
     <div id="searchDropdown" style="display:none;position:fixed;top:48px;left:50%;transform:translateX(-50%);width:420px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:500;overflow:hidden;"></div>
@@ -2994,30 +3005,52 @@ async function callAnthropic(body, apiKey) {
 
 async function fetchBolagsverket(orgNum) {
   const clean = orgNum.replace(/[^0-9]/g, '');
+  const fetchYear = getSelectedFetchYear();
 
   setStatusBar(t('status_fetching_bv'), 'loading');
   document.getElementById('bvDot').className  = 'api-dot na';
-  document.getElementById('bvText').textContent = 'Bolagsverket: Fetching…';
+  document.getElementById('bvText').textContent = `Bolagsverket: Fetching FY${fetchYear}…`;
 
-  // Tier 1: Netlify Function proxy (server-side, no CORS)
+  // Tier 1: Netlify Function proxy (server-side, no CORS, year cascade)
   const netlifyUrl = getBolagsverketProxyUrl();
   if (netlifyUrl) {
     try {
       const ctrl  = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 15000);
-      const res   = await fetch(`${netlifyUrl}?orgNr=${clean}`, { signal: ctrl.signal });
+      const timer = setTimeout(() => ctrl.abort(), 20000);
+      const res   = await fetch(`${netlifyUrl}?orgNr=${clean}&year=${fetchYear}`, { signal: ctrl.signal });
       clearTimeout(timer);
 
       if (res.ok) {
         const wrapper = await res.json();
+
+        // Store available years from the API response
+        if (wrapper.availableYears && wrapper.availableYears.length) {
+          window._bvAvailableYears = wrapper.availableYears;
+        }
+        // Store reports list for year selector
+        if (wrapper.reports && wrapper.reports.length) {
+          window._bvReports = wrapper.reports;
+        }
+
         if (wrapper.latestReport) {
+          const resolvedYr = wrapper.resolvedYear || fetchYear;
+          const yearNote   = wrapper.resolvedYear && wrapper.resolvedYear !== fetchYear
+            ? ` (resolved to FY${wrapper.resolvedYear})`
+            : '';
           document.getElementById('bvDot').className   = 'api-dot ok';
-          document.getElementById('bvText').textContent = `Bolagsverket: Connected (${wrapper.source || 'live'})`;
-          // Store reports list for year selector
-          if (wrapper.reports && wrapper.reports.length) {
-            window._bvReports = wrapper.reports;
-          }
+          document.getElementById('bvText').textContent = `Bolagsverket: Connected · FY${resolvedYr}${yearNote} (${wrapper.source || 'live'})`;
           return wrapper.latestReport;
+        } else {
+          // Proxy reached Bolagsverket but no data found for this company
+          const avail = wrapper.availableYears?.length
+            ? ` · Available years: ${wrapper.availableYears.join(', ')}`
+            : '';
+          document.getElementById('bvDot').className   = 'api-dot err';
+          document.getElementById('bvText').textContent = `Bolagsverket: No iXBRL data for FY${fetchYear}${avail}`;
+          // If there are available years but not the one requested, update the UI
+          if (wrapper.availableYears?.length && !wrapper.availableYears.includes(fetchYear)) {
+            updateFetchYearHint(wrapper.availableYears);
+          }
         }
       }
     } catch(e) {
@@ -3060,6 +3093,56 @@ function getBolagsverketProxyUrl() {
     }
   }
   return null;
+}
+
+// ============================================================
+// FETCH YEAR PICKER
+// ============================================================
+function getSelectedFetchYear() {
+  const sel = document.getElementById('fetchYearSelect');
+  if (!sel) return 'latest';
+  const val = sel.value;
+  return val || 'latest';
+}
+
+function updateFetchYearHint(availableYears) {
+  // Show a hint when the requested year isn't available
+  if (!availableYears || !availableYears.length) return;
+  const sel = document.getElementById('fetchYearSelect');
+  if (!sel) return;
+
+  // Flash the select amber to draw attention
+  sel.style.borderColor = 'var(--amber)';
+  sel.style.boxShadow   = '0 0 8px rgba(255,184,0,0.3)';
+  setTimeout(() => {
+    sel.style.borderColor = '';
+    sel.style.boxShadow   = '';
+  }, 3000);
+
+  const bestYear = availableYears[0]; // most recent available
+  showToast(`⚠ No data for FY${sel.value}. Try FY${bestYear} — select it in the year picker.`);
+}
+
+// Update the year picker options when available years are known
+function updateFetchYearOptions(availableYears) {
+  const sel = document.getElementById('fetchYearSelect');
+  if (!sel || !availableYears || !availableYears.length) return;
+
+  const current = sel.value;
+  // Keep "Latest" plus available years, plus standard range
+  const allYears = new Set(['latest']);
+  const currentCalYear = new Date().getFullYear();
+  for (let y = currentCalYear; y >= 2020; y--) allYears.add(String(y));
+  for (const y of availableYears) allYears.add(y);
+
+  const sorted = [...allYears].filter(v => v !== 'latest').sort((a,b) => parseInt(b) - parseInt(a));
+
+  sel.innerHTML = '<option value="latest">Latest</option>' +
+    sorted.map(y => {
+      const isAvail = availableYears.includes(y);
+      const marker  = isAvail ? ' ✓' : '';
+      return `<option value="${y}" ${y === current ? 'selected' : ''}>${y}${marker}</option>`;
+    }).join('');
 }
 
 // ============================================================
@@ -3584,6 +3667,12 @@ async function loadCompanyByOrg(raw, knownName) {
 
   // Update pin button state
   updatePinButton(isCompanyPinned(d.orgNr));
+
+  // Update year picker with available years from API
+  if (window._bvAvailableYears && window._bvAvailableYears.length) {
+    updateFetchYearOptions(window._bvAvailableYears);
+    window._bvAvailableYears = null;
+  }
 
   setStatusBar(`${t('status_loaded')}: ${d.name} · FY${d.fiscalYear}`, 'ok');
   document.getElementById('lastFetch').textContent = 'Last fetch: ' + new Date().toLocaleTimeString('sv-SE');
