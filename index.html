@@ -3543,7 +3543,13 @@ async function loadCompanyByOrg(raw, knownName) {
   // Step 2 — Load latest year's financial data
   const apiData = await fetchBolagsverket(raw);
   let d;
-  if (apiData && apiData.name) {
+  // Accept any non-empty object that looks like real data (various BV API field names)
+  const isLiveData = apiData && (
+    apiData.name || apiData.companyName || apiData.registrationNumber ||
+    apiData.netSales || apiData.revenues || apiData.totalAssets ||
+    apiData.equity || apiData.operatingProfit || apiData.reports
+  );
+  if (isLiveData) {
     d = mapAPIResponse(apiData, clean);
     d._isLive = true;
   } else {
@@ -5820,6 +5826,23 @@ async function fetchOneSector(sector) {
     response: { format:'json' }
   };
 
+  // Tier 1: Netlify proxy (server-side, reliable)
+  const netlifyUrl = getBolagsverketProxyUrl(); // reuse detection logic
+  if (netlifyUrl) {
+    try {
+      const proxyRes = await fetch(`/api/scb?url=${encodeURIComponent(SCB_ENDPOINT)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (proxyRes.ok) {
+        const json = await proxyRes.json();
+        return parseSCBResponse(json);
+      }
+    } catch(e) { /* proxy failed, try direct */ }
+  }
+
+  // Tier 2: Direct / CORS proxy chain (browser-side fallback)
   const res = await fetchWithProxy(SCB_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -5833,13 +5856,34 @@ async function fetchOneSector(sector) {
 
 function parseSCBResponse(data) {
   const out = { ros:null, roe:null, de:null, cr:null, revGrowth:null };
-  if (!data?.data?.length) return out;
+
+  // PxWeb JSON can have data in data[] or dataset.value[]
+  let rows = data?.data;
+  if (!rows || !rows.length) {
+    // Try alternative PxWeb JSON-stat format
+    const vals = data?.dataset?.value || data?.value;
+    if (vals) {
+      console.log('SCB: got JSON-stat format with', vals.length, 'values');
+    }
+    if (!rows || !rows.length) return out;
+  }
 
   // Accumulate values per metric code across all divisions returned
+  // The key array order matches the query dimension order:
+  // [SNI2007, Storleksklass, Nyckeltal, Kvartilar, Tid]
   const acc = {};
-  for (const row of data.data) {
-    const nyckeltal = row.key[2]; // index 2 = Nyckeltal in the key array
-    const val = parseFloat(row.values[0]);
+  for (const row of rows) {
+    // Find the nyckeltal code — it's usually at index 2 but be defensive
+    const keys = row.key || [];
+    // Find which key element matches a known metric code
+    let nyckeltal = keys[2]; // default position
+    if (!BCH_METRICS[nyckeltal]) {
+      // Try to find it in any position
+      nyckeltal = keys.find(k => BCH_METRICS[k]) || keys[2];
+    }
+
+    const rawVal = row.values?.[0];
+    const val = rawVal === '..' || rawVal === '...' || rawVal === '' ? NaN : parseFloat(rawVal);
     if (!isNaN(val)) {
       if (!acc[nyckeltal]) acc[nyckeltal] = [];
       acc[nyckeltal].push(val);

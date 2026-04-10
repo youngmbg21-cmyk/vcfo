@@ -16,3 +16,8 @@
   from = "/api/bolagsverket"
   to = "/.netlify/functions/bolagsverket-proxy"
   status = 200
+
+[[redirects]]
+  from = "/api/scb"
+  to = "/.netlify/functions/scb-proxy"
+  status = 200
