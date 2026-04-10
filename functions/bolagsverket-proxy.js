@@ -72,7 +72,11 @@ exports.handler = async (event) => {
 
   // Debug: return raw HTML sample for analysis
   if (event.queryStringParameters?.debug) {
-    const testOrg = event.queryStringParameters.debug;
+    const testOrg = (event.queryStringParameters.debug || '').replace(/[^0-9]/g, '');
+    if (!testOrg || testOrg.length < 6) {
+      return { statusCode: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version: 'v7', note: 'Pass org number as debug param: ?debug=5590016076' }) };
+    }
     try {
       const res = await serverFetch(`https://www.allabolag.se/${testOrg}/bokslut`);
       const html = await res.text();
