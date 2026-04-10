@@ -70,11 +70,45 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers: corsHeaders, body: '' };
   }
 
-  // Health check — also tests year-specific URL patterns
+  // Debug: return raw HTML sample for analysis
+  if (event.queryStringParameters?.debug) {
+    const testOrg = event.queryStringParameters.debug;
+    try {
+      const res = await serverFetch(`https://www.allabolag.se/${testOrg}/bokslut`);
+      const html = await res.text();
+      // Find tables and extract a sample
+      const tables = [];
+      const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+      let m;
+      while ((m = tableRegex.exec(html)) !== null) {
+        tables.push(m[1].slice(0, 2000));
+      }
+      // Also find any div/section with financial data
+      const finSection = html.match(/(?:Nettoomsättning|omsättning|Rörelseresultat|Resultaträkning)[\s\S]{0,3000}/i);
+      return {
+        statusCode: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          version: 'v7-debug',
+          tablesFound: tables.length,
+          tables: tables.slice(0, 3),
+          financialSection: finSection ? finSection[0].slice(0, 2000) : null,
+          htmlLength: html.length,
+          hasNettoomsattning: html.includes('Nettoomsättning') || html.includes('nettoomsättning'),
+          hasTable: html.includes('<table'),
+          sampleH1: (html.match(/<h1[^>]*>([^<]+)<\/h1>/) || [])[1] || null,
+        }, null, 2),
+      };
+    } catch(e) {
+      return { statusCode: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: e.message }) };
+    }
+  }
+
+  // Health check
   if (event.queryStringParameters?.health) {
-    const testOrg = '5590016076'; // Stadstak Sthlm AB
+    const testOrg = '5590016076';
     const diagnostics = {
-      version: 'v6-year-fix',
+      version: 'v7-multiyear',
       nodeVersion: process.version,
       timestamp: new Date().toISOString(),
       tests: {},
