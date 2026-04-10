@@ -70,37 +70,49 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers: corsHeaders, body: '' };
   }
 
-  // Debug: return raw HTML sample for analysis
+  // Debug: show parsed rows and year mapping
   if (event.queryStringParameters?.debug) {
     const testOrg = (event.queryStringParameters.debug || '').replace(/[^0-9]/g, '');
     if (!testOrg || testOrg.length < 6) {
       return { statusCode: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ version: 'v7', note: 'Pass org number as debug param: ?debug=5590016076' }) };
+        body: JSON.stringify({ version: 'v8', note: 'Pass org number: ?debug=5590016076' }) };
     }
     try {
       const res = await serverFetch(`https://www.allabolag.se/${testOrg}/bokslut`);
       const html = await res.text();
-      // Find tables and extract a sample
-      const tables = [];
-      const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
-      let m;
-      while ((m = tableRegex.exec(html)) !== null) {
-        tables.push(m[1].slice(0, 2000));
+
+      // Show what the parser sees
+      const yearMatches = html.match(/resultat(20\d{2})-\d{2}/g) || [];
+      const years = [...new Set(yearMatches.map(m => m.match(/(20\d{2})/)[1]))].sort((a,b) => b-a);
+
+      // Extract sample rows
+      const sampleRows = [];
+      const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+      let trMatch;
+      let rowCount = 0;
+      while ((trMatch = trRegex.exec(html)) !== null && rowCount < 30) {
+        const cells = [];
+        const cellRegex = /<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi;
+        let cellMatch;
+        while ((cellMatch = cellRegex.exec(trMatch[1])) !== null) {
+          cells.push(cellMatch[1].replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim());
+        }
+        if (cells.length >= 2) {
+          const isFinancial = cells[0].toLowerCase().match(/omsättning|resultat|tillgångar|kapital|balans/);
+          if (isFinancial) {
+            sampleRows.push({ label: cells[0], values: cells.slice(1), cellCount: cells.length });
+            rowCount++;
+          }
+        }
       }
-      // Also find any div/section with financial data
-      const finSection = html.match(/(?:Nettoomsättning|omsättning|Rörelseresultat|Resultaträkning)[\s\S]{0,3000}/i);
+
       return {
         statusCode: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          version: 'v7-debug',
-          tablesFound: tables.length,
-          tables: tables.slice(0, 3),
-          financialSection: finSection ? finSection[0].slice(0, 2000) : null,
-          htmlLength: html.length,
-          hasNettoomsattning: html.includes('Nettoomsättning') || html.includes('nettoomsättning'),
-          hasTable: html.includes('<table'),
-          sampleH1: (html.match(/<h1[^>]*>([^<]+)<\/h1>/) || [])[1] || null,
+          version: 'v8-debug',
+          yearsFromScope: years,
+          financialRows: sampleRows.slice(0, 15),
         }, null, 2),
       };
     } catch(e) {
