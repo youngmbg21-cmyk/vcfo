@@ -1369,15 +1369,17 @@ body::after {
     </div>
 
     <div class="modal-field">
-      <label class="modal-label">Cloudflare Worker Proxy URL <span style="color:var(--text3);font-weight:400;">(required on Netlify)</span></label>
-      <input class="modal-input" id="proxyUrlInput" type="text" placeholder="https://your-worker.workers.dev" style="margin:0;">
-      <div class="modal-note" style="color:var(--amber);">
-        ⚠ The Anthropic API is CORS-blocked on external sites. Without a proxy, AI features won't work on Netlify.<br>
-        Deploy a free Cloudflare Worker → paste the URL here. <a href="https://developers.cloudflare.com/workers/get-started/guide/" target="_blank" style="color:var(--blue);">Setup guide</a>
+      <label class="modal-label">Custom Proxy URL <span style="color:var(--text3);font-weight:400;">(optional — Netlify auto-detects)</span></label>
+      <input class="modal-input" id="proxyUrlInput" type="text" placeholder="https://your-worker.workers.dev (leave empty on Netlify)" style="margin:0;">
+      <div class="modal-note" style="color:var(--text2);">
+        <span style="color:var(--green);">On Netlify:</span> Leave this empty. A built-in Netlify Function handles CORS automatically — just set your API key above.<br>
+        <span style="color:var(--amber);">Other hosts:</span> Deploy a Cloudflare Worker proxy and paste its URL here. <a href="https://developers.cloudflare.com/workers/get-started/guide/" target="_blank" style="color:var(--blue);">Setup guide</a>
       </div>
     </div>
 
-    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:10px 12px;margin-bottom:16px;font-size:10px;color:var(--text3);line-height:1.7;">
+    <!-- Proxy auto-detection status -->
+    <div id="proxyAutoDetect" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:10px 12px;margin-bottom:16px;font-size:10px;color:var(--text3);line-height:1.7;">
+      <strong style="color:var(--blue);">Proxy status:</strong> <span id="proxyStatusText">Detecting...</span><br>
       <strong style="color:var(--blue);">Bolagsverket + SCB</strong> use a 4-proxy fallback chain (corsproxy.io → allorigins → cors-anywhere → thingproxy). Live data is attempted automatically on every load.<br>
       <strong style="color:var(--blue);">Live SCB benchmarks</strong> — go to <strong style="color:var(--text2);">📡 Benchmarks tab</strong> and click Fetch.
     </div>
@@ -2720,6 +2722,19 @@ function openSettings() {
   document.getElementById('proxyUrlInput').value     = ANTHROPIC_PROXY_URL;
   document.getElementById('anthropicStatus').style.display = 'none';
   document.getElementById('settingsModal').classList.add('open');
+
+  // Show proxy auto-detection status
+  const statusEl = document.getElementById('proxyStatusText');
+  if (statusEl) {
+    const netlifyProxy = getNetlifyProxyUrl();
+    if (netlifyProxy) {
+      statusEl.innerHTML = '<span style="color:var(--green);">● Netlify detected</span> — using built-in proxy at <code style="color:var(--amber);">/api/anthropic</code>. No custom URL needed.';
+    } else if (ANTHROPIC_PROXY_URL) {
+      statusEl.innerHTML = `<span style="color:var(--amber);">● Custom proxy</span> — using <code style="color:var(--amber);">${ANTHROPIC_PROXY_URL}</code>`;
+    } else {
+      statusEl.innerHTML = '<span style="color:var(--text2);">● Direct mode</span> — will attempt direct Anthropic API call (works in claude.ai artifacts only).';
+    }
+  }
 }
 function closeSettings() {
   document.getElementById('settingsModal').classList.remove('open');
@@ -2853,35 +2868,90 @@ async function fetchWithProxy(url, options = {}, timeoutMs = 8000) {
 // ============================================================
 // ANTHROPIC PROXY CONFIG
 // ============================================================
-// When running on Netlify/external host, direct Anthropic calls are CORS-blocked.
-// Set ANTHROPIC_PROXY_URL to a Cloudflare Worker URL that forwards requests.
-// Leave empty to attempt direct calls (works only inside claude.ai artifacts).
-// 
-// Cloudflare Worker template (paste into workers.dev):
-//   export default { async fetch(req) {
-//     const body = await req.json();
-//     const res  = await fetch('https://api.anthropic.com/v1/messages', {
-//       method: 'POST',
-//       headers: { 'Content-Type':'application/json', 'x-api-key': YOUR_KEY_HERE,
-//                  'anthropic-version':'2023-06-01' },
-//       body: JSON.stringify(body)
+// The app uses a 3-tier proxy strategy:
+//   1. Netlify Function (/api/anthropic) — auto-detected, zero config needed
+//   2. Custom proxy URL (Cloudflare Worker etc.) — set in ⚙ Settings
+//   3. Direct Anthropic API call — works only in claude.ai artifacts
+//
+// If you deploy on Netlify, the built-in Netlify Function handles CORS
+// automatically. Just enter your Anthropic API key — no proxy URL needed.
+//
+// For other hosts, deploy a Cloudflare Worker with this template:
+//   export default { async fetch(req, env) {
+//     if (req.method === 'OPTIONS') return new Response(null, {
+//       headers: { 'Access-Control-Allow-Origin':'*', 'Access-Control-Allow-Methods':'POST',
+//                  'Access-Control-Allow-Headers':'Content-Type, x-api-key' }
 //     });
-//     return new Response(JSON.stringify(data), {
-//       headers: { 'Content-Type':'application/json', 'Access-Control-Allow-Origin':'*',
-//                  'Access-Control-Allow-Methods':'POST', 'Access-Control-Allow-Headers':'*' }
+//     const apiKey = req.headers.get('x-api-key');
+//     const res = await fetch('https://api.anthropic.com/v1/messages', {
+//       method: 'POST',
+//       headers: { 'Content-Type':'application/json', 'x-api-key': apiKey,
+//                  'anthropic-version':'2023-06-01' },
+//       body: req.body
+//     });
+//     const data = await res.text();
+//     return new Response(data, {
+//       status: res.status,
+//       headers: { 'Content-Type':'application/json', 'Access-Control-Allow-Origin':'*' }
 //     });
 //   }};
-// ANTHROPIC_PROXY_URL is declared in GLOBALS above
+
+// Auto-detect Netlify Function proxy
+function getNetlifyProxyUrl() {
+  // If we're on a Netlify site, use the built-in function
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host.includes('netlify.app') || host.includes('netlify.com')) {
+      return '/api/anthropic';
+    }
+    // Also use it for localhost during netlify dev
+    if (host === 'localhost' && window.location.port === '8888') {
+      return '/api/anthropic';
+    }
+  }
+  return null;
+}
 
 async function callAnthropic(body, apiKey) {
-  // If a proxy URL is configured, route through it (API key lives in the Worker)
+  // Tier 1: Netlify Function (auto-detected)
+  const netlifyProxy = getNetlifyProxyUrl();
+  if (netlifyProxy && !ANTHROPIC_PROXY_URL) {
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 30000);
+    try {
+      const res = await fetch(netlifyProxy, {
+        method:  'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key':    apiKey,
+        },
+        body:   JSON.stringify(body),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`Netlify proxy returned ${res.status}: ${errText.slice(0, 100)}`);
+      }
+      return await res.json();
+    } catch(e) {
+      clearTimeout(timer);
+      // If Netlify proxy fails, fall through to other methods
+      console.warn('Netlify proxy failed, trying fallback:', e.message);
+    }
+  }
+
+  // Tier 2: Custom proxy URL (Cloudflare Worker etc.)
   if (ANTHROPIC_PROXY_URL) {
     const ctrl  = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 30000);
     try {
       const res = await fetch(ANTHROPIC_PROXY_URL, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key':    apiKey,
+        },
         body:    JSON.stringify(body),
         signal:  ctrl.signal,
       });
@@ -2894,8 +2964,8 @@ async function callAnthropic(body, apiKey) {
     }
   }
 
-  // Direct call — requires anthropic-dangerous-direct-browser-access header
-  // Works in claude.ai artifacts; on Netlify this will CORS-fail unless you set a Worker URL above
+  // Tier 3: Direct call — requires anthropic-dangerous-direct-browser-access header
+  // Works in claude.ai artifacts; on external hosts this will CORS-fail
   const ctrl  = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 30000);
   try {
@@ -2915,9 +2985,8 @@ async function callAnthropic(body, apiKey) {
     return await res.json();
   } catch(e) {
     clearTimeout(timer);
-    // If direct call fails (CORS on Netlify), give a clear message
     if (e.name === 'TypeError' || e.message.includes('fetch')) {
-      throw new Error('CORS blocked — set a Cloudflare Worker URL in ⚙ Settings');
+      throw new Error('CORS blocked — on Netlify this should auto-resolve. Otherwise set a Cloudflare Worker URL in ⚙ Settings');
     }
     throw e;
   }
