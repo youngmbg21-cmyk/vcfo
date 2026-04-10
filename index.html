@@ -1487,9 +1487,9 @@ body::after {
       <div style="margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:8px;">
         <div style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text3);" data-i18n="demo_or">Or load a demo</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
-          <button class="btn-secondary" onclick="loadDemo('556000-4615')" data-i18n="demo_volvo">Demo: Volvo AB</button>
-          <button class="btn-secondary" onclick="loadDemo('556465-0893')" data-i18n="demo_hm">Demo: H&amp;M</button>
-          <button class="btn-secondary" onclick="loadDemo('556074-7566')" data-i18n="demo_sandvik">Demo: Sandvik AB</button>
+          <button class="btn-secondary" onclick="loadDemo('556012-5790')" data-i18n="demo_volvo">Demo: Volvo AB</button>
+          <button class="btn-secondary" onclick="loadDemo('556042-7220')" data-i18n="demo_hm">Demo: H&amp;M</button>
+          <button class="btn-secondary" onclick="loadDemo('556000-3468')" data-i18n="demo_sandvik">Demo: Sandvik AB</button>
         </div>
       </div>
     </div>
@@ -3136,163 +3136,11 @@ function updateFetchYearOptions(availableYears) {
 // ============================================================
 // DEMO DATA STORE (realistic Swedish SME financials)
 // ============================================================
-const DEMO_COMPANIES = {
-  '5560004615': {
-    name: 'AB Volvo',
-    orgNr: '556000-4615',
-    type: 'Publikt aktiebolag',
-    industry: 'Tillverkning',
-    sni: '29100',
-    fiscalYear: '2023',
-    // Income statement (tkr)
-    netSales: 553_000_000,
-    otherRevenue: 4_200_000,
-    rawMaterials: 320_000_000,
-    personnel: 82_000_000,
-    depreciation: 18_000_000,
-    otherOpCosts: 57_000_000,
-    opProfit: 80_200_000,
-    financialIncome: 3_100_000,
-    financialExpenses: 4_800_000,
-    profitBeforeTax: 78_500_000,
-    tax: 17_200_000,
-    netProfit: 61_300_000,
-    // Balance sheet (tkr)
-    intangibleAssets: 42_000_000,
-    tangibleAssets: 98_000_000,
-    financialAssets: 210_000_000,
-    totalFixedAssets: 350_000_000,
-    inventories: 62_000_000,
-    receivables: 98_000_000,
-    cashEquivalents: 48_000_000,
-    totalCurrentAssets: 208_000_000,
-    totalAssets: 558_000_000,
-    equity: 220_000_000,
-    provisions: 22_000_000,
-    longTermDebt: 148_000_000,
-    longTermDebtOver5y: 62_000_000,
-    currentLiabilities: 168_000_000,
-    totalLiabilities: 338_000_000,
-    dividendsPaid: 58_000_000,
-    // Asset detail
-    inventarierBV: 14_200_000,
-    inventarierAcqCost: 210_000_000,
-    // Auditor
-    auditorRemark: false,
-    auditorRemarkDetail: '',
-    // Prior year comparison
-    prevNetSales: 498_000_000,
-    prevOpProfit: 43_000_000,
-    prevNetProfit: 34_200_000,
-    prevROS: 8.64,
-    // ── NEW: Tax-allocation reserves (Periodiseringsfonder) ──
-    periodiseringsfonder: 12_400_000,   // total untaxed reserves
-    taxRateDeferred: 0.206,             // 20.6% standard rate
-    // ── NEW: Subsidiaries (Andelar i koncernföretag) ──
-    subsidiaries: [
-      { name:'Volvo Financial Services AB', orgNr:'556294-6858', sni:'64910', netSales:8_200_000, netProfit:1_400_000, equity:4_200_000 },
-      { name:'Volvo IT AB', orgNr:'556550-1998', sni:'62010', netSales:3_600_000, netProfit:420_000, equity:1_800_000 },
-    ],
-    andelarKoncern: 210_000_000,  // book value of subsidiary holdings
-  },
-  '5564650893': {
-    name: 'H&M Hennes & Mauritz AB',
-    orgNr: '556465-0893',
-    type: 'Publikt aktiebolag',
-    industry: 'Detaljhandel',
-    sni: '47710',
-    fiscalYear: '2023',
-    netSales: 236_000_000,
-    otherRevenue: 1_800_000,
-    rawMaterials: 92_000_000,
-    personnel: 55_000_000,
-    depreciation: 28_000_000,
-    otherOpCosts: 37_400_000,
-    opProfit: 24_400_000,
-    financialIncome: 820_000,
-    financialExpenses: 2_100_000,
-    profitBeforeTax: 23_120_000,
-    tax: 5_100_000,
-    netProfit: 18_020_000,
-    totalFixedAssets: 168_000_000,
-    inventories: 38_000_000,
-    receivables: 18_000_000,
-    cashEquivalents: 24_000_000,
-    totalCurrentAssets: 80_000_000,
-    totalAssets: 248_000_000,
-    equity: 82_000_000,
-    provisions: 8_000_000,
-    longTermDebt: 68_000_000,
-    longTermDebtOver5y: 18_000_000,
-    currentLiabilities: 90_000_000,
-    totalLiabilities: 166_000_000,
-    dividendsPaid: 19_800_000,
-    inventarierBV: 0,
-    inventarierAcqCost: 48_000_000,
-    auditorRemark: true,
-    auditorRemarkDetail: 'Årsredovisning för räkenskapsåret 2022 ingavs för sent (ABL 7 kap. 10 §). Anmärkning noterad.',
-    prevNetSales: 221_000_000,
-    prevOpProfit: 16_200_000,
-    prevNetProfit: 12_100_000,
-    prevROS: 7.33,
-    // Periodiseringsfonder — high relative to cash (triggers warning)
-    periodiseringsfonder: 18_600_000,
-    taxRateDeferred: 0.206,
-    subsidiaries: [
-      { name:'H&M Logistics AB', orgNr:'556622-8510', sni:'49410', netSales:4_100_000, netProfit:310_000, equity:920_000 },
-    ],
-    andelarKoncern: 42_000_000,
-  },
-  '5560747566': {
-    name: 'Sandvik AB',
-    orgNr: '556074-7566',
-    type: 'Publikt aktiebolag',
-    industry: 'Industriteknik',
-    sni: '28410',
-    fiscalYear: '2023',
-    netSales: 127_500_000,
-    otherRevenue: 920_000,
-    rawMaterials: 42_000_000,
-    personnel: 34_200_000,
-    depreciation: 8_600_000,
-    otherOpCosts: 24_600_000,
-    opProfit: 18_020_000,
-    financialIncome: 1_100_000,
-    financialExpenses: 2_400_000,
-    profitBeforeTax: 16_720_000,
-    tax: 3_680_000,
-    netProfit: 13_040_000,
-    totalFixedAssets: 88_000_000,
-    inventories: 22_000_000,
-    receivables: 24_000_000,
-    cashEquivalents: 16_000_000,
-    totalCurrentAssets: 62_000_000,
-    totalAssets: 150_000_000,
-    equity: 72_000_000,
-    provisions: 6_000_000,
-    longTermDebt: 38_000_000,
-    longTermDebtOver5y: 28_000_000,
-    currentLiabilities: 34_000_000,
-    totalLiabilities: 78_000_000,
-    dividendsPaid: 4_299_000,
-    inventarierBV: 1_200_000,
-    inventarierAcqCost: 42_000_000,
-    auditorRemark: false,
-    auditorRemarkDetail: '',
-    prevNetSales: 118_200_000,
-    prevOpProfit: 10_200_000,
-    prevNetProfit: 8_100_000,
-    prevROS: 8.64,
-    periodiseringsfonder: 3_800_000,
-    taxRateDeferred: 0.206,
-    subsidiaries: [
-      { name:'Sandvik Mining AB', orgNr:'556093-8811', sni:'28920', netSales:22_400_000, netProfit:3_200_000, equity:14_100_000 },
-      { name:'Sandvik Coromant AB', orgNr:'556053-7549', sni:'28410', netSales:18_600_000, netProfit:2_800_000, equity:11_200_000 },
-      { name:'Sandvik Digital Solutions AB', orgNr:'559112-3344', sni:'62010', netSales:4_200_000, netProfit:680_000, equity:2_100_000 },
-    ],
-    andelarKoncern: 88_000_000,
-  }
-};
+// Demo data removed — all companies now fetch live data from allabolag.se.
+// The empty object ensures DEMO_COMPANIES[key] always returns undefined,
+// forcing the app to use buildGenericDemo() as fallback (which shows
+// "ESTIMATED DATA" badge) only when allabolag has no data for a company.
+const DEMO_COMPANIES = {};
 
 // Generic fallback for unknown org numbers
 function buildGenericDemo(orgNr) {

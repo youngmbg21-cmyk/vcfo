@@ -101,8 +101,12 @@ exports.handler = async (event) => {
     };
   }
 
+  const requestedYear = event.queryStringParameters?.year || '';
+
   const results = {
     orgNr,
+    requestedYear: requestedYear || 'latest',
+    resolvedYear: null,
     reports: [],
     latestReport: null,
     source: null,
@@ -112,10 +116,12 @@ exports.handler = async (event) => {
 
   // ══════════════════════════════════════════════════════════════
   // Source: Allabolag.se — scrape the bokslut (financial) page
-  // This is the most reliable free source for Swedish company data
+  // Use year-specific URL when a year is selected
   // ══════════════════════════════════════════════════════════════
   try {
-    const url = `https://www.allabolag.se/${orgNr}/bokslut`;
+    // Allabolag supports year-specific URLs: /{orgNr}/bokslut/{year}
+    const yearPath = (requestedYear && requestedYear !== 'latest') ? `/${requestedYear}` : '';
+    const url = `https://www.allabolag.se/${orgNr}/bokslut${yearPath}`;
     const res = await serverFetch(url);
 
     if (res.ok) {
@@ -134,7 +140,11 @@ exports.handler = async (event) => {
       if (financials) {
         results.latestReport = financials;
         results.source = 'allabolag';
+        results.resolvedYear = financials.financialYear || requestedYear || null;
         results.availableYears = financials._availableYears || [];
+      } else {
+        // Page loaded but no financials parsed — report clearly
+        results.errors.push(`allabolag: Page loaded but no financial data found for ${requestedYear || 'latest'} year`);
       }
     } else {
       results.errors.push(`allabolag: HTTP ${res.status}`);
