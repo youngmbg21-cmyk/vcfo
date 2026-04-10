@@ -308,17 +308,19 @@ function parseAllabolagMultiYear(html, orgNr, companyName) {
 
   // Step 4: Extract financial data from rows after the header
   const FIELDS = [
-    { field: 'netSales',            keywords: ['nettoomsättning', 'nettoomstning'] },
-    { field: 'opProfit',            keywords: ['rörelseresultat', 'rrelseresultat'] },
-    { field: 'netProfit',           keywords: ['resultat efter finansiella', 'resultat e. fin', 'årets resultat', 'resultat före skatt'] },
-    { field: 'depreciation',        keywords: ['avskrivningar', 'av- och nedskrivningar', 'avskr'] },
-    { field: 'totalFixedAssets',    keywords: ['summa anläggningstillgångar', 'summa anlggningstillgngar', 'anläggningstillgångar'] },
-    { field: 'totalCurrentAssets',  keywords: ['summa omsättningstillgångar', 'summa omsttningstillgngar', 'omsättningstillgångar'] },
-    { field: 'totalAssets',         keywords: ['summa tillgångar', 'summa tillgngar', 'balansomslutning'] },
-    { field: 'equity',              keywords: ['summa eget kapital', 'eget kapital'] },
-    { field: 'longTermLiabilities', keywords: ['summa långfristiga skulder', 'långfristiga skulder', 'lngfristiga skulder'] },
-    { field: 'currentLiabilities',  keywords: ['summa kortfristiga skulder', 'kortfristiga skulder'] },
-    { field: 'employees',           keywords: ['antal anställda', 'medelantal anst'] },
+    { field: 'netSales',               keywords: ['nettoomsättning', 'nettoomstning'] },
+    { field: 'opProfit',               keywords: ['rörelseresultat', 'rrelseresultat'] },
+    { field: 'netProfit',              keywords: ['resultat efter finansiella', 'resultat e. fin', 'årets resultat', 'resultat före skatt'] },
+    { field: 'depreciation',           keywords: ['avskrivningar', 'av- och nedskrivningar', 'avskr'] },
+    { field: 'totalFixedAssets',       keywords: ['summa anläggningstillgångar', 'summa anlggningstillgngar', 'anläggningstillgångar'] },
+    { field: 'totalCurrentAssets',     keywords: ['summa omsättningstillgångar', 'summa omsttningstillgngar', 'omsättningstillgångar'] },
+    { field: 'totalAssets',            keywords: ['summa tillgångar', 'summa tillgngar', 'balansomslutning'] },
+    { field: 'equity',                 keywords: ['summa eget kapital', 'eget kapital'] },
+    { field: 'longTermLiabilities',    keywords: ['summa långfristiga skulder', 'långfristiga skulder', 'lngfristiga skulder'] },
+    { field: 'currentLiabilities',     keywords: ['summa kortfristiga skulder', 'kortfristiga skulder'] },
+    { field: 'periodiseringsfonder',   keywords: ['periodiseringsfonder', 'obeskattade reserver', 'avsättning till periodiseringsfond'] },
+    { field: 'andelarKoncern',         keywords: ['andelar i koncernföretag', 'andelar i dotterföretag', 'andelar koncern'] },
+    { field: 'employees',              keywords: ['antal anställda', 'medelantal anst'] },
   ];
 
   // fieldData[field][year] = number
@@ -347,6 +349,18 @@ function parseAllabolagMultiYear(html, orgNr, companyName) {
   const legalMatch = html.match(/(Publikt aktiebolag|Aktiebolag|Handelsbolag|Enskild firma)/i);
   const legalForm = legalMatch ? legalMatch[1] : 'Aktiebolag';
 
+  // Step 5b: Auditor remarks — parse from page text
+  // Allabolag surfaces "Anmärkning" from the auditor's report
+  const auditorRemark = /anm[äa]rkning/i.test(html) || /revisorsanm[äa]rkning/i.test(html);
+  let auditorRemarkText = '';
+  if (auditorRemark) {
+    const remarkMatch = html.match(/anm[äa]rkning[^<]{0,30}<[^>]+>([^<]{10,300})/i);
+    if (remarkMatch) auditorRemarkText = remarkMatch[1].replace(/\s+/g, ' ').trim();
+    if (!auditorRemarkText) {
+      auditorRemarkText = 'Auditor remark (Anmärkning) noted in annual report.';
+    }
+  }
+
   // Step 6: Build per-year objects (values in tkr, scale ×1000)
   const scale = 1000;
   const yearObjects = years.map(yr => ({
@@ -357,20 +371,24 @@ function parseAllabolagMultiYear(html, orgNr, companyName) {
     reportPeriod: yr,
     sni,
     legalForm,
-    netSales:            (fieldData.netSales?.[yr] ?? 0) * scale,
-    revenues:            (fieldData.netSales?.[yr] ?? 0) * scale,
-    operatingProfit:     (fieldData.opProfit?.[yr] ?? 0) * scale,
-    netIncome:           (fieldData.netProfit?.[yr] ?? 0) * scale,
-    profitForYear:       (fieldData.netProfit?.[yr] ?? 0) * scale,
-    depreciation:        (fieldData.depreciation?.[yr] ?? 0) * scale,
-    nonCurrentAssets:    (fieldData.totalFixedAssets?.[yr] ?? 0) * scale,
-    currentAssets:       (fieldData.totalCurrentAssets?.[yr] ?? 0) * scale,
-    totalAssets:         (fieldData.totalAssets?.[yr] ?? 0) * scale,
-    equity:              (fieldData.equity?.[yr] ?? 0) * scale,
-    totalEquity:         (fieldData.equity?.[yr] ?? 0) * scale,
-    longTermLiabilities: (fieldData.longTermLiabilities?.[yr] ?? 0) * scale,
-    currentLiabilities:  (fieldData.currentLiabilities?.[yr] ?? 0) * scale,
-    employees:           fieldData.employees?.[yr] ?? null,
+    netSales:              (fieldData.netSales?.[yr] ?? 0) * scale,
+    revenues:              (fieldData.netSales?.[yr] ?? 0) * scale,
+    operatingProfit:       (fieldData.opProfit?.[yr] ?? 0) * scale,
+    netIncome:             (fieldData.netProfit?.[yr] ?? 0) * scale,
+    profitForYear:         (fieldData.netProfit?.[yr] ?? 0) * scale,
+    depreciation:          (fieldData.depreciation?.[yr] ?? 0) * scale,
+    nonCurrentAssets:      (fieldData.totalFixedAssets?.[yr] ?? 0) * scale,
+    currentAssets:         (fieldData.totalCurrentAssets?.[yr] ?? 0) * scale,
+    totalAssets:           (fieldData.totalAssets?.[yr] ?? 0) * scale,
+    equity:                (fieldData.equity?.[yr] ?? 0) * scale,
+    totalEquity:           (fieldData.equity?.[yr] ?? 0) * scale,
+    longTermLiabilities:   (fieldData.longTermLiabilities?.[yr] ?? 0) * scale,
+    currentLiabilities:    (fieldData.currentLiabilities?.[yr] ?? 0) * scale,
+    periodiseringsfonder:  (fieldData.periodiseringsfonder?.[yr] ?? 0) * scale,
+    andelarKoncern:        (fieldData.andelarKoncern?.[yr] ?? 0) * scale,
+    auditorRemark,
+    auditorRemarkText,
+    employees:             fieldData.employees?.[yr] ?? null,
   }));
 
   return { years: yearObjects };

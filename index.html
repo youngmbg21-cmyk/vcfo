@@ -1409,11 +1409,6 @@ body::after {
       <span style="font-size:9px;color:var(--text3);letter-spacing:0.08em;white-space:nowrap;">FY:</span>
       <select id="fetchYearSelect" onchange="onFetchYearChange()" style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:4px 6px;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;outline:none;cursor:pointer;appearance:auto;min-width:65px;">
         <option value="latest">Latest</option>
-        <option value="2024">2024</option>
-        <option value="2023" selected>2023</option>
-        <option value="2022">2022</option>
-        <option value="2021">2021</option>
-        <option value="2020">2020</option>
       </select>
     </div>
     <div style="font-size:10px;color:var(--text3);" id="apiHint">SE Registry · Bolagsverket iXBRL</div>
@@ -1621,7 +1616,7 @@ body::after {
           <div style="font-size:10px;color:var(--text3);margin-top:2px;" id="cfoSubtitle">AI-powered internal financial health analysis</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn-secondary" onclick="runCFOAudit()" data-i18n="btn_refresh">↺ Refresh Analysis</button>
+          <button class="btn-secondary" onclick="refreshCFOAudit()" data-i18n="btn_refresh">↺ Refresh Analysis</button>
           <button class="btn-secondary" onclick="window.print()" data-i18n="btn_export">⬇ Export</button>
         </div>
       </div>
@@ -3941,7 +3936,7 @@ function mapAPIResponse(api, clean) {
     inventarierBV: api.propertyPlantEquipmentNet || 0,
     inventarierAcqCost: api.propertyPlantEquipmentGross || 0,
     auditorRemark: api.auditorRemark || false,
-    auditorRemarkDetail: api.auditorRemarkText || '',
+    auditorRemarkDetail: api.auditorRemarkText || api.auditorRemarkDetail || '',
     prevNetSales: api.prevNetSales || 0,
     prevOpProfit: api.prevOpProfit || 0,
     prevNetProfit: api.prevNetProfit || 0,
@@ -3954,6 +3949,9 @@ function mapAPIResponse(api, clean) {
     depreciation: api.depreciation || 0,
     personnel: api.personnel || 0,
     rawMaterials: api.costOfGoods || 0,
+    periodiseringsfonder: api.periodiseringsfonder || 0,
+    andelarKoncern: api.andelarKoncern || 0,
+    subsidiaries: api.subsidiaries || [],
   };
 }
 
@@ -4071,12 +4069,19 @@ function renderFinancialsTab(d) {
 
   const priorYrLabel = prev ? `FY${priorYrKey}` : 'Prior Year';
 
+  // EBIT = Operating Profit (already in d.opProfit)
+  // EBITDA = Operating Profit + Depreciation
+  const ebitda      = d.opProfit + (d.depreciation || 0);
+  const prevEbitda  = prev ? (prev.opProfit + (prev.depreciation || 0)) : 0;
+  const ebitdaMargin = d.netSales > 0 ? (ebitda / d.netSales * 100) : null;
+
   document.getElementById('finIncome').innerHTML = `
     <table class="data-table">
       <thead><tr><th>Line Item</th><th style="text-align:right">FY${d.fiscalYear}</th><th style="text-align:right">${priorYrLabel}</th><th style="text-align:right">YoY Δ</th></tr></thead>
       <tbody>
         <tr><td>Net Sales</td><td style="text-align:right">${fmtSEK(d.netSales)}</td><td style="text-align:right">${fmtSEK(prevNetSales)}</td><td style="text-align:right">${yoyPct(d.netSales, prevNetSales)}</td></tr>
-        <tr><td>Operating Profit</td><td style="text-align:right" class="${d.opProfit>0?'pos':'neg'}">${fmtSEK(d.opProfit)}</td><td style="text-align:right">${fmtSEK(prevOpProfit)}</td><td style="text-align:right">${yoyPct(d.opProfit, prevOpProfit)}</td></tr>
+        <tr><td>EBIT (Operating Profit)</td><td style="text-align:right" class="${d.opProfit>0?'pos':'neg'}">${fmtSEK(d.opProfit)}</td><td style="text-align:right">${fmtSEK(prevOpProfit)}</td><td style="text-align:right">${yoyPct(d.opProfit, prevOpProfit)}</td></tr>
+        <tr><td>EBITDA${ebitdaMargin!==null?' <span style="font-size:9px;color:var(--text3);">('+ebitdaMargin.toFixed(1)+'% margin)</span>':''}</td><td style="text-align:right" class="${ebitda>0?'pos':'neg'}">${fmtSEK(ebitda)}</td><td style="text-align:right">${fmtSEK(prevEbitda)}</td><td style="text-align:right">${yoyPct(ebitda, prevEbitda)}</td></tr>
         <tr><td>Net Profit</td><td style="text-align:right" class="${d.netProfit>0?'pos':'neg'}">${fmtSEK(d.netProfit)}</td><td style="text-align:right">${fmtSEK(prevNetProfit)}</td><td style="text-align:right">${yoyPct(d.netProfit, prevNetProfit)}</td></tr>
         <tr><td>ROS</td><td style="text-align:right" class="${ros>10?'pos':ros>5?'amb':'neg'}">${fmtPct(ros)}</td><td style="text-align:right">${fmtPct(prevROS)}</td><td style="text-align:right">${yoyPct(ros, prevROS)}</td></tr>
         <tr><td>Dividends Paid</td><td style="text-align:right" class="${d.dividendsPaid>d.netProfit?'neg':'amb'}">${fmtSEK(d.dividendsPaid)}</td><td style="text-align:right">${prevDividends ? fmtSEK(prevDividends) : '—'}</td><td style="text-align:right">${prevDividends ? yoyPct(d.dividendsPaid, prevDividends) : '—'}</td></tr>
@@ -4145,7 +4150,15 @@ function buildRatioRows(d) {
 // ============================================================
 function computeAndRenderDeterministicCFO(d) {
   const ros = d.netSales ? (d.opProfit / d.netSales * 100) : 0;
-  const prevROS = d.prevROS || null;
+
+  // Prefer actual prior year from historyData over stored field
+  const priorYrKey = String(parseInt(d.fiscalYear) - 1);
+  const prevData   = historyData[priorYrKey] || null;
+  const prevROS    = prevData && prevData.netSales
+    ? (prevData.opProfit / prevData.netSales * 100)
+    : (d.prevROS || null);
+  const prevNetSales = prevData ? prevData.netSales : (d.prevNetSales || null);
+
   const rosDelta = prevROS !== null ? (ros - prevROS) : null;
   const payout = d.netProfit > 0 ? (d.dividendsPaid / d.netProfit * 100) : 0;
   const isAggressivePayout = d.dividendsPaid > d.netProfit;
@@ -4340,6 +4353,7 @@ function computeAndRenderDeterministicCFO(d) {
     <div class="separator"></div>
     <div class="field-row"><span class="field-key">${opProfLabel}</span><span class="field-val ${d.opProfit>0?'pos':'neg'}">${fmtSEK(d.opProfit)}</span></div>
     <div class="field-row"><span class="field-key">${netSalLabel}</span><span class="field-val">${fmtSEK(d.netSales)}</span></div>
+    ${prevNetSales ? `<div class="field-row"><span class="field-key">${isSv ? 'Intäktsförändring' : 'Revenue Growth'}</span><span class="field-val ${d.netSales >= prevNetSales ? 'pos' : 'neg'}">${((d.netSales - prevNetSales) / Math.abs(prevNetSales) * 100).toFixed(1)}%</span></div>` : ''}
     <div class="field-row"><span class="field-key">${deltaLabel}</span><span class="field-val ${rosDelta>=0?'pos':'neg'}">${rosDelta !== null ? (rosDelta>=0?'+':'')+fmtPct(rosDelta) : '—'}</span></div>
     <div class="field-row"><span class="field-key">${assessLabel}</span><span class="field-val ${rosDelta>0?'pos':rosDelta<-3?'neg':'amb'}">${assessVal}</span></div>
     <div style="margin-top:12px;padding:10px;background:var(--bg4);border-radius:4px;font-size:10px;color:var(--text3);">
@@ -4511,6 +4525,12 @@ function computeAndRenderDeterministicMA(d) {
 // ============================================================
 // AI CFO AUDIT — Anthropic API
 // ============================================================
+function refreshCFOAudit() {
+  if (!companyData) { showToast(t('toast_no_company')); return; }
+  computeAndRenderDeterministicCFO(companyData);
+  showToast(`✓ CFO Audit refreshed — FY${companyData.fiscalYear}`);
+}
+
 async function runCFOAudit() {
   if (!companyData) { showToast(t('toast_no_company')); return; }
   if (!anthropicKey) { openSettings(); showToast(t('toast_no_api_key')); return; }
@@ -4794,6 +4814,19 @@ document.addEventListener('DOMContentLoaded', () => {
     setStatusBar(t('status_ready'), 'na');
     initChatMode();
     initCompareTab();
+    // Populate year picker dynamically
+    (function() {
+      const sel = document.getElementById('fetchYearSelect');
+      if (!sel) return;
+      const cur = new Date().getFullYear();
+      for (let y = cur; y >= cur - 5; y--) {
+        const opt = document.createElement('option');
+        opt.value = String(y);
+        opt.textContent = String(y);
+        if (y === cur - 1) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    })();
     try {
       const cached = localStorage.getItem('vcfo_bch_cache');
       if (cached) {
