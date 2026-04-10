@@ -219,6 +219,7 @@ exports.handler = async (event) => {
           y.netSales !== 0 || y.totalAssets !== 0 || y.equity !== 0
         );
         results.availableYears = yearsWithData.map(y => y.financialYear).filter(Boolean);
+        results.reports = yearsWithData;
         results.source = 'allabolag';
 
         // Select the requested year from years that have actual data
@@ -307,12 +308,17 @@ function parseAllabolagMultiYear(html, orgNr, companyName) {
 
   // Step 4: Extract financial data from rows after the header
   const FIELDS = [
-    { field: 'netSales',    keywords: ['nettoomsättning', 'nettoomstning'] },
-    { field: 'opProfit',    keywords: ['rörelseresultat', 'rrelseresultat'] },
-    { field: 'netProfit',   keywords: ['resultat efter finansiella', 'resultat e. fin', 'årets resultat', 'resultat före skatt'] },
-    { field: 'totalAssets', keywords: ['summa tillgångar', 'summa tillgngar', 'balansomslutning'] },
-    { field: 'equity',      keywords: ['summa eget kapital', 'eget kapital'] },
-    { field: 'employees',   keywords: ['antal anställda', 'medelantal anst'] },
+    { field: 'netSales',            keywords: ['nettoomsättning', 'nettoomstning'] },
+    { field: 'opProfit',            keywords: ['rörelseresultat', 'rrelseresultat'] },
+    { field: 'netProfit',           keywords: ['resultat efter finansiella', 'resultat e. fin', 'årets resultat', 'resultat före skatt'] },
+    { field: 'depreciation',        keywords: ['avskrivningar', 'av- och nedskrivningar', 'avskr'] },
+    { field: 'totalFixedAssets',    keywords: ['summa anläggningstillgångar', 'summa anlggningstillgngar', 'anläggningstillgångar'] },
+    { field: 'totalCurrentAssets',  keywords: ['summa omsättningstillgångar', 'summa omsttningstillgngar', 'omsättningstillgångar'] },
+    { field: 'totalAssets',         keywords: ['summa tillgångar', 'summa tillgngar', 'balansomslutning'] },
+    { field: 'equity',              keywords: ['summa eget kapital', 'eget kapital'] },
+    { field: 'longTermLiabilities', keywords: ['summa långfristiga skulder', 'långfristiga skulder', 'lngfristiga skulder'] },
+    { field: 'currentLiabilities',  keywords: ['summa kortfristiga skulder', 'kortfristiga skulder'] },
+    { field: 'employees',           keywords: ['antal anställda', 'medelantal anst'] },
   ];
 
   // fieldData[field][year] = number
@@ -351,15 +357,20 @@ function parseAllabolagMultiYear(html, orgNr, companyName) {
     reportPeriod: yr,
     sni,
     legalForm,
-    netSales:        (fieldData.netSales?.[yr] ?? 0) * scale,
-    revenues:        (fieldData.netSales?.[yr] ?? 0) * scale,
-    operatingProfit: (fieldData.opProfit?.[yr] ?? 0) * scale,
-    netIncome:       (fieldData.netProfit?.[yr] ?? 0) * scale,
-    profitForYear:   (fieldData.netProfit?.[yr] ?? 0) * scale,
-    totalAssets:     (fieldData.totalAssets?.[yr] ?? 0) * scale,
-    equity:          (fieldData.equity?.[yr] ?? 0) * scale,
-    totalEquity:     (fieldData.equity?.[yr] ?? 0) * scale,
-    employees:       fieldData.employees?.[yr] ?? null,
+    netSales:            (fieldData.netSales?.[yr] ?? 0) * scale,
+    revenues:            (fieldData.netSales?.[yr] ?? 0) * scale,
+    operatingProfit:     (fieldData.opProfit?.[yr] ?? 0) * scale,
+    netIncome:           (fieldData.netProfit?.[yr] ?? 0) * scale,
+    profitForYear:       (fieldData.netProfit?.[yr] ?? 0) * scale,
+    depreciation:        (fieldData.depreciation?.[yr] ?? 0) * scale,
+    nonCurrentAssets:    (fieldData.totalFixedAssets?.[yr] ?? 0) * scale,
+    currentAssets:       (fieldData.totalCurrentAssets?.[yr] ?? 0) * scale,
+    totalAssets:         (fieldData.totalAssets?.[yr] ?? 0) * scale,
+    equity:              (fieldData.equity?.[yr] ?? 0) * scale,
+    totalEquity:         (fieldData.equity?.[yr] ?? 0) * scale,
+    longTermLiabilities: (fieldData.longTermLiabilities?.[yr] ?? 0) * scale,
+    currentLiabilities:  (fieldData.currentLiabilities?.[yr] ?? 0) * scale,
+    employees:           fieldData.employees?.[yr] ?? null,
   }));
 
   return { years: yearObjects };
