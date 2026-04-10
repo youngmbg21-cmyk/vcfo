@@ -202,23 +202,29 @@ exports.handler = async (event) => {
       const allYearsData = parseAllabolagMultiYear(html, orgNr, companyName);
 
       if (allYearsData && allYearsData.years.length > 0) {
-        results.availableYears = allYearsData.years.map(y => y.fiscalYear).filter(Boolean);
+        // Filter out years with no actual data (all zeros)
+        const yearsWithData = allYearsData.years.filter(y =>
+          y.netSales !== 0 || y.totalAssets !== 0 || y.equity !== 0
+        );
+        results.availableYears = yearsWithData.map(y => y.financialYear).filter(Boolean);
         results.source = 'allabolag';
 
-        // Select the requested year, or latest
+        // Select the requested year from years that have actual data
         let selected = null;
         if (requestedYear && requestedYear !== 'latest') {
-          selected = allYearsData.years.find(y => y.fiscalYear === requestedYear);
+          selected = yearsWithData.find(y => y.financialYear === requestedYear);
         }
-        if (!selected) {
-          selected = allYearsData.years[0]; // first = most recent
+        if (!selected && yearsWithData.length > 0) {
+          selected = yearsWithData[0]; // first with data = most recent
         }
 
         if (selected) {
           results.latestReport = selected;
-          results.resolvedYear = selected.fiscalYear;
-        } else {
+          results.resolvedYear = selected.financialYear;
+        } else if (results.availableYears.length > 0) {
           results.errors.push(`No data for FY${requestedYear}. Available: ${results.availableYears.join(', ')}`);
+        } else {
+          results.errors.push('Financial table found but all values are zero');
         }
       } else {
         results.errors.push('Page loaded but no financial table found');
