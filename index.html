@@ -5203,7 +5203,7 @@ const SNI_BENCHMARKS = {
     payout: 52,     // Payout Ratio %
     assetDeprec: 58,// Asset Depreciation %
     maScore: 48,    // Avg M&A score
-    revenueGrowth: 4.2,
+    revGrowth: 4.2,
   },
   construction: {
     label: 'Construction (SNI 41–43)',
@@ -5215,7 +5215,7 @@ const SNI_BENCHMARKS = {
     payout: 61,
     assetDeprec: 72,
     maScore: 44,
-    revenueGrowth: 6.8,
+    revGrowth: 6.8,
   },
   manufacturing: {
     label: 'Manufacturing (SNI 10–33)',
@@ -5227,7 +5227,7 @@ const SNI_BENCHMARKS = {
     payout: 48,
     assetDeprec: 61,
     maScore: 52,
-    revenueGrowth: 3.9,
+    revGrowth: 3.9,
   },
   wholesale: {
     label: 'Wholesale Trade (SNI 46)',
@@ -5239,7 +5239,7 @@ const SNI_BENCHMARKS = {
     payout: 55,
     assetDeprec: 44,
     maScore: 46,
-    revenueGrowth: 5.1,
+    revGrowth: 5.1,
   },
   retail: {
     label: 'Retail (SNI 47)',
@@ -5251,7 +5251,7 @@ const SNI_BENCHMARKS = {
     payout: 58,
     assetDeprec: 68,
     maScore: 42,
-    revenueGrowth: 4.4,
+    revGrowth: 4.4,
   },
   professional: {
     label: 'Professional Services (SNI 69–74)',
@@ -5263,7 +5263,7 @@ const SNI_BENCHMARKS = {
     payout: 64,
     assetDeprec: 38,
     maScore: 57,
-    revenueGrowth: 7.2,
+    revGrowth: 7.2,
   },
   transport: {
     label: 'Transport & Logistics (SNI 49–53)',
@@ -5275,7 +5275,7 @@ const SNI_BENCHMARKS = {
     payout: 44,
     assetDeprec: 79,
     maScore: 41,
-    revenueGrowth: 3.1,
+    revGrowth: 3.1,
   },
   realestate: {
     label: 'Real Estate (SNI 68)',
@@ -5287,7 +5287,7 @@ const SNI_BENCHMARKS = {
     payout: 38,
     assetDeprec: 22,
     maScore: 51,
-    revenueGrowth: 5.6,
+    revGrowth: 5.6,
   },
   ict: {
     label: 'ICT & Software (SNI 58–63)',
@@ -5299,7 +5299,31 @@ const SNI_BENCHMARKS = {
     payout: 42,
     assetDeprec: 48,
     maScore: 61,
-    revenueGrowth: 9.8,
+    revGrowth: 9.8,
+  },
+  hospitality: {
+    label: 'Hotels & Restaurants (SNI 55–56)',
+    sni: '55-56',
+    ros: 3.2,
+    roe: 11.8,
+    de: 2.2,
+    cr: 1.0,
+    payout: 40,
+    assetDeprec: 65,
+    maScore: 38,
+    revGrowth: 5.2,
+  },
+  healthcare: {
+    label: 'Healthcare (SNI 86–88)',
+    sni: '86-88',
+    ros: 6.8,
+    roe: 13.4,
+    de: 1.4,
+    cr: 1.3,
+    payout: 50,
+    assetDeprec: 55,
+    maScore: 49,
+    revGrowth: 4.6,
   },
 };
 
@@ -6137,16 +6161,21 @@ async function fetchBenchmarks() {
   bchLog(`Source: ${SCB_ENDPOINT}`, 'info');
 
   const results = {};
+  let liveCount = 0;
+  let estCount  = 0;
+
   for (let i = 0; i < sectors.length; i++) {
     const s = sectors[i];
     try {
       bchLog(`Fetching ${s.label} (SNI ${s.sniRange})…`, 'info');
       const data = await fetchOneSector(s);
       results[s.key] = { ...data, label:s.label, sni:s.sniRange, key:s.key, source:'SCB live' };
-      bchLog(`✓ ${s.label}: ROS ${data.ros!==null?data.ros.toFixed(1)+'%':'N/A'}, D/E ${data.de!==null?data.de.toFixed(2)+'x':'N/A'}`, 'ok');
+      liveCount++;
+      bchLog(`✓ ${s.label}: ROS ${data.ros!==null?data.ros.toFixed(1)+'%':'N/A'}, ROE ${data.roe!==null?data.roe.toFixed(1)+'%':'N/A'}, D/E ${data.de!==null?data.de.toFixed(2)+'x':'N/A'}`, 'ok');
     } catch(e) {
       results[s.key] = buildFallbackForSector(s);
-      bchLog(`⚠ ${s.label}: ${e.message} — using estimate`, 'warn');
+      estCount++;
+      bchLog(`⚠ ${s.label}: ${e.message} — using built-in estimate`, 'warn');
     }
     const pct = Math.round((i+1)/sectors.length*100);
     document.getElementById('bchProgress').style.width = pct + '%';
@@ -6154,15 +6183,23 @@ async function fetchBenchmarks() {
     await sleep(320); // polite rate limit
   }
 
-  bchLastFetch = { data: results, year: bchYear, size: bchSize, fetchedAt: new Date().toISOString() };
-  try { try { localStorage.setItem('vcfo_bch_cache', JSON.stringify(bchLastFetch)); } catch(e) {} } catch(e) {}
+  // Determine overall source quality
+  const sourceType = liveCount > 0 ? 'live' : 'built-in';
 
-  applyBenchmarkData(results, 'live');
+  bchLastFetch = { data: results, year: bchYear, size: bchSize, fetchedAt: new Date().toISOString(), liveCount, estCount };
+  try { localStorage.setItem('vcfo_bch_cache', JSON.stringify(bchLastFetch)); } catch(e) {}
+
+  applyBenchmarkData(results, sourceType);
   renderBchTable(results);
   document.getElementById('bchResultCount').textContent = `${Object.keys(results).length} sectors · FY${bchYear}`;
   document.getElementById('btnBchExport').style.display = 'inline-block';
-  bchLog(`Complete — ${Object.keys(results).length} sectors loaded. Compare tab now uses live data.`, 'ok');
-  showToast(`${t('toast_benchmarks_updated')}: ${Object.keys(results).length}`);
+
+  if (liveCount > 0) {
+    bchLog(`Complete — ${liveCount} live + ${estCount} estimated. Compare tab updated.`, 'ok');
+  } else {
+    bchLog(`⚠ SCB returned no data for FY${bchYear} — all sectors using built-in estimates. Try an earlier year.`, 'err');
+  }
+  showToast(`${t('toast_benchmarks_updated')}: ${liveCount} live, ${estCount} estimated`);
 
   bchFetching = false;
   btn.disabled = false;
@@ -6184,77 +6221,135 @@ async function fetchOneSector(sector) {
     response: { format:'json' }
   };
 
+  let parsed = null;
+  let lastErr = null;
+
   // Tier 1: Netlify proxy (server-side, reliable)
-  const netlifyUrl = getBolagsverketProxyUrl(); // reuse detection logic
-  if (netlifyUrl) {
+  try {
+    const proxyRes = await fetch(`/api/scb?url=${encodeURIComponent(SCB_ENDPOINT)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (proxyRes.ok) {
+      const json = await proxyRes.json();
+      parsed = parseSCBResponse(json);
+    } else {
+      lastErr = `Proxy returned ${proxyRes.status}`;
+    }
+  } catch(e) { lastErr = e.message; }
+
+  // Tier 2: Try requesting JSON-stat2 format (some SCB endpoints prefer this)
+  if (!parsed || !hasAnyMetric(parsed)) {
     try {
+      const body2 = { ...body, response: { format: 'json-stat2' } };
       const proxyRes = await fetch(`/api/scb?url=${encodeURIComponent(SCB_ENDPOINT)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(body2),
       });
       if (proxyRes.ok) {
         const json = await proxyRes.json();
-        return parseSCBResponse(json);
+        parsed = parseSCBResponse(json);
       }
-    } catch(e) { /* proxy failed, try direct */ }
+    } catch(e) { /* continue */ }
   }
 
-  // Tier 2: Direct / CORS proxy chain (browser-side fallback)
-  const res = await fetchWithProxy(SCB_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  }, 12000);
+  // Validate: at least one metric must have a value
+  if (parsed && hasAnyMetric(parsed)) return parsed;
 
-  if (!res) throw new Error('All proxies failed');
-  const json = await res.json();
-  return parseSCBResponse(json);
+  throw new Error(lastErr || 'No data returned for this sector/year');
+}
+
+function hasAnyMetric(m) {
+  return m && (m.ros !== null || m.roe !== null || m.de !== null || m.cr !== null || m.revGrowth !== null);
 }
 
 function parseSCBResponse(data) {
   const out = { ros:null, roe:null, de:null, cr:null, revGrowth:null };
 
-  // PxWeb JSON can have data in data[] or dataset.value[]
+  // PxWeb standard JSON format: { data: [{ key: [...], values: [...] }] }
   let rows = data?.data;
-  if (!rows || !rows.length) {
-    // Try alternative PxWeb JSON-stat format
-    const vals = data?.dataset?.value || data?.value;
-    if (vals) {
-      console.log('SCB: got JSON-stat format with', vals.length, 'values');
+
+  if (rows && rows.length) {
+    // Standard PxWeb JSON format
+    const acc = {};
+    for (const row of rows) {
+      const keys = row.key || [];
+      let nyckeltal = keys[2];
+      if (!BCH_METRICS[nyckeltal]) {
+        nyckeltal = keys.find(k => BCH_METRICS[k]) || keys[2];
+      }
+      const rawVal = row.values?.[0];
+      const val = rawVal === '..' || rawVal === '...' || rawVal === '' ? NaN : parseFloat(rawVal);
+      if (!isNaN(val)) {
+        if (!acc[nyckeltal]) acc[nyckeltal] = [];
+        acc[nyckeltal].push(val);
+      }
     }
-    if (!rows || !rows.length) return out;
+    const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+    for (const [code, vcfoKey] of Object.entries(BCH_METRICS)) {
+      const val = avg(acc[code] || []);
+      if (vcfoKey === 'cr_pct') out.cr = val !== null ? val / 100 : null;
+      else out[vcfoKey] = val;
+    }
+    return out;
   }
 
-  // Accumulate values per metric code across all divisions returned
-  // The key array order matches the query dimension order:
-  // [SNI2007, Storleksklass, Nyckeltal, Kvartilar, Tid]
-  const acc = {};
-  for (const row of rows) {
-    // Find the nyckeltal code — it's usually at index 2 but be defensive
-    const keys = row.key || [];
-    // Find which key element matches a known metric code
-    let nyckeltal = keys[2]; // default position
-    if (!BCH_METRICS[nyckeltal]) {
-      // Try to find it in any position
-      nyckeltal = keys.find(k => BCH_METRICS[k]) || keys[2];
+  // JSON-stat format: { dataset: { dimension: {...}, value: [...], ... } }
+  // or sometimes: { columns: [...], data: [...] } with data being an empty array
+  const ds = data?.dataset;
+  if (ds && ds.value && ds.dimension) {
+    const dims   = ds.dimension;
+    const values = ds.value;
+    const size   = ds.size || [];
+
+    // Find dimension indices — order varies but we need Nyckeltal and SNI2007
+    const dimIds = ds.id || Object.keys(dims);
+    const nyckeltalDimIdx = dimIds.indexOf('Nyckeltal');
+
+    // Get Nyckeltal category keys in order
+    const nyckeltalDim = dims.Nyckeltal || dims.nyckeltal;
+    const nyckeltalKeys = nyckeltalDim?.category?.index
+      ? Object.keys(nyckeltalDim.category.index).sort((a,b) => nyckeltalDim.category.index[a] - nyckeltalDim.category.index[b])
+      : [];
+
+    if (nyckeltalKeys.length === 0) return out;
+
+    // Calculate strides for each dimension to map flat array index → dimension indices
+    const strides = [];
+    for (let i = 0; i < size.length; i++) {
+      let stride = 1;
+      for (let j = i + 1; j < size.length; j++) stride *= size[j];
+      strides.push(stride);
     }
 
-    const rawVal = row.values?.[0];
-    const val = rawVal === '..' || rawVal === '...' || rawVal === '' ? NaN : parseFloat(rawVal);
-    if (!isNaN(val)) {
-      if (!acc[nyckeltal]) acc[nyckeltal] = [];
-      acc[nyckeltal].push(val);
+    // Accumulate values grouped by metric code
+    const acc = {};
+    for (let flatIdx = 0; flatIdx < values.length; flatIdx++) {
+      const val = values[flatIdx];
+      if (val === null || val === undefined) continue;
+      const parsed = typeof val === 'number' ? val : parseFloat(val);
+      if (isNaN(parsed)) continue;
+
+      // Determine which nyckeltal this value belongs to
+      const nDimPos = Math.floor(flatIdx / strides[nyckeltalDimIdx]) % size[nyckeltalDimIdx];
+      const code = nyckeltalKeys[nDimPos];
+      if (code && BCH_METRICS[code]) {
+        if (!acc[code]) acc[code] = [];
+        acc[code].push(parsed);
+      }
     }
+
+    const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+    for (const [code, vcfoKey] of Object.entries(BCH_METRICS)) {
+      const val = avg(acc[code] || []);
+      if (vcfoKey === 'cr_pct') out.cr = val !== null ? val / 100 : null;
+      else out[vcfoKey] = val;
+    }
+    return out;
   }
 
-  // Average across divisions, map to our keys
-  const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
-  for (const [code, vcfoKey] of Object.entries(BCH_METRICS)) {
-    const val = avg(acc[code] || []);
-    if (vcfoKey === 'cr_pct') out.cr = val !== null ? val / 100 : null; // % → ratio
-    else out[vcfoKey] = val;
-  }
   return out;
 }
 
@@ -6281,14 +6376,14 @@ function applyBenchmarkData(results, sourceType) {
   benchmarkSource = sourceType;
   for (const [key, vals] of Object.entries(results)) {
     if (SNI_BENCHMARKS[key]) {
-      Object.assign(SNI_BENCHMARKS[key], {
-        ros:      vals.ros,
-        roe:      vals.roe,
-        de:       vals.de,
-        cr:       vals.cr,
-        revGrowth:vals.revGrowth,
-        maScore:  estimateBchMAScore(vals),
-      });
+      // Only overwrite with non-null values — preserve built-in defaults when SCB returns nothing
+      if (vals.ros !== null && vals.ros !== undefined) SNI_BENCHMARKS[key].ros = vals.ros;
+      if (vals.roe !== null && vals.roe !== undefined) SNI_BENCHMARKS[key].roe = vals.roe;
+      if (vals.de !== null && vals.de !== undefined) SNI_BENCHMARKS[key].de = vals.de;
+      if (vals.cr !== null && vals.cr !== undefined) SNI_BENCHMARKS[key].cr = vals.cr;
+      if (vals.revGrowth !== null && vals.revGrowth !== undefined) SNI_BENCHMARKS[key].revGrowth = vals.revGrowth;
+      const maScore = estimateBchMAScore(vals);
+      if (maScore !== null) SNI_BENCHMARKS[key].maScore = maScore;
     }
   }
   // Refresh Compare tab selector badge if visible
@@ -6296,15 +6391,14 @@ function applyBenchmarkData(results, sourceType) {
 }
 
 function estimateBchMAScore(m) {
+  if (!hasAnyMetric(m)) return null;
   let prof=0, bs=0, eff=0;
-  if ((m.ros||0)>15) prof+=15; else if ((m.ros||0)>8) prof+=10; else if ((m.ros||0)>3) prof+=5;
-  if ((m.roe||0)>15) prof+=10; else if ((m.roe||0)>8) prof+=6;  else if ((m.roe||0)>3) prof+=3;
-  const cr = m.cr||0;
-  if (cr>1.8) bs+=10; else if (cr>1.2) bs+=6; else if (cr>0.8) bs+=3;
-  const de = m.de||99;
-  if (de<1.0) bs+=10; else if (de<2.0) bs+=6; else if (de<3.5) bs+=3;
+  if (m.ros !== null) { if (m.ros>15) prof+=15; else if (m.ros>8) prof+=10; else if (m.ros>3) prof+=5; }
+  if (m.roe !== null) { if (m.roe>15) prof+=10; else if (m.roe>8) prof+=6;  else if (m.roe>3) prof+=3; }
+  if (m.cr !== null) { if (m.cr>1.8) bs+=10; else if (m.cr>1.2) bs+=6; else if (m.cr>0.8) bs+=3; }
+  if (m.de !== null) { if (m.de<1.0) bs+=10; else if (m.de<2.0) bs+=6; else if (m.de<3.5) bs+=3; }
   bs+=5;
-  if ((m.revGrowth||0)>10) eff+=10; else if ((m.revGrowth||0)>3) eff+=7; else if ((m.revGrowth||0)>0) eff+=4;
+  if (m.revGrowth !== null) { if (m.revGrowth>10) eff+=10; else if (m.revGrowth>3) eff+=7; else if (m.revGrowth>0) eff+=4; }
   eff+=10;
   return prof + 20 + bs + eff; // 20 = compliance baseline
 }
@@ -6312,40 +6406,61 @@ function estimateBchMAScore(m) {
 function renderBchTable(results) {
   const fmt1 = v => v!=null ? v.toFixed(1) : '—';
   const fmt2 = v => v!=null ? v.toFixed(2) : '—';
-  const rows = Object.values(results).map(d => `
+  const entries = Object.values(results);
+  if (!entries.length) {
+    document.getElementById('bchResultsBody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px;">No results — click Fetch from SCB</td></tr>';
+    document.getElementById('bchResultCount').textContent = '0 sectors';
+    return;
+  }
+
+  const rows = entries.map(d => {
+    const isLive = d.source === 'SCB live' && hasAnyMetric(d);
+    const maScore = estimateBchMAScore(d);
+    const maColor = maScore === null ? 'var(--text3)' : maScore >= 65 ? 'var(--green)' : maScore >= 40 ? 'var(--amber)' : 'var(--red)';
+    const maText  = maScore !== null ? `${maScore}/100` : '—';
+    return `
     <tr>
       <td style="text-align:left;">
         ${d.label}<br>
         <span style="font-size:9px;color:var(--blue);">SNI ${d.sni}</span>
       </td>
-      <td style="text-align:right;">${fmt1(d.ros)}%</td>
-      <td style="text-align:right;">${fmt1(d.roe)}%</td>
-      <td style="text-align:right;">${fmt2(d.de)}x</td>
-      <td style="text-align:right;">${fmt2(d.cr)}x</td>
+      <td style="text-align:right;">${d.ros!=null ? fmt1(d.ros)+'%' : '—'}</td>
+      <td style="text-align:right;">${d.roe!=null ? fmt1(d.roe)+'%' : '—'}</td>
+      <td style="text-align:right;">${d.de!=null ? fmt2(d.de)+'x' : '—'}</td>
+      <td style="text-align:right;">${d.cr!=null ? fmt2(d.cr)+'x' : '—'}</td>
       <td style="text-align:right;">${d.revGrowth!=null?(d.revGrowth>=0?'+':'')+fmt1(d.revGrowth)+'%':'—'}</td>
-      <td style="text-align:right;font-weight:700;color:${estimateBchMAScore(d)>=65?'var(--green)':estimateBchMAScore(d)>=40?'var(--amber)':'var(--red)'};">
-        ${estimateBchMAScore(d)}/100
+      <td style="text-align:right;font-weight:700;color:${maColor};">
+        ${maText}
       </td>
       <td style="text-align:center;">
-        <span style="font-size:9px;padding:2px 6px;border-radius:2px;background:${d.source==='SCB live'?'var(--green-dim)':'var(--amber-dim)'};color:${d.source==='SCB live'?'var(--green)':'var(--amber)'};">
-          ${d.source==='SCB live'?'● LIVE':'● EST.'}
+        <span style="font-size:9px;padding:2px 6px;border-radius:2px;background:${isLive?'var(--green-dim)':'var(--amber-dim)'};color:${isLive?'var(--green)':'var(--amber)'};">
+          ${isLive?'● LIVE':'● EST.'}
         </span>
       </td>
-    </tr>`).join('');
-  document.getElementById('bchResultsBody').innerHTML = rows || '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px;">No results</td></tr>';
-  document.getElementById('bchResultCount').textContent = `${Object.keys(results).length} sectors · FY${bchYear}`;
+    </tr>`;
+  }).join('');
+  document.getElementById('bchResultsBody').innerHTML = rows;
+  const liveN = entries.filter(d => d.source === 'SCB live' && hasAnyMetric(d)).length;
+  const estN  = entries.length - liveN;
+  document.getElementById('bchResultCount').textContent = `${entries.length} sectors · FY${bchYear}` + (liveN > 0 ? ` · ${liveN} live` : '') + (estN > 0 ? ` · ${estN} est.` : '');
 }
 
 function renderBchSourceBadge() {
   const badge = document.getElementById('bchSourceBadge');
   if (!badge) return;
-  if (bchLastFetch && benchmarkSource === 'live') {
-    badge.innerHTML = `<span style="font-size:10px;padding:3px 10px;border-radius:3px;background:var(--green-dim);color:var(--green);border:1px solid rgba(0,255,136,0.25);">● LIVE SCB · FY${bchLastFetch.year} · ${Object.keys(bchLastFetch.data).length} sectors</span>`;
+  const liveN = bchLastFetch ? (bchLastFetch.liveCount || 0) : 0;
+  if (bchLastFetch && benchmarkSource === 'live' && liveN > 0) {
+    badge.innerHTML = `<span style="font-size:10px;padding:3px 10px;border-radius:3px;background:var(--green-dim);color:var(--green);border:1px solid rgba(0,255,136,0.25);">● LIVE SCB · FY${bchLastFetch.year} · ${liveN} sectors</span>`;
   } else if (bchLastFetch && benchmarkSource === 'cached') {
-    badge.innerHTML = `<span style="font-size:10px;padding:3px 10px;border-radius:3px;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,184,0,0.25);">● CACHED · FY${bchLastFetch.year}</span>`;
+    const cachedLive = bchLastFetch.liveCount || 0;
+    const label = cachedLive > 0 ? `● CACHED · FY${bchLastFetch.year} · ${cachedLive} live` : `● CACHED · FY${bchLastFetch.year}`;
+    badge.innerHTML = `<span style="font-size:10px;padding:3px 10px;border-radius:3px;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,184,0,0.25);">${label}</span>`;
   } else {
     badge.innerHTML = `<span style="font-size:10px;padding:3px 10px;border-radius:3px;background:var(--bg3);color:var(--text3);border:1px solid var(--border);">● BUILT-IN ESTIMATES</span>`;
   }
+  // Also update Compare tab badge if present
+  const cmpBadge = document.getElementById('benchmarkSourceBadge');
+  if (cmpBadge) cmpBadge.innerHTML = badge.innerHTML;
 }
 
 function updateBenchmarkStatusBadge(state, msg) {
