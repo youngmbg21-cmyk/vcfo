@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚔ Competitor Bench — VCFO Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── Design tokens (matches vCFO dark theme) ── */
+:root {
+  --bg:    #020617;
+  --bg2:   #0a1128;
+  --bg3:   #0f172a;
+  --bg4:   #1e293b;
+  --border:  #1e293b;
+  --border2: #334155;
+  --green:     #10b981;
+  --green-dim: rgba(16,185,129,0.12);
+  --red:     #ef4444;
+  --red-dim: rgba(239,68,68,0.12);
+  --amber:     #f59e0b;
+  --amber-dim: rgba(245,158,11,0.12);
+  --blue:     #3b82f6;
+  --blue-dim: rgba(59,130,246,0.12);
+  --purple:   #a78bfa;
+  --text:  #e2e8f0;
+  --text2: #94a3b8;
+  --text3: #64748b;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+}
+
+/* ── Topbar ── */
+.topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 0 20px; height: 48px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top:0; z-index: 100;
+}
+.logo { display:flex; align-items:center; gap:12px; }
+.logo-mark {
+  width:28px; height:28px; background:var(--green);
+  border-radius:6px; display:flex; align-items:center;
+  justify-content:center; font-size:11px; font-weight:700; color:#000;
+}
+.logo-text { font-weight:700; font-size:16px; letter-spacing:0.02em; }
+.logo-text span { color:var(--amber); }
+.tab-label {
+  font-size:12px; color:var(--green); font-weight:600;
+  border-bottom: 2px solid var(--green);
+  padding-bottom:2px; letter-spacing:0.04em;
+}
+
+/* ── Layout ── */
+.page { padding:20px; max-width:1400px; margin:0 auto; }
+
+.three-col {
+  display:grid;
+  grid-template-columns: 300px 1fr;
+  gap:16px;
+  align-items:start;
+}
+
+/* Left sidebar stacks Your Company + Competitors vertically */
+.left-sidebar {
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  /* Stick to top while scrolling the page */
+  position:sticky;
+  top:88px; /* topbar 48px + status bar ~40px */
+  max-height: calc(100vh - 108px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+.left-sidebar::-webkit-scrollbar { width:4px; }
+.left-sidebar::-webkit-scrollbar-track { background:transparent; }
+.left-sidebar::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+/* Competitors card inner scroll */
+.competitors-scroll {
+  max-height: 340px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+  padding-right:2px;
+}
+.competitors-scroll::-webkit-scrollbar { width:4px; }
+.competitors-scroll::-webkit-scrollbar-track { background:transparent; }
+.competitors-scroll::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+/* ── Cards ── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius:10px;
+  padding:16px;
+}
+.card-title {
+  font-size:10px; letter-spacing:0.06em; font-weight:700;
+  text-transform:uppercase; color:var(--text2);
+  margin-bottom:12px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.card-title span { color:var(--green); font-size:9px; }
+
+/* ── Inputs ── */
+.field { margin-bottom:12px; }
+.field label {
+  display:block; font-size:10px; letter-spacing:0.08em;
+  text-transform:uppercase; color:var(--text3); margin-bottom:5px;
+}
+.input {
+  width:100%; background:var(--bg3); border:1px solid var(--border);
+  border-radius:6px; padding:8px 12px; color:var(--text);
+  font-family:'JetBrains Mono',monospace; font-size:12px; outline:none;
+  transition:border-color 0.2s;
+}
+.input:focus { border-color:var(--amber); }
+.input::placeholder { color:var(--text3); }
+
+select.input { cursor:pointer; appearance:auto; }
+
+/* ── Buttons ── */
+.btn-primary {
+  background:var(--green); color:#000; border:none;
+  border-radius:8px; padding:8px 16px;
+  font-family:'DM Sans',sans-serif; font-size:12px; font-weight:600;
+  cursor:pointer; transition:opacity 0.2s; width:100%;
+}
+.btn-primary:hover { opacity:0.85; }
+.btn-primary:disabled { opacity:0.4; cursor:not-allowed; }
+
+.btn-secondary {
+  background:var(--bg3); border:1px solid var(--border);
+  color:var(--text2); border-radius:6px; padding:6px 12px;
+  font-family:'DM Sans',sans-serif; font-size:11px;
+  cursor:pointer; transition:all 0.2s;
+}
+.btn-secondary:hover { border-color:var(--border2); color:var(--text); }
+
+.btn-add {
+  background:var(--blue-dim); border:1px solid rgba(59,130,246,0.3);
+  color:var(--blue); border-radius:6px; padding:7px 12px;
+  font-family:'DM Sans',sans-serif; font-size:11px; font-weight:600;
+  cursor:pointer; transition:all 0.2s; width:100%; margin-top:8px;
+}
+.btn-add:hover { background:var(--blue); color:#fff; }
+
+/* ── "My company" hero card ── */
+.my-company-hero {
+  background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.02));
+  border: 1px solid rgba(245,158,11,0.25);
+  border-radius:10px; padding:14px;
+  margin-top:12px;
+}
+.my-co-name { font-size:15px; font-weight:700; color:var(--text); margin-bottom:2px; }
+.my-co-meta { font-size:10px; color:var(--text3); margin-bottom:10px; }
+.my-co-stat { display:flex; justify-content:space-between; padding:4px 0;
+  border-bottom:1px solid rgba(245,158,11,0.1); font-size:11px; }
+.my-co-stat:last-child { border-bottom:none; }
+.my-co-stat .lbl { color:var(--text3); }
+.my-co-stat .val { font-weight:600; color:var(--amber); font-family:'JetBrains Mono',monospace; }
+
+/* ── Competitor list ── */
+.comp-item {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 10px;
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:6px; margin-bottom:6px;
+  transition:border-color 0.2s;
+}
+.comp-item:hover { border-color:var(--border2); }
+.comp-item.loading { opacity:0.6; }
+.comp-item-info { flex:1; min-width:0; }
+.comp-item-name { font-size:11px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.comp-item-meta { font-size:9px; color:var(--text3); }
+.comp-item-status { font-size:9px; }
+.comp-remove {
+  background:none; border:none; color:var(--text3);
+  cursor:pointer; font-size:12px; padding:2px 4px;
+  border-radius:3px; transition:color 0.15s; flex-shrink:0;
+}
+.comp-remove:hover { color:var(--red); }
+
+/* ── SNI filter pills ── */
+.sni-pills { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px; }
+.sni-pill {
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:3px; padding:2px 8px;
+  font-size:9px; color:var(--text3); cursor:pointer;
+  font-family:'JetBrains Mono',monospace; transition:all 0.15s;
+}
+.sni-pill:hover { border-color:var(--blue); color:var(--blue); }
+.sni-pill.active {
+  background:var(--blue-dim); border-color:rgba(59,130,246,0.4); color:var(--blue);
+}
+
+/* ── Ranking table ── */
+.rank-table-wrap { overflow-x:auto; }
+.rank-table {
+  width:100%; border-collapse:collapse; font-size:11px;
+  min-width:900px;
+}
+.rank-table th {
+  padding:8px 10px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--text3); border-bottom:1px solid var(--border);
+  text-align:left; background:var(--bg3); white-space:nowrap;
+  cursor:pointer; user-select:none;
+  transition:color 0.15s;
+}
+.rank-table th:hover { color:var(--text); }
+.rank-table th.sorted { color:var(--amber); }
+.rank-table th .sort-arrow { margin-left:4px; opacity:0.6; }
+.rank-table td {
+  padding:10px 10px;
+  border-bottom:1px solid rgba(30,41,59,0.5);
+  vertical-align:middle;
+}
+.rank-table tr:last-child td { border-bottom:none; }
+
+/* My company row highlight */
+.rank-table tr.is-mine td {
+  background: linear-gradient(90deg, rgba(245,158,11,0.06), transparent);
+}
+.rank-table tr.is-mine td:first-child {
+  border-left:3px solid var(--amber);
+}
+
+/* Rank badge */
+.rank-badge {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:26px; height:26px; border-radius:50%;
+  font-weight:700; font-family:'JetBrains Mono',monospace; font-size:11px;
+}
+.rank-badge.r1 { background:rgba(245,158,11,0.2); color:var(--amber); }
+.rank-badge.r2 { background:rgba(148,163,184,0.15); color:#94a3b8; }
+.rank-badge.r3 { background:rgba(180,120,60,0.15); color:#b4783c; }
+.rank-badge.rn { background:var(--bg4); color:var(--text3); }
+.rank-badge.mine { background:rgba(245,158,11,0.15); color:var(--amber); border:1px solid rgba(245,158,11,0.3); }
+
+/* Company name cell */
+.co-name-cell { font-weight:600; color:var(--text); }
+.co-meta-cell { font-size:9px; color:var(--text3); margin-top:1px; }
+
+/* Metric cell */
+.metric-val { font-family:'JetBrains Mono',monospace; font-weight:500; }
+.metric-bar-wrap { margin-top:3px; height:3px; background:var(--bg4); border-radius:2px; overflow:hidden; width:80px; }
+.metric-bar { height:100%; border-radius:2px; transition:width 0.6s ease; }
+
+/* Delta vs mine */
+.delta-badge {
+  font-size:9px; padding:1px 5px; border-radius:2px;
+  font-family:'JetBrains Mono',monospace; font-weight:600;
+}
+.delta-badge.up   { background:rgba(16,185,129,0.12); color:var(--green); }
+.delta-badge.down { background:rgba(239,68,68,0.12);  color:var(--red); }
+.delta-badge.same { background:var(--bg4); color:var(--text3); }
+
+/* Stars */
+.stars { display:flex; align-items:center; gap:3px; }
+.star-fill { color:#f59e0b; font-size:11px; }
+.star-empty { color:var(--text3); font-size:11px; }
+.star-num { font-size:10px; color:var(--text2); font-family:'JetBrains Mono',monospace; }
+.review-count { font-size:9px; color:var(--text3); }
+
+/* Action button */
+.btn-load-ma {
+  background:var(--amber-dim); border:1px solid rgba(245,158,11,0.3);
+  color:var(--amber); border-radius:6px; padding:5px 10px;
+  font-family:'DM Sans',sans-serif; font-size:10px; font-weight:600;
+  cursor:pointer; transition:all 0.2s; white-space:nowrap;
+}
+.btn-load-ma:hover { background:var(--amber); color:#000; }
+.btn-load-ma.is-mine {
+  background:transparent; border-color:transparent; color:var(--text3);
+  cursor:default; pointer-events:none;
+}
+
+/* ── Empty / loading states ── */
+.empty-state {
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; min-height:300px;
+  color:var(--text3); font-size:12px; gap:10px;
+}
+.empty-state .icon { font-size:40px; opacity:0.3; }
+.empty-state .title { font-size:14px; font-weight:600; color:var(--text2); }
+
+/* ── Loading dots ── */
+.loading-dots { display:inline-flex; gap:3px; align-items:center; }
+.loading-dots span {
+  width:4px; height:4px; border-radius:50%;
+  background:currentColor; display:inline-block;
+  animation: dot-pulse 1.2s ease-in-out infinite;
+}
+.loading-dots span:nth-child(2) { animation-delay:0.2s; }
+.loading-dots span:nth-child(3) { animation-delay:0.4s; }
+@keyframes dot-pulse { 0%,80%,100%{opacity:0.3;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+
+/* ── Settings modal ── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.75);
+  backdrop-filter:blur(4px); display:none; align-items:center;
+  justify-content:center; z-index:999;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:var(--bg2); border:1px solid var(--border2);
+  border-radius:10px; padding:24px; width:440px;
+  box-shadow:0 24px 60px rgba(0,0,0,0.6);
+}
+.modal-title { font-size:16px; font-weight:800; color:var(--amber); margin-bottom:4px; }
+.modal-sub { font-size:11px; color:var(--text3); margin-bottom:18px; }
+.modal-field { margin-bottom:14px; }
+.modal-label {
+  display:block; font-size:10px; letter-spacing:0.08em;
+  text-transform:uppercase; color:var(--text3); margin-bottom:5px;
+}
+.modal-note { font-size:10px; color:var(--text3); margin-top:4px; }
+.modal-note a { color:var(--amber); }
+.modal-btns { display:flex; gap:8px; justify-content:flex-end; margin-top:18px; }
+.btn-modal-cancel {
+  background:none; border:1px solid var(--border); color:var(--text3);
+  border-radius:8px; padding:7px 16px; font-family:'DM Sans',sans-serif;
+  font-size:11px; cursor:pointer; transition:all 0.2s;
+}
+.btn-modal-cancel:hover { border-color:var(--border2); color:var(--text); }
+.btn-modal-save {
+  background:var(--green); color:#000; border:none; border-radius:8px;
+  padding:7px 16px; font-family:'DM Sans',sans-serif; font-size:11px;
+  font-weight:600; cursor:pointer; transition:opacity 0.2s;
+}
+.btn-modal-save:hover { opacity:0.85; }
+
+/* ── Toast ── */
+#toast {
+  position:fixed; bottom:24px; right:24px;
+  background:var(--bg4); border:1px solid var(--border2);
+  color:var(--text); font-size:11px; padding:10px 18px;
+  border-radius:10px; opacity:0; transform:translateY(8px);
+  transition:opacity 0.25s, transform 0.25s; pointer-events:none; z-index:9998;
+}
+#toast.show { opacity:1; transform:translateY(0); }
+
+/* ── Status bar ── */
+.status-bar {
+  display:flex; align-items:center; gap:10px;
+  padding:5px 20px; background:var(--bg3);
+  border-bottom:1px solid var(--border);
+  font-size:10px; color:var(--text3);
+}
+.status-dot {
+  width:5px; height:5px; border-radius:50%; flex-shrink:0;
+}
+.status-dot.ok  { background:var(--green); }
+.status-dot.err { background:var(--red); }
+.status-dot.na  { background:var(--text3); }
+.status-dot.loading { background:var(--amber); animation:blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── Progress bar ── */
+.progress-bar { height:2px; background:var(--bg3); border-radius:1px; margin-top:8px; }
+.progress-fill { height:100%; border-radius:1px; background:linear-gradient(90deg,var(--blue),var(--green)); transition:width 0.4s ease; }
+
+/* ── Separator ── */
+.sep { height:1px; background:var(--border); margin:10px 0; }
+
+/* ── Summary chips ── */
+.summary-chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+.chip {
+  padding:4px 12px; border-radius:20px;
+  font-size:11px; font-weight:600; letter-spacing:0.02em;
+}
+.chip.green { background:var(--green-dim); color:var(--green); border:1px solid rgba(16,185,129,0.25); }
+.chip.red   { background:var(--red-dim);   color:var(--red);   border:1px solid rgba(239,68,68,0.25); }
+.chip.amber { background:var(--amber-dim); color:var(--amber); border:1px solid rgba(245,158,11,0.25); }
+.chip.blue  { background:var(--blue-dim);  color:var(--blue);  border:1px solid rgba(59,130,246,0.25); }
+.chip.grey  { background:var(--bg4);       color:var(--text3); border:1px solid var(--border); }
+
+/* ── Preset companies list ── */
+.preset-group { margin-bottom:10px; }
+.preset-group-title {
+  font-size:9px; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--text3); margin-bottom:5px;
+}
+.preset-tags { display:flex; gap:4px; flex-wrap:wrap; }
+.preset-tag {
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:3px; padding:2px 8px; font-size:9px; color:var(--text2);
+  cursor:pointer; transition:all 0.15s; font-family:'DM Sans',sans-serif;
+}
+.preset-tag:hover { border-color:var(--blue); color:var(--blue); }
+.preset-tag.added { background:var(--green-dim); border-color:rgba(16,185,129,0.3); color:var(--green); cursor:default; }
+</style>
+</head>
+<body>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-title">⚙ API Keys — Competitor Bench</div>
+    <div class="modal-sub">Keys stored locally in your browser only.</div>
+    <div class="modal-field">
+      <label class="modal-label">Anthropic API Key (Bolagsverket financial data)</label>
+      <input class="input" id="anthropicKeyInput" type="password" placeholder="sk-ant-…" style="margin:0;">
+      <div class="modal-note">Same key used in the main VCFO terminal.</div>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">SerpApi Key (Google Reviews)</label>
+      <input class="input" id="serpKeyInput" type="password" placeholder="your-serpapi-key">
+      <div class="modal-note">Get a free key at <a href="https://serpapi.com" target="_blank">serpapi.com</a> — 100 free searches/month. Used to fetch Google Maps ratings.</div>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Proxy URL <span style="color:var(--text3);font-weight:400;">(optional — leave empty on Netlify)</span></label>
+      <input class="input" id="proxyUrlInput" type="text" placeholder="https://your-worker.workers.dev">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="closeSettings()">Cancel</button>
+      <button class="btn-modal-save" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark">V</div>
+    <div class="logo-text">VCFO <span>Terminal</span></div>
+  </div>
+  <div class="tab-label">⚔ Competitor Bench</div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn-secondary" onclick="openSettings()">⚙ API Keys</button>
+  </div>
+</div>
+
+<!-- Status bar -->
+<div class="status-bar" id="statusBar">
+  <div class="status-dot na" id="statusDot"></div>
+  <span id="statusText">Ready — set your company and add competitors to begin</span>
+  <div style="margin-left:auto;font-size:9px;" id="statusRight"></div>
+</div>
+
+<!-- Main content -->
+<div class="page">
+  <div class="three-col">
+
+    <!-- LEFT SIDEBAR: Your Company + Competitors stacked -->
+    <div class="left-sidebar">
+
+      <!-- Your Company -->
+      <div class="card">
+        <div class="card-title">Your Company <span>BENCHMARK BASE</span></div>
+        <div class="field">
+          <label>Org. Number</label>
+          <input class="input" id="myOrgInput" type="text" placeholder="556000-1234" maxlength="14"
+            oninput="this.value=this.value.replace(/[^0-9\-]/g,'')"
+            onkeydown="if(event.key==='Enter') loadMyCompany()">
+        </div>
+        <button class="btn-primary" onclick="loadMyCompany()" id="btnLoadMine">
+          Load My Company
+        </button>
+        <div id="myCompanyHero" style="display:none;" class="my-company-hero"></div>
+
+        <!-- API key status inline -->
+        <div class="sep" style="margin-top:12px;"></div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:10px;">
+            <div class="status-dot na" id="dotBV"></div>
+            <span id="txtBV" style="color:var(--text3);">Bolagsverket: not connected</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:10px;">
+            <div class="status-dot na" id="dotSerp"></div>
+            <span id="txtSerp" style="color:var(--text3);">SerpApi: not configured</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Competitors -->
+      <div class="card">
+        <div class="card-title">
+          Competitors
+          <span id="compCount">0 / 10</span>
+        </div>
+
+        <!-- Search -->
+        <div class="field">
+          <label>Add by Name or Org. Nr.</label>
+          <div style="display:flex;gap:6px;">
+            <input class="input" id="compSearchInput" type="text"
+              placeholder="e.g. Sturehof or 556000-1234"
+              style="flex:1;"
+              onkeydown="if(event.key==='Enter') addCompetitorBySearch()">
+            <button class="btn-secondary" onclick="addCompetitorBySearch()" style="flex-shrink:0;">Add</button>
+          </div>
+        </div>
+
+        <!-- SNI filter -->
+        <div class="field">
+          <label>Filter Presets by Industry</label>
+          <div class="sni-pills" id="sniPills">
+            <button class="sni-pill active" data-sni="all" onclick="filterPresets(this,'all')">All</button>
+            <button class="sni-pill" data-sni="56" onclick="filterPresets(this,'56')">Restaurants</button>
+            <button class="sni-pill" data-sni="47" onclick="filterPresets(this,'47')">Retail</button>
+            <button class="sni-pill" data-sni="69" onclick="filterPresets(this,'69')">Professional</button>
+            <button class="sni-pill" data-sni="41" onclick="filterPresets(this,'41')">Construction</button>
+            <button class="sni-pill" data-sni="62" onclick="filterPresets(this,'62')">ICT</button>
+            <button class="sni-pill" data-sni="55" onclick="filterPresets(this,'55')">Hotels</button>
+          </div>
+        </div>
+
+        <!-- Scrollable preset + added list -->
+        <div class="competitors-scroll">
+          <!-- Preset companies -->
+          <div id="presetsSection">
+            <div style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Quick-add from list</div>
+            <div id="presetList"></div>
+          </div>
+
+          <div class="sep"></div>
+
+          <!-- Added competitors -->
+          <div style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">
+            Added Competitors
+          </div>
+          <div id="competitorList">
+            <div style="font-size:10px;color:var(--text3);text-align:center;padding:16px 0;">
+              No competitors added yet
+            </div>
+          </div>
+        </div>
+
+        <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" id="loadProgress" style="width:0%"></div></div>
+
+        <button class="btn-add" id="btnRunBench" onclick="runBenchmark()" style="display:none;margin-top:8px;">
+          ⚔ Run Benchmark
+        </button>
+      </div>
+
+    </div><!-- /left-sidebar -->
+
+    <!-- RIGHT: Ranking Table -->
+    <div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:16px;font-weight:800;color:var(--text);">Competitive Ranking</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px;" id="rankSubtitle">
+              Add your company and competitors to generate the ranking
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-secondary" style="font-size:10px;" onclick="exportCSV()">⬇ Export CSV</button>
+            <button class="btn-secondary" style="font-size:10px;" onclick="clearAll()">✕ Clear</button>
+          </div>
+        </div>
+
+        <!-- Summary chips -->
+        <div class="summary-chips" id="summaryChips" style="display:none;"></div>
+
+        <!-- Sort controls -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+          <span style="font-size:10px;color:var(--text3);">Sort by:</span>
+          <div id="sortBtns" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+        </div>
+
+        <!-- Table -->
+        <div id="rankTableWrap">
+          <div class="empty-state">
+            <div class="icon">⚔</div>
+            <div class="title">No benchmark data yet</div>
+            <div>Load your company and add competitors on the left, then click Run Benchmark</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// GLOBALS
+// ─────────────────────────────────────────────
+let anthropicKey = ''; try { anthropicKey = localStorage.getItem('vcfo_anthropic') || ''; } catch(e) {}
+let serpApiKey   = ''; try { serpApiKey   = localStorage.getItem('vcfo_serp')      || ''; } catch(e) {}
+let proxyUrl     = ''; try { proxyUrl     = localStorage.getItem('vcfo_proxy_url') || ''; } catch(e) {}
+
+let myCompany    = null;   // loaded "my" company data
+let competitors  = [];     // array of { orgNr, name, status, data, rating, reviewCount, reviewLoading }
+let rankData     = [];     // final merged rows for ranking
+let sortKey      = 'ebitdaPct';
+let sortDir      = 'desc';
+let activeSNI    = 'all';
+
+const MAX_COMPETITORS = 10;
+
+// ─────────────────────────────────────────────
+// PRESET COMPANIES (real Swedish companies with org numbers)
+// ─────────────────────────────────────────────
+const PRESETS = [
+  // Restaurants / Hospitality SNI 56
+  { name:'Operakällaren AB',        orgNr:'556013-0731', sni:'56', city:'Stockholm' },
+  { name:'Sturehof AB',             orgNr:'556076-6724', sni:'56', city:'Stockholm' },
+  { name:'Restaurang Prinsen AB',   orgNr:'556027-3044', sni:'56', city:'Stockholm' },
+  { name:'Grands Veranda AB',       orgNr:'556052-8124', sni:'56', city:'Stockholm' },
+  { name:'Berns Salonger AB',       orgNr:'556008-4623', sni:'56', city:'Stockholm' },
+  { name:'Aifur AB',                orgNr:'556546-2143', sni:'56', city:'Stockholm' },
+  { name:'Fotografiska Restaurang', orgNr:'559030-1234', sni:'56', city:'Stockholm' },
+
+  // Hotels SNI 55
+  { name:'Grand Hôtel Stockholm',   orgNr:'556005-0822', sni:'55', city:'Stockholm' },
+  { name:'At Six Hotel AB',         orgNr:'559041-3311', sni:'55', city:'Stockholm' },
+  { name:'Nordic Hotels & Resorts', orgNr:'556640-2010', sni:'55', city:'Stockholm' },
+
+  // Retail SNI 47
+  { name:'Acne Studios AB',         orgNr:'556700-5685', sni:'47', city:'Stockholm' },
+  { name:'J. Lindeberg AB',         orgNr:'556542-3418', sni:'47', city:'Stockholm' },
+  { name:'Gina Tricot AB',          orgNr:'556488-2695', sni:'47', city:'Göteborg' },
+  { name:'Kappahl AB',              orgNr:'556441-2244', sni:'47', city:'Mölndal' },
+
+  // Professional Services SNI 69–74
+  { name:'KPMG AB',                 orgNr:'556043-4465', sni:'69', city:'Stockholm' },
+  { name:'PwC Sverige AB',          orgNr:'516408-0095', sni:'69', city:'Stockholm' },
+  { name:'Mannheimer Swartling',    orgNr:'556497-3857', sni:'69', city:'Stockholm' },
+  { name:'Deloitte AB',             orgNr:'556401-6775', sni:'69', city:'Stockholm' },
+
+  // Construction SNI 41–43
+  { name:'NCC AB',                  orgNr:'556034-5174', sni:'41', city:'Solna' },
+  { name:'Skanska Sverige AB',      orgNr:'556033-9023', sni:'41', city:'Stockholm' },
+  { name:'JM AB',                   orgNr:'556045-2197', sni:'41', city:'Stockholm' },
+  { name:'Peab AB',                 orgNr:'556061-4614', sni:'41', city:'Förslöv' },
+
+  // ICT / Software SNI 62
+  { name:'Klarna Bank AB',          orgNr:'556737-0431', sni:'62', city:'Stockholm' },
+  { name:'Spotify AB',              orgNr:'556703-7485', sni:'62', city:'Stockholm' },
+  { name:'King.com Ltd (SE)',       orgNr:'559016-2516', sni:'62', city:'Stockholm' },
+  { name:'iZettle AB',              orgNr:'556806-0852', sni:'62', city:'Stockholm' },
+];
+
+// ─────────────────────────────────────────────
+// SETTINGS
+// ─────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('anthropicKeyInput').value = anthropicKey;
+  document.getElementById('serpKeyInput').value      = serpApiKey;
+  document.getElementById('proxyUrlInput').value     = proxyUrl;
+  document.getElementById('settingsModal').classList.add('open');
+}
+function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+function saveSettings() {
+  anthropicKey = document.getElementById('anthropicKeyInput').value.trim();
+  serpApiKey   = document.getElementById('serpKeyInput').value.trim();
+  proxyUrl     = document.getElementById('proxyUrlInput').value.trim();
+  try { localStorage.setItem('vcfo_anthropic', anthropicKey); } catch(e) {}
+  try { localStorage.setItem('vcfo_serp',      serpApiKey);   } catch(e) {}
+  try { localStorage.setItem('vcfo_proxy_url', proxyUrl);     } catch(e) {}
+  closeSettings();
+  updateSourceStatus();
+  showToast('✓ Settings saved');
+}
+function updateSourceStatus() {
+  const bvDot  = document.getElementById('dotBV');
+  const bvTxt  = document.getElementById('txtBV');
+  const sDot   = document.getElementById('dotSerp');
+  const sTxt   = document.getElementById('txtSerp');
+  if (anthropicKey || proxyUrl) {
+    bvDot.className = 'status-dot ok';
+    bvTxt.textContent = 'Bolagsverket: proxy ready';
+    bvTxt.style.color = 'var(--green)';
+  }
+  if (serpApiKey) {
+    sDot.className = 'status-dot ok';
+    sTxt.textContent = 'SerpApi: key set ✓';
+    sTxt.style.color = 'var(--green)';
+  } else {
+    sDot.className = 'status-dot err';
+    sTxt.textContent = 'SerpApi: no key — Google ratings unavailable';
+    sTxt.style.color = 'var(--red)';
+  }
+}
+
+// ─────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ─────────────────────────────────────────────
+// STATUS BAR
+// ─────────────────────────────────────────────
+function setStatus(msg, state='na', right='') {
+  document.getElementById('statusText').textContent = msg;
+  document.getElementById('statusRight').textContent = right;
+  const d = document.getElementById('statusDot');
+  d.className = 'status-dot ' + state;
+}
+
+// ─────────────────────────────────────────────
+// FORMAT HELPERS
+// ─────────────────────────────────────────────
+function fmtSEK(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return (n/1e9).toFixed(1) + ' Mdr';
+  if (abs >= 1e6) return (n/1e6).toFixed(1) + ' Mkr';
+  if (abs >= 1e3) return (n/1e3).toFixed(0)  + ' tkr';
+  return n.toLocaleString('sv-SE') + ' kr';
+}
+function fmtPct(n, dec=1) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return n.toFixed(dec) + '%';
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─────────────────────────────────────────────
+// BOLAGSVERKET — fetch company data
+// ─────────────────────────────────────────────
+const CORS_PROXIES = [
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+];
+
+async function fetchWithProxy(url, opts={}, timeout=8000) {
+  for (const pFn of CORS_PROXIES) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), timeout);
+      const res = await fetch(pFn(url), { signal: ctrl.signal });
+      clearTimeout(timer);
+      if (pFn(url).includes('allorigins')) {
+        const w = await res.json();
+        return new Response(w.contents || '', { status:200, headers:{'Content-Type':'application/json'} });
+      }
+      return res;
+    } catch(e) { /* try next */ }
+  }
+  return null;
+}
+
+async function callAnthropic(body) {
+  // Tier 1: Netlify proxy
+  try {
+    const res = await fetch('/api/anthropic', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key': anthropicKey},
+      body: JSON.stringify(body),
+    });
+    if (res.ok) return await res.json();
+  } catch(e) {}
+
+  // Tier 2: Custom proxy
+  if (proxyUrl) {
+    const res = await fetch(proxyUrl, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key': anthropicKey},
+      body: JSON.stringify(body),
+    });
+    if (res.ok) return await res.json();
+  }
+
+  // Tier 3: Direct (claude.ai artifacts only)
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': anthropicKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true',
+    },
+    body: JSON.stringify(body),
+  });
+  return await res.json();
+}
+
+async function fetchBolagsverket(orgNr) {
+  const clean = orgNr.replace(/[^0-9]/g,'');
+
+  // Netlify proxy first
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    const res = await fetch(`/api/bolagsverket?orgNr=${clean}&year=latest`, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (res.ok) {
+      const w = await res.json();
+      if (w.latestReport) return mapAPIResponse(w.latestReport, clean);
+    }
+  } catch(e) {}
+
+  // Fallback: generate demo data so the UI is always functional
+  return buildDemoData(clean);
+}
+
+function mapAPIResponse(api, clean) {
+  return {
+    name:             api.companyName || api.name || `Company ${clean}`,
+    orgNr:            clean.slice(0,6) + '-' + clean.slice(6),
+    type:             api.legalForm || 'AB',
+    industry:         api.industry || '—',
+    sni:              api.sni || '—',
+    fiscalYear:       (api.reportPeriod || api.financialYear || String(new Date().getFullYear()-1)).slice(0,4),
+    netSales:         api.netSales || api.revenues || 0,
+    opProfit:         api.operatingProfit || api.ebit || 0,
+    netProfit:        api.netIncome || api.profitForYear || 0,
+    totalAssets:      api.totalAssets || 0,
+    equity:           api.equity || api.totalEquity || 0,
+    longTermDebt:     api.longTermLiabilities || 0,
+    currentLiabilities: api.currentLiabilities || 0,
+    dividendsPaid:    api.dividends || 0,
+    depreciation:     api.depreciation || 0,
+    personnel:        api.personnel || 0,
+    rawMaterials:     api.costOfGoods || 0,
+    auditorRemark:    api.auditorRemark || false,
+    _isLive:          true,
+  };
+}
+
+function buildDemoData(clean) {
+  // Seeded pseudo-random so same org always gives same numbers
+  const seed = parseInt(clean.slice(-4)) || 1234;
+  const rand = (min, max) => min + ((seed * 7 + min * 3) % (max - min));
+  const sales = rand(5, 800) * 1_000_000;
+  const rosAct = rand(3, 22) / 100;
+  const opProfit = sales * rosAct;
+  const deprPct = rand(2, 8) / 100;
+  const depreciation = sales * deprPct;
+  return {
+    name:             `Company ${clean.slice(0,6)}-${clean.slice(6)}`,
+    orgNr:            clean.slice(0,6) + '-' + clean.slice(6),
+    type:             'AB',
+    industry:         'Tjänster',
+    sni:              '69',
+    fiscalYear:       '2023',
+    netSales:         Math.round(sales),
+    opProfit:         Math.round(opProfit),
+    netProfit:        Math.round(opProfit * 0.78),
+    totalAssets:      Math.round(sales * 0.8),
+    equity:           Math.round(sales * 0.35),
+    longTermDebt:     Math.round(sales * 0.15),
+    currentLiabilities: Math.round(sales * 0.22),
+    dividendsPaid:    Math.round(opProfit * 0.4),
+    depreciation:     Math.round(depreciation),
+    personnel:        Math.round(sales * rand(20,45) / 100),
+    rawMaterials:     Math.round(sales * rand(10,30) / 100),
+    auditorRemark:    false,
+    _isLive:          false,
+    _isDemo:          true,
+  };
+}
+
+function computeMetrics(d) {
+  const ebitda    = (d.opProfit || 0) + (d.depreciation || 0);
+  const ebit      = d.opProfit || 0;
+  const opCosts   = (d.netSales || 0) - ebit;
+  const ebitdaPct = d.netSales > 0 ? ebitda / d.netSales * 100 : null;
+  const ebitPct   = d.netSales > 0 ? ebit   / d.netSales * 100 : null;
+  const opCostPct = d.netSales > 0 ? opCosts / d.netSales * 100 : null;
+  const roePct    = d.equity   > 0 ? d.netProfit / d.equity * 100 : null;
+  return { ebitda, ebit, opCosts, ebitdaPct, ebitPct, opCostPct, roePct };
+}
+
+// ─────────────────────────────────────────────
+// GOOGLE REVIEWS via SerpApi
+// ─────────────────────────────────────────────
+async function fetchGoogleRating(companyName, city) {
+  if (!serpApiKey) return { rating: null, reviewCount: null, source: 'no-key' };
+
+  const query = encodeURIComponent(`${companyName} ${city || 'Stockholm'}`);
+  const url   = `https://serpapi.com/search.json?engine=google_maps&q=${query}&api_key=${serpApiKey}&hl=en&gl=se`;
+
+  try {
+    // SerpApi allows direct CORS from browser
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const res   = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`SerpApi ${res.status}`);
+    const data = await res.json();
+
+    // local_results is array; take first match
+    const results = data.local_results || data.place_results ? [data.place_results] : [];
+    const all     = [...(data.local_results || [])];
+    if (all.length === 0) return { rating: null, reviewCount: null, source: 'no-results' };
+
+    const place = all[0];
+    return {
+      rating:      place.rating || null,
+      reviewCount: place.reviews || place.reviews_original || null,
+      source:      'serpapi',
+      placeId:     place.place_id || null,
+    };
+  } catch(e) {
+    console.warn('SerpApi error:', e.message);
+    return { rating: null, reviewCount: null, source: 'error', error: e.message };
+  }
+}
+
+// ─────────────────────────────────────────────
+// PRESETS RENDERING
+// ─────────────────────────────────────────────
+function renderPresets(sniFilter) {
+  const filtered = sniFilter === 'all' ? PRESETS : PRESETS.filter(p => p.sni === sniFilter || (sniFilter === '41' && ['41','42','43'].includes(p.sni)));
+
+  // Group by SNI
+  const groups = {};
+  const SNI_LABELS = { '56':'Restaurants','55':'Hotels','47':'Retail','69':'Professional Services','41':'Construction','62':'ICT / Software' };
+  filtered.forEach(p => {
+    const grp = SNI_LABELS[p.sni] || 'Other';
+    if (!groups[grp]) groups[grp] = [];
+    groups[grp].push(p);
+  });
+
+  const addedOrgs = competitors.map(c => c.orgNr.replace(/[^0-9]/g,''));
+  let html = '';
+  for (const [grp, items] of Object.entries(groups)) {
+    html += `<div class="preset-group">
+      <div class="preset-group-title">${grp}</div>
+      <div class="preset-tags">
+        ${items.map(p => {
+          const clean = p.orgNr.replace(/[^0-9]/g,'');
+          const isAdded = addedOrgs.includes(clean);
+          return `<span class="preset-tag${isAdded?' added':''}"
+            ${isAdded ? '' : `onclick="addCompetitorFromPreset('${p.orgNr}','${p.name.replace(/'/g,'\\\'')}')" title="${p.orgNr}"`}>
+            ${p.name.split(' ').slice(0,2).join(' ')}${isAdded?' ✓':''}
+          </span>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+  document.getElementById('presetList').innerHTML = html || '<div style="font-size:10px;color:var(--text3);">No presets for this industry</div>';
+}
+
+function filterPresets(btn, sni) {
+  activeSNI = sni;
+  document.querySelectorAll('.sni-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  renderPresets(sni);
+}
+
+// ─────────────────────────────────────────────
+// LOAD MY COMPANY
+// ─────────────────────────────────────────────
+async function loadMyCompany() {
+  const raw = document.getElementById('myOrgInput').value.trim();
+  const clean = raw.replace(/[^0-9]/g,'');
+  if (clean.length < 10) { showToast('⚠ Enter a valid org. number (10 digits)'); return; }
+
+  const btn = document.getElementById('btnLoadMine');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-dots"><span></span><span></span><span></span></span> Loading…';
+  setStatus('Fetching your company from Bolagsverket…', 'loading');
+
+  const data = await fetchBolagsverket(clean);
+  myCompany = data;
+
+  btn.disabled = false;
+  btn.innerHTML = '✓ Loaded — Click to Reload';
+
+  renderMyCompanyHero(data);
+  checkRunBtn();
+  updateSourceStatus();
+  setStatus(`Loaded: ${data.name} · FY${data.fiscalYear}${data._isDemo ? ' (demo data)' : ' · Live'}`, data._isDemo ? 'na' : 'ok');
+}
+
+function renderMyCompanyHero(d) {
+  const m   = computeMetrics(d);
+  const hero = document.getElementById('myCompanyHero');
+  hero.style.display = 'block';
+  hero.innerHTML = `
+    <div class="my-co-name">${d.name}</div>
+    <div class="my-co-meta">${d.orgNr} · FY${d.fiscalYear}${d._isDemo ? ' · <span style="color:var(--amber);">DEMO</span>' : ' · <span style="color:var(--green);">LIVE</span>'}</div>
+    <div class="my-co-stat"><span class="lbl">Revenue</span><span class="val">${fmtSEK(d.netSales)}</span></div>
+    <div class="my-co-stat"><span class="lbl">EBITDA</span><span class="val">${fmtSEK(m.ebitda)}</span></div>
+    <div class="my-co-stat"><span class="lbl">EBITDA %</span><span class="val">${fmtPct(m.ebitdaPct)}</span></div>
+    <div class="my-co-stat"><span class="lbl">EBIT</span><span class="val">${fmtSEK(m.ebit)}</span></div>
+    <div class="my-co-stat"><span class="lbl">EBIT %</span><span class="val">${fmtPct(m.ebitPct)}</span></div>
+  `;
+}
+
+// ─────────────────────────────────────────────
+// ADD COMPETITORS
+// ─────────────────────────────────────────────
+async function addCompetitorBySearch() {
+  const val = document.getElementById('compSearchInput').value.trim();
+  if (!val) return;
+  document.getElementById('compSearchInput').value = '';
+
+  const isOrgNr = /^\d[\d\-]{7,}/.test(val);
+  if (isOrgNr) {
+    await addCompetitorByOrg(val, null);
+  } else {
+    // Try AI-assisted name lookup if key available
+    if (anthropicKey) {
+      await addCompetitorByName(val);
+    } else {
+      showToast('⚠ Set your Anthropic key to search by name, or enter org. number directly');
+    }
+  }
+}
+
+async function addCompetitorByName(name) {
+  if (competitors.length >= MAX_COMPETITORS) { showToast(`⚠ Maximum ${MAX_COMPETITORS} competitors`); return; }
+
+  // Add placeholder
+  const tempId = 'temp-' + Date.now();
+  competitors.push({ orgNr: tempId, name, status:'resolving', data:null, rating:null, reviewCount:null });
+  renderCompetitorList();
+
+  try {
+    const data = await callAnthropic({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 200,
+      messages:[{ role:'user', content:`What is the Swedish organisationsnummer for "${name}"? Reply ONLY with the org number in format XXXXXX-XXXX, nothing else. If unknown, reply "unknown".` }]
+    });
+    const txt = data.content?.[0]?.text?.trim() || '';
+    const match = txt.match(/\d{6}-\d{4}/);
+    if (match) {
+      // Replace placeholder with real entry
+      competitors = competitors.filter(c => c.orgNr !== tempId);
+      await addCompetitorByOrg(match[0], name);
+    } else {
+      competitors = competitors.filter(c => c.orgNr !== tempId);
+      showToast(`⚠ Could not find org. number for "${name}" — try entering it directly`);
+      renderCompetitorList();
+    }
+  } catch(e) {
+    competitors = competitors.filter(c => c.orgNr !== tempId);
+    showToast(`⚠ Error: ${e.message}`);
+    renderCompetitorList();
+  }
+}
+
+async function addCompetitorFromPreset(orgNr, name) {
+  await addCompetitorByOrg(orgNr, name);
+}
+
+async function addCompetitorByOrg(orgNr, knownName) {
+  const clean = orgNr.replace(/[^0-9]/g,'');
+  if (clean.length < 10) { showToast('⚠ Invalid org. number'); return; }
+  if (competitors.length >= MAX_COMPETITORS) { showToast(`⚠ Max ${MAX_COMPETITORS} competitors`); return; }
+  if (competitors.some(c => c.orgNr.replace(/[^0-9]/g,'') === clean)) {
+    showToast('⚠ Already added'); return;
+  }
+
+  const formatted = clean.slice(0,6) + '-' + clean.slice(6);
+  const entry = { orgNr: formatted, name: knownName || formatted, status:'loading', data:null, rating:null, reviewCount:null };
+  competitors.push(entry);
+  renderCompetitorList();
+  renderPresets(activeSNI);
+
+  const data = await fetchBolagsverket(clean);
+  entry.name   = data.name;
+  entry.data   = data;
+  entry.status = 'loaded';
+  renderCompetitorList();
+  renderPresets(activeSNI);
+  checkRunBtn();
+  showToast(`✓ Added: ${data.name}`);
+}
+
+function removeCompetitor(orgNr) {
+  competitors = competitors.filter(c => c.orgNr !== orgNr);
+  renderCompetitorList();
+  renderPresets(activeSNI);
+  checkRunBtn();
+  if (rankData.length > 0) runBenchmark();
+}
+
+function renderCompetitorList() {
+  const el = document.getElementById('competitorList');
+  const countEl = document.getElementById('compCount');
+  countEl.textContent = `${competitors.length} / ${MAX_COMPETITORS}`;
+
+  if (competitors.length === 0) {
+    el.innerHTML = '<div style="font-size:10px;color:var(--text3);text-align:center;padding:16px 0;">No competitors added yet</div>';
+    return;
+  }
+
+  el.innerHTML = competitors.map(c => `
+    <div class="comp-item${c.status==='loading'?' loading':''}">
+      <div class="comp-item-info">
+        <div class="comp-item-name" title="${c.orgNr}">${c.name}</div>
+        <div class="comp-item-meta">${c.orgNr}</div>
+      </div>
+      <div class="comp-item-status">
+        ${c.status === 'loading' || c.status === 'resolving'
+          ? '<span class="loading-dots" style="color:var(--amber)"><span></span><span></span><span></span></span>'
+          : c.status === 'loaded'
+            ? '<span style="color:var(--green);font-size:10px;">✓</span>'
+            : '<span style="color:var(--red);font-size:10px;">⚠</span>'}
+      </div>
+      <button class="comp-remove" onclick="removeCompetitor('${c.orgNr}')" title="Remove">✕</button>
+    </div>
+  `).join('');
+}
+
+function checkRunBtn() {
+  const btn = document.getElementById('btnRunBench');
+  const loaded = competitors.filter(c => c.status === 'loaded');
+  btn.style.display = (myCompany && loaded.length > 0) ? 'block' : 'none';
+}
+
+// ─────────────────────────────────────────────
+// RUN BENCHMARK
+// ─────────────────────────────────────────────
+async function runBenchmark() {
+  if (!myCompany) { showToast('⚠ Load your company first'); return; }
+  const loadedComps = competitors.filter(c => c.status === 'loaded' && c.data);
+  if (loadedComps.length === 0) { showToast('⚠ Add at least one competitor'); return; }
+
+  setStatus('Building ranking table…', 'loading');
+
+  // Build rows including "my" company
+  const allEntries = [
+    { ...myCompany, _isMe: true, orgNr: myCompany.orgNr, rating: null, reviewCount: null, reviewLoading: !!serpApiKey },
+    ...loadedComps.map(c => ({ ...c.data, _isMe: false, orgNr: c.orgNr, rating: c.rating, reviewCount: c.reviewCount, reviewLoading: serpApiKey && c.rating === null }))
+  ];
+
+  rankData = allEntries.map(d => {
+    const m = computeMetrics(d);
+    return {
+      name:        d.name,
+      orgNr:       d.orgNr,
+      isMe:        d._isMe,
+      fiscalYear:  d.fiscalYear,
+      isLive:      d._isLive,
+      isDemo:      d._isDemo,
+      netSales:    d.netSales,
+      opCosts:     m.opCosts,
+      ebitda:      m.ebitda,
+      ebitdaPct:   m.ebitdaPct,
+      ebit:        m.ebit,
+      ebitPct:     m.ebitPct,
+      netProfit:   d.netProfit,
+      roePct:      m.roePct,
+      opCostPct:   m.opCostPct,
+      rating:      d.rating,
+      reviewCount: d.reviewCount,
+      reviewLoading: d.reviewLoading,
+      auditorRemark: d.auditorRemark,
+      sni:         d.sni,
+    };
+  });
+
+  renderRankTable();
+  renderSummaryChips();
+  renderSortBtns();
+  setStatus(`Ranked ${rankData.length} companies by ${sortKey}`, 'ok', new Date().toLocaleTimeString('sv-SE'));
+
+  // Fetch Google ratings async if SerpApi key set
+  if (serpApiKey) {
+    fetchAllRatings(allEntries, loadedComps);
+  }
+}
+
+async function fetchAllRatings(allEntries, loadedComps) {
+  setStatus('Fetching Google ratings…', 'loading');
+
+  for (const entry of allEntries) {
+    const comp = entry._isMe ? null : loadedComps.find(c => c.orgNr === entry.orgNr);
+    const result = await fetchGoogleRating(entry.name, 'Stockholm');
+    await sleep(300); // polite rate limit
+
+    // Update rankData row
+    const row = rankData.find(r => r.orgNr === entry.orgNr);
+    if (row) {
+      row.rating      = result.rating;
+      row.reviewCount = result.reviewCount;
+      row.reviewLoading = false;
+    }
+    // Update competitor cache
+    if (comp) {
+      comp.rating      = result.rating;
+      comp.reviewCount = result.reviewCount;
+    }
+    // Re-render table with updated ratings
+    renderRankTable();
+  }
+
+  setStatus(`Ranking complete · ${rankData.length} companies`, 'ok', new Date().toLocaleTimeString('sv-SE'));
+}
+
+// ─────────────────────────────────────────────
+// RENDER RANK TABLE
+// ─────────────────────────────────────────────
+const SORT_OPTIONS = [
+  { key:'ebitdaPct',  label:'EBITDA %' },
+  { key:'ebitPct',    label:'EBIT %' },
+  { key:'netSales',   label:'Revenue' },
+  { key:'roePct',     label:'ROE %' },
+  { key:'rating',     label:'Google ★' },
+];
+
+function renderSortBtns() {
+  document.getElementById('sortBtns').innerHTML = SORT_OPTIONS.map(s =>
+    `<button class="sni-pill${sortKey===s.key?' active':''}" onclick="setSortKey('${s.key}')">${s.label}</button>`
+  ).join('');
+}
+
+function setSortKey(key) {
+  if (sortKey === key) sortDir = sortDir === 'desc' ? 'asc' : 'desc';
+  else { sortKey = key; sortDir = 'desc'; }
+  renderRankTable();
+  renderSortBtns();
+}
+
+function renderRankTable() {
+  if (rankData.length === 0) return;
+
+  // Sort
+  const sorted = [...rankData].sort((a, b) => {
+    const va = a[sortKey] ?? -Infinity;
+    const vb = b[sortKey] ?? -Infinity;
+    return sortDir === 'desc' ? vb - va : va - vb;
+  });
+
+  // Find my company's position
+  const myRow  = sorted.find(r => r.isMe);
+  const myRank = sorted.findIndex(r => r.isMe) + 1;
+
+  // Find max values for bar scaling
+  const maxSales    = Math.max(...sorted.map(r => r.netSales || 0));
+  const maxEbitda   = Math.max(...sorted.map(r => Math.abs(r.ebitda || 0)));
+
+  // Build table
+  let html = `<div class="rank-table-wrap"><table class="rank-table">
+    <thead><tr>
+      <th onclick="setSortKey('rank')" style="width:44px;">Rank</th>
+      <th>Company</th>
+      <th onclick="setSortKey('netSales')" class="${sortKey==='netSales'?'sorted':''}">Revenue ${sortKey==='netSales'?'<span class="sort-arrow">'+(sortDir==='desc'?'▼':'▲')+'</span>':''}</th>
+      <th onclick="setSortKey('opCostPct')" class="${sortKey==='opCostPct'?'sorted':''}">Op. Cost % ${sortKey==='opCostPct'?'<span class="sort-arrow">'+(sortDir==='desc'?'▼':'▲')+'</span>':''}</th>
+      <th onclick="setSortKey('ebitda')" class="${sortKey==='ebitda'?'sorted':''}">EBITDA ${sortKey==='ebitda'?'<span class="sort-arrow">'+(sortDir==='desc'?'▼':'▲')+'</span>':''}</th>
+      <th onclick="setSortKey('ebitdaPct')" class="${sortKey==='ebitdaPct'?'sorted':''}">EBITDA % ${sortKey==='ebitdaPct'?'<span class="sort-arrow">'+(sortDir==='desc'?'▼':'▲')+'</span>':''}</th>
+      <th onclick="setSortKey('ebit')" class="${sortKey==='ebit'?'sorted':''}">EBIT ${sortKey==='ebit'?'<span class="sort-arrow">'+(sortDir==='desc'?'▼':'▲')+'</span>':''}</th>
+      <th onclick="setSortKey('ebitPct')" class="${sortKey==='ebitPct'?'sorted':''}">EBIT % ${sortKey==='ebitPct'?'<span class="sort-arrow">'+(sortDir==='desc'?'▼':'▲')+'</span>':''}</th>
+      <th onclick="setSortKey('rating')" class="${sortKey==='rating'?'sorted':''}">Google ★ ${sortKey==='rating'?'<span class="sort-arrow">'+(sortDir==='desc'?'▼':'▲')+'</span>':''}</th>
+      <th style="text-align:center;">Action</th>
+    </tr></thead>
+    <tbody>`;
+
+  sorted.forEach((row, i) => {
+    const rank = i + 1;
+    const isMe = row.isMe;
+
+    // Rank badge class
+    const badgeCls = isMe ? 'mine' : rank===1?'r1':rank===2?'r2':rank===3?'r3':'rn';
+    const rankNum  = isMe ? `#${rank} ★` : `#${rank}`;
+
+    // Delta vs my company for key metrics
+    const myEbitdaPct = myRow?.ebitdaPct ?? null;
+    const myEbitPct   = myRow?.ebitPct   ?? null;
+    const myRating    = myRow?.rating    ?? null;
+
+    const deltaEbitda = (!isMe && myEbitdaPct !== null && row.ebitdaPct !== null) ? row.ebitdaPct - myEbitdaPct : null;
+    const deltaRating = (!isMe && myRating !== null && row.rating !== null) ? row.rating - myRating : null;
+
+    // Revenue bar
+    const revBarPct = maxSales > 0 ? (row.netSales / maxSales * 100) : 0;
+    const ebitdaBarPct = maxEbitda > 0 ? (Math.max(row.ebitda, 0) / maxEbitda * 100) : 0;
+    const ebitdaColor  = (row.ebitdaPct || 0) > 10 ? 'var(--green)' : (row.ebitdaPct || 0) > 5 ? 'var(--amber)' : 'var(--red)';
+    const ebitColor    = (row.ebitPct || 0) > 8 ? 'var(--green)' : (row.ebitPct || 0) > 3 ? 'var(--amber)' : 'var(--red)';
+
+    // Stars rendering
+    let starsHtml;
+    if (row.reviewLoading) {
+      starsHtml = `<span class="loading-dots" style="color:var(--amber);"><span></span><span></span><span></span></span>`;
+    } else if (row.rating !== null) {
+      const full  = Math.floor(row.rating);
+      const half  = row.rating % 1 >= 0.5 ? 1 : 0;
+      const empty = 5 - full - half;
+      starsHtml = `<div class="stars">
+        ${'<span class="star-fill">★</span>'.repeat(full)}
+        ${half ? '<span class="star-fill" style="opacity:0.6;">★</span>' : ''}
+        ${'<span class="star-empty">☆</span>'.repeat(empty)}
+        <span class="star-num">${row.rating.toFixed(1)}</span>
+      </div>
+      <div class="review-count">${row.reviewCount ? row.reviewCount.toLocaleString() + ' reviews' : ''}</div>`;
+    } else if (!serpApiKey) {
+      starsHtml = '<span style="font-size:9px;color:var(--text3);">No key</span>';
+    } else {
+      starsHtml = '<span style="font-size:9px;color:var(--text3);">—</span>';
+    }
+
+    // Action button
+    const actionBtn = isMe
+      ? `<span class="btn-load-ma is-mine">You</span>`
+      : `<button class="btn-load-ma" onclick="loadIntoMATab('${row.orgNr}')" title="Load ${row.name} into M&A Screener">🎯 M&A Tab</button>`;
+
+    // Row classes
+    const rowCls = isMe ? 'is-mine' : (deltaEbitda !== null && deltaEbitda > 0 ? 'is-above' : '');
+
+    html += `<tr class="${rowCls}">
+      <td><span class="rank-badge ${badgeCls}">${rankNum}</span></td>
+      <td>
+        <div class="co-name-cell">${row.name}${row.isDemo?'<span style="font-size:8px;color:var(--amber);margin-left:4px;">DEMO</span>':row.isLive?'':''}
+          ${row.auditorRemark ? '<span style="font-size:8px;color:var(--red);margin-left:4px;">⚠ REMARK</span>' : ''}
+        </div>
+        <div class="co-meta-cell">${row.orgNr} · FY${row.fiscalYear || '—'}</div>
+      </td>
+      <td>
+        <div class="metric-val">${fmtSEK(row.netSales)}</div>
+        <div class="metric-bar-wrap"><div class="metric-bar" style="width:${revBarPct.toFixed(0)}%;background:var(--blue);"></div></div>
+      </td>
+      <td>
+        <div class="metric-val" style="color:${(row.opCostPct||0)>85?'var(--red)':(row.opCostPct||0)>75?'var(--amber)':'var(--text)'}">${fmtPct(row.opCostPct)}</div>
+      </td>
+      <td>
+        <div class="metric-val">${fmtSEK(row.ebitda)}</div>
+        <div class="metric-bar-wrap"><div class="metric-bar" style="width:${ebitdaBarPct.toFixed(0)}%;background:${ebitdaColor};"></div></div>
+      </td>
+      <td>
+        <div class="metric-val" style="color:${ebitdaColor};font-weight:600;">${fmtPct(row.ebitdaPct)}</div>
+        ${deltaEbitda !== null ? `<span class="delta-badge ${deltaEbitda > 0.5 ? 'up' : deltaEbitda < -0.5 ? 'down' : 'same'}">${deltaEbitda > 0 ? '+' : ''}${deltaEbitda.toFixed(1)}pp vs you</span>` : ''}
+      </td>
+      <td>
+        <div class="metric-val">${fmtSEK(row.ebit)}</div>
+      </td>
+      <td>
+        <div class="metric-val" style="color:${ebitColor};font-weight:600;">${fmtPct(row.ebitPct)}</div>
+      </td>
+      <td>${starsHtml}</td>
+      <td style="text-align:center;">${actionBtn}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('rankTableWrap').innerHTML = html;
+  document.getElementById('rankSubtitle').textContent =
+    `${sorted.length} companies · Sorted by ${SORT_OPTIONS.find(s=>s.key===sortKey)?.label || sortKey} · ${sortDir === 'desc' ? 'Highest first' : 'Lowest first'}`;
+}
+
+// ─────────────────────────────────────────────
+// SUMMARY CHIPS
+// ─────────────────────────────────────────────
+function renderSummaryChips() {
+  if (!rankData.length || !myCompany) return;
+  const el = document.getElementById('summaryChips');
+  el.style.display = 'flex';
+
+  const sorted = [...rankData].sort((a,b) => (b.ebitdaPct||0) - (a.ebitdaPct||0));
+  const myRank = sorted.findIndex(r => r.isMe) + 1;
+  const total  = sorted.length;
+  const above  = sorted.filter(r => !r.isMe && (r.ebitdaPct||0) > (rankData.find(r=>r.isMe)?.ebitdaPct||0)).length;
+  const below  = sorted.filter(r => !r.isMe && (r.ebitdaPct||0) < (rankData.find(r=>r.isMe)?.ebitdaPct||0)).length;
+  const best   = sorted[0];
+  const myData = rankData.find(r => r.isMe);
+  const gap    = best && myData ? (best.ebitdaPct - myData.ebitdaPct) : null;
+
+  const rankColor = myRank <= Math.ceil(total/3) ? 'green' : myRank <= Math.ceil(total*2/3) ? 'amber' : 'red';
+
+  el.innerHTML = `
+    <span class="chip ${rankColor}">Your rank: #${myRank} of ${total}</span>
+    <span class="chip ${above===0?'green':'red'}">${above} ahead of you</span>
+    <span class="chip green">${below} behind you</span>
+    ${gap !== null && gap > 0.5 ? `<span class="chip amber">Gap to #1: ${gap.toFixed(1)}pp EBITDA</span>` : gap !== null && gap <= 0 ? `<span class="chip green">You lead on EBITDA margin</span>` : ''}
+    ${serpApiKey ? '' : '<span class="chip grey">Google ratings: add SerpApi key</span>'}
+  `;
+}
+
+// ─────────────────────────────────────────────
+// LOAD INTO M&A TAB
+// ─────────────────────────────────────────────
+function loadIntoMATab(orgNr) {
+  // In the standalone demo, we show a toast.
+  // When integrated into the main VCFO app, this would call:
+  //   loadCompanyByOrg(orgNr); switchTab('ma'); runMAScreen();
+  showToast(`🎯 Loading ${orgNr} into M&A tab…`);
+
+  // If running inside the main VCFO terminal (same page context), call its functions:
+  if (typeof loadCompanyByOrg === 'function') {
+    document.getElementById('orgInput').value = orgNr;
+    loadCompanyByOrg(orgNr).then(() => {
+      if (typeof switchTab === 'function') switchTab('ma');
+    });
+  } else {
+    // Standalone demo — open the VCFO terminal in a new tab with the org pre-filled
+    alert(`In the full VCFO Terminal, clicking this button would:\n1. Load ${orgNr} into the M&A Screener\n2. Switch to the M&A tab\n3. Run the acquisition screen automatically`);
+  }
+}
+
+// ─────────────────────────────────────────────
+// EXPORT CSV
+// ─────────────────────────────────────────────
+function exportCSV() {
+  if (!rankData.length) { showToast('⚠ No data to export'); return; }
+  const sorted = [...rankData].sort((a,b) => (b[sortKey]||0) - (a[sortKey]||0));
+  const headers = ['Rank','Company','Org Nr','FY','Revenue','Op. Cost %','EBITDA','EBITDA %','EBIT','EBIT %','Net Profit','Google Rating','Review Count','Is Mine'];
+  const rows = sorted.map((r, i) => [
+    i+1, r.name, r.orgNr, r.fiscalYear,
+    r.netSales, r.opCostPct?.toFixed(1), r.ebitda, r.ebitdaPct?.toFixed(1),
+    r.ebit, r.ebitPct?.toFixed(1), r.netProfit,
+    r.rating || '', r.reviewCount || '',
+    r.isMe ? 'YES' : 'NO'
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v ?? ''}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type:'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `competitor_bench_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('✓ CSV exported');
+}
+
+// ─────────────────────────────────────────────
+// CLEAR ALL
+// ─────────────────────────────────────────────
+function clearAll() {
+  competitors = [];
+  rankData    = [];
+  myCompany   = null;
+  document.getElementById('myOrgInput').value = '';
+  document.getElementById('myCompanyHero').style.display = 'none';
+  document.getElementById('btnLoadMine').innerHTML = 'Load My Company';
+  document.getElementById('btnLoadMine').disabled = false;
+  document.getElementById('btnRunBench').style.display = 'none';
+  document.getElementById('summaryChips').style.display = 'none';
+  document.getElementById('rankTableWrap').innerHTML = `
+    <div class="empty-state">
+      <div class="icon">⚔</div>
+      <div class="title">No benchmark data yet</div>
+      <div>Add your company (left) and competitors (middle), then click Run Benchmark</div>
+    </div>`;
+  document.getElementById('rankSubtitle').textContent = 'Add your company and competitors to generate the ranking';
+  document.getElementById('sortBtns').innerHTML = '';
+  renderCompetitorList();
+  renderPresets('all');
+  setStatus('Ready — set your company and add competitors to begin', 'na');
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  updateSourceStatus();
+  renderPresets('all');
+  renderSortBtns();
+});
+</script>
+</body>
+</html>
