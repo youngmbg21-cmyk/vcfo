@@ -123,7 +123,14 @@ body {
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
   padding: 0 20px; gap: 0;
+  position: sticky;
+  top: 48px;       /* anchored below the 48px topbar */
+  z-index: 90;
+  overflow-x: auto;
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE/Edge */
 }
+.tabs::-webkit-scrollbar { display: none; }
 .tab {
   padding: 12px 20px;
   font-size:12px; letter-spacing:0.02em;
@@ -1614,14 +1621,14 @@ body.light-mode {
 <!-- TABS -->
 <div class="tabs">
   <div class="tab active" id="tab-company-btn"    onclick="switchTab('company')" data-i18n="tab_company">🏢 Company</div>
-  <div class="tab" id="tab-cfo-btn"              onclick="switchTab('cfo')" data-i18n="tab_cfo">📊 CFO Audit</div>
-  <div class="tab" id="tab-ma-btn"               onclick="switchTab('ma')" data-i18n="tab_ma">🎯 M&A Screener</div>
   <div class="tab" id="tab-financials-btn"       onclick="switchTab('financials')" data-i18n="tab_financials">📋 Financials</div>
   <div class="tab" id="tab-cashflow-btn"         onclick="switchTab('cashflow')" data-i18n="tab_cashflow">💧 Cash Flow</div>
-  <div class="tab" id="tab-compare-btn"          onclick="switchTab('compare')" data-i18n="tab_compare">⚖ Compare</div>
-  <div class="tab" id="tab-benchmarks-btn"       onclick="switchTab('benchmarks')" data-i18n="tab_benchmarks">📡 Benchmarks</div>
-  <div class="tab" id="tab-watchlist-btn"        onclick="switchTab('watchlist')" data-i18n="tab_watchlist">★ Watchlist</div>
+  <div class="tab" id="tab-cfo-btn"              onclick="switchTab('cfo')" data-i18n="tab_cfo">📊 CFO Audit</div>
+  <div class="tab" id="tab-ma-btn"               onclick="switchTab('ma')" data-i18n="tab_ma">🎯 M&A Screener</div>
   <div class="tab" id="tab-competitor-bench-btn" onclick="switchTab('competitor-bench')">⚔ Competitor Bench</div>
+  <div class="tab" id="tab-compare-btn"          onclick="switchTab('compare')" data-i18n="tab_compare">⚖ Compare</div>
+  <div class="tab" id="tab-watchlist-btn"        onclick="switchTab('watchlist')" data-i18n="tab_watchlist">★ Watchlist</div>
+  <div class="tab" id="tab-benchmarks-btn"       onclick="switchTab('benchmarks')" data-i18n="tab_benchmarks">📡 Benchmarks</div>
   <div class="tab" id="tab-guide-btn"            onclick="switchTab('guide')" style="margin-left:auto;" data-i18n="tab_guide">📖 Guide</div>
 </div>
 
@@ -2068,7 +2075,7 @@ body.light-mode {
     <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;">
 
       <!-- Left sidebar (sticky) -->
-      <div style="position:sticky;top:60px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;">
+      <div style="position:sticky;top:92px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 112px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;">
 
         <!-- Your Company card -->
         <div class="card">
@@ -2106,7 +2113,7 @@ body.light-mode {
         <div class="card">
           <div class="card-title">
             Competitors
-            <span id="cbCompCount">0 / 10</span>
+            <span id="cbCompCount">0 / 20</span>
           </div>
 
           <!-- Search input + Add button -->
@@ -2122,32 +2129,27 @@ body.light-mode {
             <div id="cbSearchDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:450;overflow:hidden;max-height:240px;overflow-y:auto;"></div>
           </div>
 
-          <!-- Filter pills -->
+          <!-- Filter pills (dynamically rebuilt from saved competitors' SNI codes) -->
           <div style="margin-bottom:12px;">
-            <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;">Filter Presets by Industry</div>
-            <div style="display:flex;gap:4px;flex-wrap:wrap;" id="cbSniPills">
-              <button onclick="cbFilterPresets(this,'all')" class="cb-sni-pill active" style="background:var(--blue-dim);border:1px solid rgba(59,130,246,0.4);color:var(--blue);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">All</button>
-              <button onclick="cbFilterPresets(this,'56')" class="cb-sni-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Restaurants</button>
-              <button onclick="cbFilterPresets(this,'47')" class="cb-sni-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Retail</button>
-              <button onclick="cbFilterPresets(this,'69')" class="cb-sni-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Professional</button>
-              <button onclick="cbFilterPresets(this,'41')" class="cb-sni-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Construction</button>
-              <button onclick="cbFilterPresets(this,'62')" class="cb-sni-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">ICT</button>
-              <button onclick="cbFilterPresets(this,'55')" class="cb-sni-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Hotels</button>
-            </div>
+            <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;">Filter by Industry</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;" id="cbSniPills"></div>
           </div>
 
-          <!-- Scrollable preset + added list -->
+          <!-- Scrollable saved + session list -->
           <div style="max-height:340px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;padding-right:2px;">
 
-            <!-- Quick-add presets -->
-            <div style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Quick-add from list</div>
+            <!-- Saved competitors (persistent via localStorage) -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <div style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Saved Competitors</div>
+              <button onclick="cbClearSaved()" style="background:none;border:none;color:var(--text3);font-size:9px;cursor:pointer;padding:0;" title="Clear all saved">Clear all</button>
+            </div>
             <div id="cbPresetList"></div>
 
             <div style="height:1px;background:var(--border);margin:10px 0;"></div>
 
-            <!-- Added competitors -->
+            <!-- Session competitors (active benchmark list) -->
             <div style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">
-              Added Competitors
+              Active Competitors
             </div>
             <div id="cbCompetitorList">
               <div style="font-size:10px;color:var(--text3);text-align:center;padding:16px 0;">
@@ -3044,14 +3046,15 @@ let activeTab = 'company';
 
 function switchTab(name) {
   activeTab = name;
-  ['company','cfo','ma','financials','cashflow','compare','benchmarks','watchlist','competitor-bench','guide'].forEach(t => {
+  ['company','financials','cashflow','cfo','ma','competitor-bench','compare','watchlist','benchmarks','guide'].forEach(t => {
     document.getElementById('tab-' + t).style.display = (t === name) ? 'block' : 'none';
     document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === name);
   });
-  if (name === 'compare')    renderCompareTab();
-  if (name === 'benchmarks') initBenchmarksTab();
-  if (name === 'cashflow')   renderCashFlow();
-  if (name === 'watchlist')  renderWatchlistTab();
+  if (name === 'compare')           renderCompareTab();
+  if (name === 'benchmarks')        initBenchmarksTab();
+  if (name === 'cashflow')          renderCashFlow();
+  if (name === 'watchlist')         renderWatchlistTab();
+  if (name === 'competitor-bench')  { cbRenderSavedPills(); cbRenderPresets(cbActiveSNI); }
   updateChatPills();
   updateChatSuggestions();
 }
@@ -8583,57 +8586,95 @@ function cbRenderMyCompanyHero(d) {
 // ============================================================
 // COMPETITOR BENCH — Competitors logic
 // ============================================================
-const CB_MAX_COMPETITORS = 10;
+const CB_MAX_COMPETITORS = 20;
 let cbCompetitors = [];
 let cbActiveSNI   = 'all';
 
-const CB_PRESETS = [
-  { name:'Operakällaren AB',        orgNr:'556013-0731', sni:'56' },
-  { name:'Sturehof AB',             orgNr:'556076-6724', sni:'56' },
-  { name:'Restaurang Prinsen',      orgNr:'556027-3044', sni:'56' },
-  { name:'Grands Veranda',          orgNr:'556052-8124', sni:'56' },
-  { name:'Berns Salonger',          orgNr:'556008-4623', sni:'56' },
-  { name:'Aifur AB',                orgNr:'556546-2143', sni:'56' },
-  { name:'Fotografiska Restaurang', orgNr:'559030-1234', sni:'56' },
+// ── Saved competitors — localStorage-backed, auto-classified by SNI ──
+const CB_SAVED_KEY = 'vcfo_cb_saved';
 
-  { name:'Grand Hôtel',             orgNr:'556005-0822', sni:'55' },
-  { name:'At Six',                  orgNr:'559041-3311', sni:'55' },
-  { name:'Nordic Hotels',           orgNr:'556640-2010', sni:'55' },
+function cbLoadSaved() {
+  try { return JSON.parse(localStorage.getItem(CB_SAVED_KEY)) || []; } catch(e) { return []; }
+}
+function cbPersistSaved(list) {
+  try { localStorage.setItem(CB_SAVED_KEY, JSON.stringify(list)); } catch(e) {}
+}
 
-  { name:'Acne Studios',            orgNr:'556700-5685', sni:'47' },
-  { name:'J. Lindeberg',            orgNr:'556542-3418', sni:'47' },
-  { name:'Gina Tricot',             orgNr:'556488-2695', sni:'47' },
-  { name:'Kappahl AB',              orgNr:'556441-2244', sni:'47' },
+// Map SNI 2-digit prefix to a human-readable label
+function cbSniToLabel(sni) {
+  if (!sni || sni === '—') return 'Other';
+  const code = String(sni).slice(0, 2);
+  const n = parseInt(code);
+  if (n >= 10 && n <= 33) return 'Manufacturing';
+  if (n >= 41 && n <= 43) return 'Construction';
+  if (n === 45 || n === 46) return 'Wholesale';
+  if (n === 47) return 'Retail';
+  if (n >= 49 && n <= 53) return 'Transport';
+  if (n === 55) return 'Hotels';
+  if (n === 56) return 'Restaurants';
+  if (n >= 58 && n <= 63) return 'ICT / Software';
+  if (n === 68) return 'Real Estate';
+  if (n >= 69 && n <= 74) return 'Professional Services';
+  if (n >= 86 && n <= 88) return 'Healthcare';
+  return 'Other';
+}
 
-  { name:'KPMG AB',                 orgNr:'556043-4465', sni:'69' },
-  { name:'PwC Sverige',             orgNr:'516408-0095', sni:'69' },
-  { name:'Mannheimer Swartling',    orgNr:'556497-3857', sni:'69' },
-  { name:'Deloitte AB',             orgNr:'556401-6775', sni:'69' },
+// Save a competitor from their loaded data (called after successful fetch)
+function cbSaveCompetitor(entry) {
+  const saved = cbLoadSaved();
+  const clean = entry.orgNr.replace(/[^0-9]/g, '');
+  if (saved.some(s => s.orgNr.replace(/[^0-9]/g, '') === clean)) return; // already saved
+  const sni = (entry.data && entry.data.sni) ? String(entry.data.sni) : '—';
+  saved.push({ name: entry.name, orgNr: entry.orgNr, sni });
+  cbPersistSaved(saved);
+  cbRenderSavedPills();
+  cbRenderPresets(cbActiveSNI);
+}
 
-  { name:'NCC AB',                  orgNr:'556034-5174', sni:'41' },
-  { name:'Skanska Sverige AB',      orgNr:'556033-9023', sni:'41' },
-  { name:'JM AB',                   orgNr:'556045-2197', sni:'41' },
-  { name:'Peab AB',                 orgNr:'556061-4614', sni:'41' },
+function cbRemoveSaved(orgNr) {
+  const clean = orgNr.replace(/[^0-9]/g, '');
+  const saved = cbLoadSaved().filter(s => s.orgNr.replace(/[^0-9]/g, '') !== clean);
+  cbPersistSaved(saved);
+  cbRenderSavedPills();
+  cbRenderPresets(cbActiveSNI);
+}
 
-  { name:'Klarna Bank AB',          orgNr:'556737-0431', sni:'62' },
-  { name:'Spotify AB',              orgNr:'556703-7485', sni:'62' },
-  { name:'King.com Ltd (SE)',       orgNr:'559016-2516', sni:'62' },
-  { name:'iZettle AB',              orgNr:'556806-0852', sni:'62' },
-];
+function cbClearSaved() {
+  cbPersistSaved([]);
+  cbRenderSavedPills();
+  cbRenderPresets(cbActiveSNI);
+}
 
-const CB_SNI_LABELS = {
-  '56':'Restaurants', '55':'Hotels', '47':'Retail',
-  '69':'Professional Services', '41':'Construction', '62':'ICT / Software'
-};
+// Render the industry filter pills dynamically from saved competitors' SNI codes
+function cbRenderSavedPills() {
+  const saved = cbLoadSaved();
+  const sniSet = new Set();
+  saved.forEach(s => { if (s.sni && s.sni !== '—') sniSet.add(cbSniToLabel(s.sni)); });
+  const labels = [...sniSet].sort();
+
+  const pillStyle = (active) => active
+    ? 'background:var(--blue-dim);border:1px solid rgba(59,130,246,0.4);color:var(--blue);'
+    : 'background:var(--bg3);border:1px solid var(--border);color:var(--text3);';
+  const base = 'border-radius:3px;padding:2px 8px;font-size:9px;font-family:\'JetBrains Mono\',monospace;cursor:pointer;';
+
+  let html = `<button onclick="cbFilterPresets(this,'all')" class="cb-sni-pill${cbActiveSNI === 'all' ? ' active' : ''}" style="${pillStyle(cbActiveSNI === 'all')}${base}">All</button>`;
+  labels.forEach(lbl => {
+    const isActive = cbActiveSNI === lbl;
+    html += `<button onclick="cbFilterPresets(this,'${lbl}')" class="cb-sni-pill${isActive ? ' active' : ''}" style="${pillStyle(isActive)}${base}">${lbl}</button>`;
+  });
+  document.getElementById('cbSniPills').innerHTML = html;
+}
 
 function cbRenderPresets(sniFilter) {
+  const saved = cbLoadSaved();
   const filtered = sniFilter === 'all'
-    ? CB_PRESETS
-    : CB_PRESETS.filter(p => p.sni === sniFilter || (sniFilter === '41' && ['41','42','43'].includes(p.sni)));
+    ? saved
+    : saved.filter(p => cbSniToLabel(p.sni) === sniFilter);
 
+  // Group by industry label
   const groups = {};
   filtered.forEach(p => {
-    const grp = CB_SNI_LABELS[p.sni] || 'Other';
+    const grp = cbSniToLabel(p.sni);
     if (!groups[grp]) groups[grp] = [];
     groups[grp].push(p);
   });
@@ -8650,15 +8691,16 @@ function cbRenderPresets(sniFilter) {
           const baseStyle = isAdded
             ? 'background:var(--green-dim);border:1px solid rgba(16,185,129,0.3);color:var(--green);cursor:default;'
             : 'background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;';
-          return `<span style="${baseStyle}border-radius:3px;padding:2px 8px;font-size:9px;"
+          return `<span style="${baseStyle}border-radius:3px;padding:2px 8px;font-size:9px;display:inline-flex;align-items:center;gap:4px;"
             ${isAdded ? '' : `onclick="cbAddFromPreset('${p.orgNr}','${p.name.replace(/'/g, "\\'")}')" title="${p.orgNr}"`}>
             ${p.name}${isAdded ? ' ✓' : ''}
+            <button onclick="event.stopPropagation();cbRemoveSaved('${p.orgNr}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:10px;padding:0 2px;line-height:1;" title="Remove from saved">&times;</button>
           </span>`;
         }).join('')}
       </div>
     </div>`;
   }
-  document.getElementById('cbPresetList').innerHTML = html || '<div style="font-size:10px;color:var(--text3);">No presets for this industry</div>';
+  document.getElementById('cbPresetList').innerHTML = html || '<div style="font-size:10px;color:var(--text3);text-align:center;padding:12px 0;">No saved competitors yet — add companies above and they will be saved here automatically</div>';
 }
 
 function cbFilterPresets(btn, sni) {
@@ -8794,11 +8836,14 @@ async function cbFetchCompetitorData(entry) {
     entry.data = d;
     entry.name = d.name;
     entry.status = 'loaded';
+    // Auto-save to persistent list (classified by SNI from the filing)
+    cbSaveCompetitor(entry);
   } catch (e) {
     entry.status = 'error';
   }
   cbUpdateCount();
   cbRenderCompetitorList();
+  cbRenderSavedPills();
   cbRenderPresets(cbActiveSNI);
   cbCheckRunBtn();
 }
