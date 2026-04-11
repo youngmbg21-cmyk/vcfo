@@ -1764,6 +1764,15 @@ body::after {
             </div>
           </div>
 
+          <!-- ── Business Valuation Estimate ── -->
+          <div class="card" id="maValuationCard">
+            <div class="card-title">
+              Business Valuation Estimate
+              <span style="color:var(--green);">EBITDA MULTIPLE</span>
+            </div>
+            <div id="maValuationContent" style="font-size:11px;color:var(--text2);">—</div>
+          </div>
+
           <!-- ── NEW: Hidden Debt (Periodiseringsfonder) in M&A context ── -->
           <div class="card" id="maHiddenDebtCard">
             <div class="card-title">
@@ -4562,6 +4571,100 @@ function computeAndRenderDeterministicMA(d) {
             : `Debt maturity profile is favourable. Limited long-term cash flow constraints.`}
         </div>
       </div>
+    </div>`;
+
+  // ── Render business valuation estimate ──
+  renderValuationCard(d);
+}
+
+// ============================================================
+// BUSINESS VALUATION — EBITDA Multiple Method
+// ============================================================
+function renderValuationCard(d) {
+  const el = document.getElementById('maValuationContent');
+  if (!el) return;
+  const isSv = appLang === 'sv';
+
+  const ebitda = (d.opProfit || 0) + (d.depreciation || 0);
+
+  if (ebitda <= 0) {
+    el.innerHTML = `<div style="color:var(--text3);">${
+      isSv ? 'EBITDA är negativ eller noll — värdering via EBITDA-multipel ej tillämpbar.'
+           : 'EBITDA is negative or zero — EBITDA multiple valuation is not applicable.'
+    }</div>`;
+    return;
+  }
+
+  // Step 1: Size-based multiple range
+  let sizeLow, sizeHigh, sizeLabel;
+  if (ebitda < 250_000)        { sizeLow = 1.5; sizeHigh = 2.5; sizeLabel = '< 250k'; }
+  else if (ebitda < 750_000)   { sizeLow = 2.0; sizeHigh = 3.5; sizeLabel = '250k–750k'; }
+  else if (ebitda < 1_500_000) { sizeLow = 3.0; sizeHigh = 5.5; sizeLabel = '750k–1.5M'; }
+  else if (ebitda < 5_000_000) { sizeLow = 4.0; sizeHigh = 9.0; sizeLabel = '1.5M–5M'; }
+  else                         { sizeLow = 5.0; sizeHigh = 12.0; sizeLabel = '> 5M'; }
+
+  // Step 2: Industry-adjusted multiple from SNI code
+  const sniCode = parseInt((d.sni || '').replace(/[^0-9]/g, '').slice(0, 2)) || 0;
+  let indLow = null, indHigh = null, indLabel = '';
+
+  if (sniCode >= 10 && sniCode <= 33) {
+    indLow = 3; indHigh = 6; indLabel = isSv ? 'Tillverkning' : 'Manufacturing';
+  } else if (sniCode === 47 || sniCode === 56 || sniCode === 55) {
+    indLow = 1.5; indHigh = 3; indLabel = isSv ? 'Detaljhandel / Restaurang' : 'Retail & Food Service';
+  } else if ((sniCode >= 69 && sniCode <= 74) || (sniCode >= 77 && sniCode <= 82)) {
+    indLow = 1.5; indHigh = 3.5; indLabel = isSv ? 'Tjänsteföretag' : 'Service Businesses';
+  } else if (sniCode === 46) {
+    indLow = 2; indHigh = 5; indLabel = isSv ? 'Grossist / Distribution' : 'Wholesale / Distribution';
+  } else if (sniCode >= 58 && sniCode <= 63) {
+    indLow = 8; indHigh = 20; indLabel = isSv ? 'IT / Mjukvara' : 'SaaS / Software';
+  } else if (sniCode >= 41 && sniCode <= 43) {
+    indLow = 3; indHigh = 6; indLabel = isSv ? 'Bygg & Anläggning' : 'Construction';
+  } else if (sniCode >= 86 && sniCode <= 88) {
+    indLow = 3; indHigh = 7; indLabel = isSv ? 'Vård & Omsorg' : 'Healthcare';
+  } else if (sniCode === 68) {
+    indLow = 4; indHigh = 10; indLabel = isSv ? 'Fastigheter' : 'Real Estate';
+  }
+
+  // Use industry multiple if available, otherwise size-based
+  const usedLow  = indLow !== null ? indLow : sizeLow;
+  const usedHigh = indHigh !== null ? indHigh : sizeHigh;
+  const methodLabel = indLabel || (isSv ? 'Storleksbaserad' : 'Size-based');
+
+  const valLow  = Math.round(ebitda * usedLow);
+  const valHigh = Math.round(ebitda * usedHigh);
+  const valMid  = Math.round(ebitda * (usedLow + usedHigh) / 2);
+
+  // M&A score quality adjustment hint
+  const qualityNote = maScore >= 65
+    ? (isSv ? 'Stark profil kan motivera övre delen av spannet.' : 'Strong profile may justify upper end of range.')
+    : maScore >= 40
+    ? (isSv ? 'Medelprofil — mitten av spannet är rimligt.' : 'Average profile — mid-range valuation is reasonable.')
+    : (isSv ? 'Svag profil — nedre delen av spannet eller rabatt kan krävas.' : 'Weak profile — lower end or discount may apply.');
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+      <div style="flex:1;">
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">${isSv ? 'Uppskattat värdeintervall' : 'Estimated Value Range'}</div>
+        <div style="font-size:20px;font-weight:800;font-family:'Syne',sans-serif;color:var(--green);">${fmtSEK(valLow)} — ${fmtSEK(valHigh)}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">${isSv ? 'Mittpunkt' : 'Midpoint'}: ${fmtSEK(valMid)}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;">${isSv ? 'Multipel' : 'Multiple'}</div>
+        <div style="font-size:16px;font-weight:700;color:var(--amber);">${usedLow.toFixed(1)}x – ${usedHigh.toFixed(1)}x</div>
+        <div style="font-size:9px;color:var(--text3);">EBITDA</div>
+      </div>
+    </div>
+    <div class="separator"></div>
+    <div class="field-row"><span class="field-key">EBITDA</span><span class="field-val pos">${fmtSEK(ebitda)}</span></div>
+    <div class="field-row"><span class="field-key">${isSv ? 'Metod' : 'Method'}</span><span class="field-val">${methodLabel} (${usedLow.toFixed(1)}x–${usedHigh.toFixed(1)}x)</span></div>
+    ${indLabel ? `<div class="field-row"><span class="field-key">${isSv ? 'Bransch (SNI)' : 'Industry (SNI)'}</span><span class="field-val">${indLabel} (${d.sni})</span></div>` : ''}
+    <div class="field-row"><span class="field-key">${isSv ? 'Storleksklass' : 'Size Tier'}</span><span class="field-val">${sizeLabel} EBITDA (${sizeLow.toFixed(1)}x–${sizeHigh.toFixed(1)}x)</span></div>
+    <div class="field-row"><span class="field-key">${isSv ? 'EBITDA-marginal' : 'EBITDA Margin'}</span><span class="field-val">${d.netSales > 0 ? (ebitda / d.netSales * 100).toFixed(1) + '%' : '—'}</span></div>
+    <div class="field-row"><span class="field-key">${isSv ? 'M&A-poäng' : 'M&A Score'}</span><span class="field-val ${maScore >= 65 ? 'pos' : maScore >= 40 ? 'amb' : 'neg'}">${maScore}/100</span></div>
+
+    <div style="margin-top:12px;padding:10px;background:var(--bg4);border-radius:4px;font-size:10px;color:var(--text3);line-height:1.6;">
+      ${qualityNote}<br>
+      <span style="font-size:9px;">${isSv ? 'Observera' : 'Note'}: ${isSv ? 'Detta är en indikativ uppskattning baserad på EBITDA-multipel. Faktiskt företagsvärde kräver detaljerad due diligence, kassaflödesanalys och marknadsjämförelser.' : 'This is an indicative estimate based on EBITDA multiples. Actual enterprise value requires detailed due diligence, DCF analysis, and comparable transactions.'}</span>
     </div>`;
 }
 
