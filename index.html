@@ -1235,6 +1235,76 @@ body {
   font-family: 'DM Sans', sans-serif;
 }
 
+/* ===== CASH FLOW YEAR SELECTOR ===== */
+.cf-year-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.cf-year-pill {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.cf-year-pill:hover { border-color: var(--border2); color: var(--text); }
+.cf-year-pill.active {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--green);
+}
+.cf-year-pill.compare-selected {
+  background: var(--blue-dim);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.cf-compare-toggle {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.06em;
+  margin-left: auto;
+}
+.cf-compare-toggle:hover { border-color: var(--border2); color: var(--text); }
+.cf-compare-toggle.active {
+  background: var(--blue-dim);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.cf-compare-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 10px;
+  color: var(--text2);
+}
+.cf-compare-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.cf-compare-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
 /* ===== WATCHLIST TAB ===== */
 .wl-grid {
   display: grid;
@@ -1867,7 +1937,9 @@ body.light-mode {
         <!-- Right: chart -->
         <div class="card">
           <div class="card-title">Waterfall Chart <span style="color:var(--green);">NET PROFIT → FCF</span></div>
+          <div id="cfYearBar" class="cf-year-bar" style="display:none;"></div>
           <canvas id="cfWaterfallChart" style="max-height:320px;"></canvas>
+          <div id="cfCompareLegend" class="cf-compare-legend" style="display:none;"></div>
           <div style="margin-top:12px;font-size:9px;color:var(--text3);line-height:1.6;">
             FCF = Net Profit + Depreciation − Change in Working Capital − CapEx.<br>
             Working Capital = (Current Assets − Cash) − Current Liabilities.<br>
@@ -7245,6 +7317,18 @@ function copyAIOutput(elementId, btn) {
 // CASH FLOW WATERFALL
 // ============================================================
 let cfWaterfallChartInst = null;
+let cfSelectedYear       = null;   // year shown in single-year mode (null = current)
+let cfCompareMode        = false;  // multi-year overlay active?
+let cfCompareYears       = [];     // selected years for comparison
+
+const CF_COMPARE_COLORS = [
+  { bg: 'rgba(0,200,255,0.65)',  border: '#00c8ff' },   // cyan
+  { bg: 'rgba(0,255,136,0.65)',  border: '#10b981' },   // green
+  { bg: 'rgba(245,158,11,0.65)', border: '#f59e0b' },   // amber
+  { bg: 'rgba(167,139,250,0.65)',border: '#a78bfa' },   // purple
+  { bg: 'rgba(59,130,246,0.65)', border: '#3b82f6' },   // blue
+  { bg: 'rgba(244,63,94,0.65)',  border: '#f43f5e' },   // rose
+];
 
 function computeCashFlow(d) {
   if (!d) return null;
@@ -7284,16 +7368,90 @@ function computeCashFlow(d) {
   };
 }
 
+function getCfAvailableYears() {
+  return Object.keys(historyData).sort();
+}
+
+function renderCfYearBar() {
+  const bar = document.getElementById('cfYearBar');
+  if (!bar) return;
+  const years = getCfAvailableYears();
+  if (years.length <= 1) { bar.style.display = 'none'; return; }
+
+  bar.style.display = 'flex';
+  const activeYear = cfSelectedYear || (companyData ? companyData.fiscalYear : null);
+
+  let html = '';
+  for (const yr of years) {
+    if (cfCompareMode) {
+      const sel = cfCompareYears.includes(yr);
+      html += `<button class="cf-year-pill${sel ? ' compare-selected' : ''}" onclick="cfToggleCompareYear('${yr}')">${yr}</button>`;
+    } else {
+      html += `<button class="cf-year-pill${yr === activeYear ? ' active' : ''}" onclick="cfSwitchYear('${yr}')">${yr}</button>`;
+    }
+  }
+  html += `<button class="cf-compare-toggle${cfCompareMode ? ' active' : ''}" onclick="cfToggleCompareMode()">${cfCompareMode ? '✕ Exit Compare' : '⇄ Compare Years'}</button>`;
+  bar.innerHTML = html;
+}
+
+function cfSwitchYear(year) {
+  if (!historyData[year]) return;
+  cfSelectedYear = year;
+  renderCfYearBar();
+  renderCashFlowForYear(historyData[year]);
+}
+
+function cfToggleCompareMode() {
+  cfCompareMode = !cfCompareMode;
+  const legend = document.getElementById('cfCompareLegend');
+  if (cfCompareMode) {
+    // Pre-select all available years (up to 6)
+    cfCompareYears = getCfAvailableYears().slice(-6);
+    renderCfYearBar();
+    renderCfCompareChart();
+    if (legend) legend.style.display = 'flex';
+  } else {
+    cfCompareYears = [];
+    renderCfYearBar();
+    // Restore single-year view
+    const yr = cfSelectedYear || (companyData ? companyData.fiscalYear : null);
+    if (yr && historyData[yr]) renderCashFlowForYear(historyData[yr]);
+    if (legend) legend.style.display = 'none';
+  }
+}
+
+function cfToggleCompareYear(year) {
+  const idx = cfCompareYears.indexOf(year);
+  if (idx >= 0) {
+    cfCompareYears.splice(idx, 1);
+  } else {
+    if (cfCompareYears.length >= 6) return; // max 6
+    cfCompareYears.push(year);
+    cfCompareYears.sort();
+  }
+  renderCfYearBar();
+  renderCfCompareChart();
+}
+
 function renderCashFlow() {
   if (!companyData) return;
-  const d   = companyData;
-  const cf  = computeCashFlow(d);
+  cfSelectedYear = null;
+  cfCompareMode  = false;
+  cfCompareYears = [];
+  document.getElementById('cfCompareLegend').style.display = 'none';
+  renderCfYearBar();
+  renderCashFlowForYear(companyData);
+}
+
+function renderCashFlowForYear(d) {
+  if (!d) return;
+  const cf = computeCashFlow(d);
   if (!cf) return;
 
   // Show content
   document.getElementById('cfEmpty').style.display   = 'none';
   document.getElementById('cfContent').style.display = 'block';
-  document.getElementById('cfCompanyTitle').textContent = `Cash Flow Bridge — ${d.name}`;
+  document.getElementById('cfCompanyTitle').textContent = `Cash Flow Bridge — ${d.name || (companyData && companyData.name) || ''}`;
   document.getElementById('cfSubtitle').textContent    = `FY${d.fiscalYear} · Net Profit to Free Cash Flow waterfall`;
 
   // Summary rows
@@ -7348,10 +7506,10 @@ function renderWaterfallChart(cf) {
   const canvas = document.getElementById('cfWaterfallChart');
   if (!canvas) return;
 
+  const tickColor = document.body.classList.contains('light-mode') ? '#334155' : '#FFFFFF';
+  const gridColor = document.body.classList.contains('light-mode') ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
+
   const labels = ['Net Profit', '+ Deprec.', '- Δ Work. Cap.', '- CapEx', 'Free Cash Flow'];
-  // Running total for waterfall effect
-  const running = [0, cf.netProfit, cf.netProfit + cf.depreciation,
-    cf.netProfit + cf.depreciation - cf.deltaWC, 0];
   const values  = [cf.netProfit, cf.depreciation, -cf.deltaWC, -cf.capex, cf.fcf];
 
   // For waterfall: invisible base bars + colored segment bars
@@ -7372,9 +7530,9 @@ function renderWaterfallChart(cf) {
   });
 
   const borderColors = values.map((v, i) => {
-    if (i === 4) return cf.fcf >= 0 ? 'var(--green)' : 'var(--red)';
-    if (i === 0) return 'var(--blue)';
-    return v >= 0 ? 'var(--green)' : 'var(--red)';
+    if (i === 4) return cf.fcf >= 0 ? '#10b981' : '#ef4444';
+    if (i === 0) return '#3b82f6';
+    return v >= 0 ? '#10b981' : '#ef4444';
   });
 
   const draw = () => {
@@ -7408,13 +7566,13 @@ function renderWaterfallChart(cf) {
         scales: {
           x: {
             stacked: true,
-            ticks: { color: '#FFFFFF', font: { size: 10, family: 'JetBrains Mono' } },
+            ticks: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' } },
             grid: { display: false }
           },
           y: {
             stacked: true,
             ticks: {
-              color: '#FFFFFF',
+              color: tickColor,
               font: { size: 9, family: 'JetBrains Mono' },
               callback: v => {
                 const abs = Math.abs(v);
@@ -7423,7 +7581,7 @@ function renderWaterfallChart(cf) {
                 return v;
               }
             },
-            grid: { color: 'rgba(255,255,255,0.04)' }
+            grid: { color: gridColor }
           }
         },
         plugins: {
@@ -7443,6 +7601,142 @@ function renderWaterfallChart(cf) {
   };
 
   if (typeof Chart === 'undefined') { loadChartJS(draw); } else { draw(); }
+}
+
+// Multi-year grouped comparison chart
+function renderCfCompareChart() {
+  if (!cfCompareYears.length) return;
+  const canvas = document.getElementById('cfWaterfallChart');
+  if (!canvas) return;
+
+  const tickColor = document.body.classList.contains('light-mode') ? '#334155' : '#FFFFFF';
+  const gridColor = document.body.classList.contains('light-mode') ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
+
+  const components = ['Net Profit', 'Depreciation', 'Δ Work. Cap.', 'CapEx', 'Free Cash Flow'];
+  const sortedYears = [...cfCompareYears].sort();
+
+  // Build datasets — one per year
+  const datasets = sortedYears.map((yr, yi) => {
+    const d  = historyData[yr];
+    const cf = computeCashFlow(d);
+    if (!cf) return null;
+    const clr = CF_COMPARE_COLORS[yi % CF_COMPARE_COLORS.length];
+    return {
+      label: yr,
+      data: [cf.netProfit, cf.depreciation, cf.deltaWC, cf.capex, cf.fcf],
+      backgroundColor: clr.bg,
+      borderColor: clr.border,
+      borderWidth: 1,
+      borderRadius: 3,
+    };
+  }).filter(Boolean);
+
+  // Update sidebar to show latest selected year's data
+  const latestYr = sortedYears[sortedYears.length - 1];
+  if (historyData[latestYr]) renderCashFlowSidebar(historyData[latestYr]);
+
+  // Update subtitle
+  document.getElementById('cfSubtitle').textContent = `Comparing FY${sortedYears[0]}–${sortedYears[sortedYears.length - 1]} · Side-by-side components`;
+
+  // Legend
+  const legendEl = document.getElementById('cfCompareLegend');
+  if (legendEl) {
+    legendEl.innerHTML = sortedYears.map((yr, yi) => {
+      const clr = CF_COMPARE_COLORS[yi % CF_COMPARE_COLORS.length];
+      return `<div class="cf-compare-legend-item"><span class="cf-compare-legend-swatch" style="background:${clr.border};"></span>${yr}</div>`;
+    }).join('');
+  }
+
+  const draw = () => {
+    if (cfWaterfallChartInst) cfWaterfallChartInst.destroy();
+    cfWaterfallChartInst = new Chart(canvas, {
+      type: 'bar',
+      data: { labels: components, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          x: {
+            ticks: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' } },
+            grid: { display: false }
+          },
+          y: {
+            ticks: {
+              color: tickColor,
+              font: { size: 9, family: 'JetBrains Mono' },
+              callback: v => {
+                const abs = Math.abs(v);
+                if (abs >= 1e6) return (v / 1e6).toFixed(0) + 'M';
+                if (abs >= 1e3) return (v / 1e3).toFixed(0) + 'k';
+                return v;
+              }
+            },
+            grid: { color: gridColor }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${fmtSEK(ctx.parsed.y)}`
+            }
+          }
+        }
+      }
+    });
+  };
+
+  if (typeof Chart === 'undefined') { loadChartJS(draw); } else { draw(); }
+}
+
+// Update just the sidebar summary without re-rendering the chart
+function renderCashFlowSidebar(d) {
+  if (!d) return;
+  const cf = computeCashFlow(d);
+  if (!cf) return;
+
+  document.getElementById('cfCompanyTitle').textContent = `Cash Flow Bridge — ${d.name || (companyData && companyData.name) || ''}`;
+
+  document.getElementById('cfSummaryRows').innerHTML = [
+    ['Net Profit',              cf.netProfit,     cf.netProfit >= 0 ? 'pos' : 'neg'],
+    ['(+) Depreciation',        cf.depreciation,  ''],
+    ['(-) Change in WC',        cf.deltaWC,       cf.deltaWC > 0 ? 'neg' : 'pos'],
+    ['(-) CapEx (est.)',        cf.capex,         'neg'],
+  ].map(([label, val, cls]) => `
+    <div class="cf-summary-item">
+      <span class="cf-summary-label">${label}</span>
+      <span class="cf-summary-value ${cls}">${fmtSEK(val)}</span>
+    </div>`).join('') + '<div class="separator"></div>';
+
+  const fcfEl = document.getElementById('cfFCFVal');
+  fcfEl.textContent = fmtSEK(cf.fcf);
+  fcfEl.className = `cf-fcf-val ${cf.fcf >= 0 ? 'pos' : 'neg'}`;
+
+  const fcfBox = document.getElementById('cfFCFBox');
+  if (cf.fcf < 0) {
+    fcfBox.style.background    = 'linear-gradient(135deg, var(--red-dim), rgba(255,69,96,0.04))';
+    fcfBox.style.borderColor   = 'rgba(255,69,96,0.3)';
+    fcfBox.querySelector('.cf-fcf-label').style.color = 'var(--red)';
+  } else {
+    fcfBox.style.background    = '';
+    fcfBox.style.borderColor   = '';
+    fcfBox.querySelector('.cf-fcf-label').style.color = '';
+  }
+
+  document.getElementById('cfMetrics').innerHTML = [
+    ['Cash Conversion',  cf.cashConversion !== null ? cf.cashConversion.toFixed(0) + '%' : '—',
+      cf.cashConversion !== null ? (cf.cashConversion > 80 ? 'pos' : cf.cashConversion > 50 ? 'amb' : 'neg') : ''],
+    ['FCF Margin',       cf.fcfMargin !== null ? cf.fcfMargin.toFixed(1) + '%' : '—',
+      cf.fcfMargin !== null ? (cf.fcfMargin > 8 ? 'pos' : cf.fcfMargin > 3 ? 'amb' : 'neg') : ''],
+    ['FCF / Total Assets', cf.fcfYield !== null ? cf.fcfYield.toFixed(1) + '%' : '—',
+      cf.fcfYield !== null ? (cf.fcfYield > 5 ? 'pos' : cf.fcfYield > 2 ? 'amb' : 'neg') : ''],
+    ['Dividends / FCF',  cf.fcf > 0 ? ((d.dividendsPaid / cf.fcf * 100).toFixed(0) + '%') : '—',
+      cf.fcf > 0 ? (d.dividendsPaid / cf.fcf > 1 ? 'neg' : d.dividendsPaid / cf.fcf > 0.7 ? 'amb' : 'pos') : ''],
+  ].map(([label, val, cls]) => `
+    <div class="cf-summary-item">
+      <span class="cf-summary-label">${label}</span>
+      <span class="cf-summary-value ${cls}">${val}</span>
+    </div>`).join('');
 }
 
 // ============================================================
