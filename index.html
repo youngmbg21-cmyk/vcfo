@@ -3824,6 +3824,11 @@ async function loadAllYears() {
   if (btn) btn.style.display = 'none';
 
   renderTrendPanel();
+
+  // Re-run M&A scorer now that historyData has multi-year data for trend scoring
+  if (companyData) {
+    computeAndRenderDeterministicMA(companyData);
+  }
 }
 
 function renderTrendPanel() {
