@@ -2283,7 +2283,7 @@ body.light-mode {
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
       <div>
         <div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:800;color:var(--blue);">⚖ Multi-Company Comparison & Benchmark</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px;">Load up to 5 companies via org. number · Auto-benchmark against SNI sector medians</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">Load up to 5 companies via org. number or company name · Auto-benchmark against SNI sector medians</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button class="btn-secondary" onclick="clearCompareSlot(-1)" data-i18n="btn_clear_all">✕ Clear All</button>
@@ -2317,7 +2317,7 @@ body.light-mode {
     <div id="compareEmpty" style="text-align:center;padding:60px 20px;color:var(--text3);">
       <div style="font-size:36px;opacity:0.3;margin-bottom:12px;">⚖</div>
       <div style="font-size:13px;margin-bottom:6px;">No companies loaded for comparison</div>
-      <div style="font-size:11px;">Use the slots above to add companies by org. number, or click "Add Current" to add the company loaded in the main terminal.</div>
+      <div style="font-size:11px;">Use the slots above to add companies by org. number or name, or click "Add Current" to add the company loaded in the main terminal.</div>
     </div>
 
     <!-- Comparison table -->
@@ -2681,7 +2681,7 @@ const STRINGS = {
 
     // Compare tab
     compare_title:      '⚖ Multi-Company Comparison & Benchmark',
-    compare_sub:        'Load up to 5 companies via org. number · Auto-benchmark against SNI sector medians',
+    compare_sub:        'Load up to 5 companies via org. number or company name · Auto-benchmark against SNI sector medians',
     bench_source:       'Source: SCB Branschnyckeltal',
 
     // Benchmarks tab
@@ -3809,12 +3809,21 @@ function closeSearchDropdown() {
 
 // Single permanent listener — closes any open dropdown on outside click
 document.addEventListener('click', (e) => {
+  // Main search + CB dropdowns
   [['searchDropdown', 'orgInput'], ['cbSearchDropdown', 'cbCompSearchInput']].forEach(([ddId, inputId]) => {
     const dd = document.getElementById(ddId);
     if (dd && dd.style.display !== 'none' && !dd.contains(e.target) && e.target.id !== inputId) {
       dd.style.display = 'none';
     }
   });
+  // Compare slot dropdowns (cmp-dd-0 through cmp-dd-4)
+  for (let si = 0; si < 5; si++) {
+    const dd = document.getElementById('cmp-dd-' + si);
+    const inp = document.getElementById('cmp-input-' + si);
+    if (dd && dd.style.display !== 'none' && !dd.contains(e.target) && e.target !== inp) {
+      dd.style.display = 'none';
+    }
+  }
 });
 
 function selectSearchResult(orgNr, name, el) {
@@ -6143,20 +6152,20 @@ function renderSlots() {
           <div style="font-size:9px;color:var(--text3);">ROS ${m.ros !== null ? m.ros.toFixed(1)+'%' : '—'} · D/E ${m.de !== null ? m.de.toFixed(1)+'x' : '—'}</div>
         </div>`;
     } else {
-      html += `<div class="cmp-slot empty" onclick="focusSlotInput(${i})" id="cmp-slot-empty-${i}">
+      html += `<div class="cmp-slot empty" onclick="focusSlotInput(${i})" id="cmp-slot-empty-${i}" style="position:relative;">
           <div style="font-size:9px;letter-spacing:0.12em;color:var(--blue);text-transform:uppercase;font-weight:700;margin-bottom:6px;">Slot ${i+1}</div>
           <input class="cmp-slot-input" id="cmp-input-${i}" type="text"
-            placeholder="556000-1234" maxlength="14"
+            placeholder="Org. nr. or company name" maxlength="80"
             onclick="event.stopPropagation()"
-            oninput="this.value=this.value.replace(/[^0-9\\-]/g,'')"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();loadCompareSlot(${i});}">
+            oninput="cmpSlotInput(${i},this.value)"
+            onkeydown="cmpSlotKey(event,${i})">
+          <div id="cmp-dd-${i}" style="display:none;position:absolute;left:8px;right:8px;top:100%;margin-top:-4px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,0.4);z-index:460;overflow:hidden;max-height:180px;overflow-y:auto;"></div>
           <div style="display:flex;gap:4px;margin-top:6px;">
             <button class="btn-secondary" style="flex:1;font-size:9px;padding:4px 6px;"
               onclick="event.stopPropagation();loadCompareSlot(${i})">Load</button>
             ${companyData ? `<button class="btn-secondary" style="flex:1;font-size:9px;padding:4px 6px;"
               onclick="event.stopPropagation();addCurrentToSlot(${i})">+ Current</button>` : ''}
           </div>
-          <div style="font-size:9px;color:var(--text3);margin-top:4px;text-align:center;">Enter org. nr.</div>
         </div>`;
     }
   }
@@ -6180,17 +6189,62 @@ function addCurrentToSlot(i) {
   showToast(`${t('toast_added_compare')} (${companyData.name})`);
 }
 
-// Load a company into a compare slot by org number
+// ── Compare slot search handlers ──
+let _cmpSlotTimer = null;
+
+function cmpSlotInput(i, val) {
+  clearTimeout(_cmpSlotTimer);
+  const dd = document.getElementById('cmp-dd-' + i);
+  if (!dd) return;
+  const isOrg = /^[\d]/.test(val);
+  if (isOrg || !val || val.length < 2) { closeDropdown(dd); return; }
+  _cmpSlotTimer = setTimeout(() => {
+    runLiveSearch(val, dd, (orgNr, name) => {
+      closeDropdown(dd);
+      const input = document.getElementById('cmp-input-' + i);
+      if (input) input.value = orgNr;
+      loadCompareSlotByOrg(i, orgNr, name);
+    });
+  }, 300);
+}
+
+function cmpSlotKey(e, i) {
+  if (e.key === 'Escape') closeDropdown(document.getElementById('cmp-dd-' + i));
+  if (e.key === 'Enter') { e.preventDefault(); loadCompareSlot(i); }
+}
+
+// Load a company into a compare slot — handles both org number and name
 async function loadCompareSlot(i) {
   const input = document.getElementById('cmp-input-' + i);
   if (!input) return;
-  const raw   = input.value.trim();
+  const raw = input.value.trim();
+  if (!raw) return;
+  closeDropdown(document.getElementById('cmp-dd-' + i));
+
+  const isOrg = /^\d[\d\-]{7,}/.test(raw);
+  if (isOrg) {
+    await loadCompareSlotByOrg(i, raw);
+  } else {
+    // Name-based: try server search, then AI fallback
+    const slotEl = document.getElementById('cmp-slot-empty-' + i);
+    if (slotEl) slotEl.innerHTML = `<div class="cmp-slot-loading"><span class="loading-dots"><span></span><span></span><span></span></span> Searching "${raw}"...</div>`;
+    const results = await searchByNameServer(raw);
+    if (results && results.length > 0) {
+      await loadCompareSlotByOrg(i, results[0].orgNr, results[0].name);
+    } else {
+      showToast('No company found — try an org. number');
+      renderSlots();
+    }
+  }
+}
+
+async function loadCompareSlotByOrg(i, raw, knownName) {
   const clean = raw.replace(/[^0-9]/g, '');
   if (clean.length < 10) { showToast(t('toast_invalid_org')); return; }
 
   // Show loading state
   const slotEl = document.getElementById('cmp-slot-empty-' + i);
-  if (slotEl) slotEl.innerHTML = `<div class="cmp-slot-loading"><span class="loading-dots"><span></span><span></span><span></span></span> Loading ${raw}...</div>`;
+  if (slotEl) slotEl.innerHTML = `<div class="cmp-slot-loading"><span class="loading-dots"><span></span><span></span><span></span></span> Loading ${knownName || raw}...</div>`;
 
   // Try live API then fallback to demo
   let d = null;
@@ -6199,9 +6253,9 @@ async function loadCompareSlot(i) {
     d = mapAPIResponse(apiData, clean);
   } else {
     d = DEMO_COMPANIES[clean] || buildGenericDemo(raw);
-    // Give slots slightly varied data so comparison is interesting
     d = jitterDemoData(d, i);
   }
+  if (knownName && d.name === `Company ${raw}`) d.name = knownName;
 
   // Prevent same org appearing twice
   if (compareSlots.some((s,idx) => s && s.orgNr === d.orgNr && idx !== i)) {
@@ -7873,7 +7927,7 @@ FLAGS:
   } else if (activeTab === 'ma') {
     ctx += `\nThe M&A Screener shows a score ring (0–100), a BUY/HOLD/PASS verdict, and a score breakdown bar chart. Below that are compliance DD flags, asset lifecycle analysis, and debt maturity. The AI screen adds a full DD findings table with deal structure recommendations. Score >65 = BUY, 40-65 = HOLD, <40 = PASS.`;
   } else if (activeTab === 'compare') {
-    ctx += `\nThe Compare tab has 5 company slots at the top. Empty slots show an input box — enter an org. number and press Enter or click Load. The "+ Current" button adds whatever company is loaded in the main terminal. The SNI selector row changes which sector benchmark is shown. The radar chart shows 6 normalised dimensions per company. The flag matrix shows compliance risks across all loaded companies.`;
+    ctx += `\nThe Compare tab has 5 company slots at the top. Empty slots show an input box — type an org. number or company name and press Enter or click Load. Name searches show a live dropdown of matching companies. The "+ Current" button adds whatever company is loaded in the main terminal. The SNI selector row changes which sector benchmark is shown. The radar chart shows 6 normalised dimensions per company. The flag matrix shows compliance risks across all loaded companies.`;
   } else if (activeTab === 'benchmarks') {
     ctx += `\nThe Benchmarks tab fetches live sector median ratios from Statistics Sweden (SCB). Select which sectors you need, choose a year and company size class, then click "Fetch from SCB". It calls SCB's free PxWeb API one sector at a time (about 30 seconds total for all sectors). Once done, the Compare tab automatically uses these real numbers. The results show ● LIVE for real SCB data and ● EST. for fallback estimates. The app caches the last fetch so it works offline.`;
   } else if (activeTab === 'financials') {
