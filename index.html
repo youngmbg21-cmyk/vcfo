@@ -1430,6 +1430,73 @@ body.light-mode {
   --text2:   #334155;
   --text3:   #64748b;
 }
+
+/* ===== COMPETITOR BENCH — Ranking Table ===== */
+.cb-rank-table-wrap { overflow-x:auto; }
+.cb-rank-table {
+  width:100%; border-collapse:collapse; font-size:11px;
+  min-width:900px;
+}
+.cb-rank-table th {
+  padding:8px 10px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--text3); border-bottom:1px solid var(--border);
+  text-align:left; background:var(--bg3); white-space:nowrap;
+  cursor:pointer; user-select:none;
+  transition:color 0.15s;
+}
+.cb-rank-table th:hover { color:var(--text); }
+.cb-rank-table th.sorted { color:var(--amber); }
+.cb-rank-table th .sort-arrow { margin-left:4px; opacity:0.6; }
+.cb-rank-table td {
+  padding:10px 10px;
+  border-bottom:1px solid rgba(30,41,59,0.5);
+  vertical-align:middle;
+}
+.cb-rank-table tr:last-child td { border-bottom:none; }
+.cb-rank-table tr.cb-is-mine td {
+  background: linear-gradient(90deg, rgba(245,158,11,0.06), transparent);
+}
+.cb-rank-table tr.cb-is-mine td:first-child {
+  border-left:3px solid var(--amber);
+}
+.cb-rank-badge {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:26px; height:26px; border-radius:50%;
+  font-weight:700; font-family:'JetBrains Mono',monospace; font-size:11px;
+}
+.cb-rank-badge.r1 { background:rgba(245,158,11,0.2); color:var(--amber); }
+.cb-rank-badge.r2 { background:rgba(148,163,184,0.15); color:#94a3b8; }
+.cb-rank-badge.r3 { background:rgba(180,120,60,0.15); color:#b4783c; }
+.cb-rank-badge.rn { background:var(--bg4); color:var(--text3); }
+.cb-rank-badge.mine { background:rgba(245,158,11,0.15); color:var(--amber); border:1px solid rgba(245,158,11,0.3); }
+.cb-metric-val { font-family:'JetBrains Mono',monospace; font-weight:500; }
+.cb-metric-bar-wrap { margin-top:3px; height:3px; background:var(--bg4); border-radius:2px; overflow:hidden; width:80px; }
+.cb-metric-bar { height:100%; border-radius:2px; transition:width 0.6s ease; }
+.cb-delta-badge {
+  font-size:9px; padding:1px 5px; border-radius:2px;
+  font-family:'JetBrains Mono',monospace; font-weight:600;
+}
+.cb-delta-badge.up   { background:rgba(16,185,129,0.12); color:var(--green); }
+.cb-delta-badge.down { background:rgba(239,68,68,0.12);  color:var(--red); }
+.cb-delta-badge.same { background:var(--bg4); color:var(--text3); }
+.cb-stars { display:flex; align-items:center; gap:3px; }
+.cb-star-fill { color:#f59e0b; font-size:11px; }
+.cb-star-empty { color:var(--text3); font-size:11px; }
+.cb-star-num { font-size:10px; color:var(--text2); font-family:'JetBrains Mono',monospace; }
+.cb-review-count { font-size:9px; color:var(--text3); }
+.cb-btn-ma {
+  background:var(--amber-dim); border:1px solid rgba(245,158,11,0.3);
+  color:var(--amber); border-radius:6px; padding:5px 10px;
+  font-family:'DM Sans',sans-serif; font-size:10px; font-weight:600;
+  cursor:pointer; transition:all 0.2s; white-space:nowrap;
+}
+.cb-btn-ma:hover { background:var(--amber); color:#000; }
+.cb-btn-ma.is-mine {
+  background:transparent; border-color:transparent; color:var(--text3);
+  cursor:default; pointer-events:none;
+}
 </style>
 </head>
 <body>
@@ -2097,8 +2164,8 @@ body.light-mode {
               </div>
             </div>
             <div style="display:flex;gap:6px;">
-              <button class="btn-secondary" style="font-size:10px;" id="cbBtnExport">⬇ Export CSV</button>
-              <button class="btn-secondary" style="font-size:10px;" id="cbBtnClear">✕ Clear</button>
+              <button class="btn-secondary" style="font-size:10px;" id="cbBtnExport" onclick="cbExportCSV()">⬇ Export CSV</button>
+              <button class="btn-secondary" style="font-size:10px;" id="cbBtnClear" onclick="cbClearAll()">✕ Clear</button>
             </div>
           </div>
 
@@ -8591,9 +8658,294 @@ function cbCheckRunBtn() {
   btn.style.display = (hasCompany && hasCompetitors) ? 'block' : 'none';
 }
 
+// ============================================================
+// COMPETITOR BENCH — Ranking engine
+// ============================================================
+let cbRankData  = [];
+let cbSortKey   = 'ebitdaPct';
+let cbSortDir   = 'desc';
+
+const CB_SORT_OPTIONS = [
+  { key:'ebitdaPct', label:'EBITDA %' },
+  { key:'ebitPct',   label:'EBIT %' },
+  { key:'netSales',  label:'Revenue' },
+  { key:'roePct',    label:'ROE %' },
+  { key:'rating',    label:'Google ★' },
+];
+
+function cbComputeMetrics(d) {
+  const ebitda    = (d.opProfit || 0) + (d.depreciation || 0);
+  const ebit      = d.opProfit || 0;
+  const opCosts   = (d.netSales || 0) - ebit;
+  const ebitdaPct = d.netSales > 0 ? ebitda / d.netSales * 100 : null;
+  const ebitPct   = d.netSales > 0 ? ebit   / d.netSales * 100 : null;
+  const opCostPct = d.netSales > 0 ? opCosts / d.netSales * 100 : null;
+  const roePct    = d.equity   > 0 ? d.netProfit / d.equity * 100 : null;
+  return { ebitda, ebit, opCosts, ebitdaPct, ebitPct, opCostPct, roePct };
+}
+
 function cbRunBenchmark() {
-  // Placeholder — will be built in a later step
-  showToast('⚔ Benchmark will be implemented in a later step');
+  if (!cbMyCompany) { showToast('⚠ Load your company first'); return; }
+  const loadedComps = cbCompetitors.filter(c => c.status === 'loaded' && c.data);
+  if (loadedComps.length === 0) { showToast('⚠ Add at least one competitor'); return; }
+
+  const allEntries = [
+    { ...cbMyCompany, _isMe: true, orgNr: cbMyCompany.orgNr, rating: null, reviewCount: null, reviewLoading: false },
+    ...loadedComps.map(c => ({ ...c.data, _isMe: false, orgNr: c.orgNr, rating: null, reviewCount: null, reviewLoading: false }))
+  ];
+
+  cbRankData = allEntries.map(d => {
+    const m = cbComputeMetrics(d);
+    return {
+      name:        d.name,
+      orgNr:       d.orgNr,
+      isMe:        d._isMe,
+      fiscalYear:  d.fiscalYear,
+      isLive:      d._isLive,
+      isDemo:      d._isDemo,
+      netSales:    d.netSales,
+      opCosts:     m.opCosts,
+      ebitda:      m.ebitda,
+      ebitdaPct:   m.ebitdaPct,
+      ebit:        m.ebit,
+      ebitPct:     m.ebitPct,
+      netProfit:   d.netProfit,
+      roePct:      m.roePct,
+      opCostPct:   m.opCostPct,
+      rating:      d.rating,
+      reviewCount: d.reviewCount,
+      reviewLoading: d.reviewLoading,
+      auditorRemark: d.auditorRemark,
+    };
+  });
+
+  cbRenderRankTable();
+  cbRenderSummaryChips();
+  cbRenderSortBtns();
+  showToast(`⚔ Ranked ${cbRankData.length} companies by ${CB_SORT_OPTIONS.find(s=>s.key===cbSortKey)?.label || cbSortKey}`);
+}
+
+function cbSetSortKey(key) {
+  if (cbSortKey === key) cbSortDir = cbSortDir === 'desc' ? 'asc' : 'desc';
+  else { cbSortKey = key; cbSortDir = 'desc'; }
+  cbRenderRankTable();
+  cbRenderSortBtns();
+}
+
+function cbRenderSortBtns() {
+  document.getElementById('cbSortBtns').innerHTML = CB_SORT_OPTIONS.map(s => {
+    const isActive = cbSortKey === s.key;
+    const style = isActive
+      ? 'background:var(--green-dim);border:1px solid rgba(16,185,129,0.4);color:var(--green);font-weight:600;'
+      : 'background:var(--bg3);border:1px solid var(--border);color:var(--text3);';
+    return `<button class="cb-sort-pill${isActive?' active':''}" onclick="cbSetSortKey('${s.key}')" style="${style}border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">${s.label}</button>`;
+  }).join('');
+}
+
+function cbRenderRankTable() {
+  if (cbRankData.length === 0) return;
+
+  const sorted = [...cbRankData].sort((a, b) => {
+    const va = a[cbSortKey] ?? -Infinity;
+    const vb = b[cbSortKey] ?? -Infinity;
+    return cbSortDir === 'desc' ? vb - va : va - vb;
+  });
+
+  const myRow     = sorted.find(r => r.isMe);
+  const maxSales  = Math.max(...sorted.map(r => r.netSales || 0));
+  const maxEbitda = Math.max(...sorted.map(r => Math.abs(r.ebitda || 0)));
+
+  const thSort = (key, label) => {
+    const isSorted = cbSortKey === key;
+    return `<th onclick="cbSetSortKey('${key}')" class="${isSorted?'sorted':''}">${label}${isSorted ? ' <span class="sort-arrow">'+(cbSortDir==='desc'?'▼':'▲')+'</span>' : ''}</th>`;
+  };
+
+  let html = `<div class="cb-rank-table-wrap"><table class="cb-rank-table">
+    <thead><tr>
+      <th style="width:44px;">Rank</th>
+      <th>Company</th>
+      ${thSort('netSales','Revenue')}
+      ${thSort('opCostPct','Op. Cost %')}
+      ${thSort('ebitda','EBITDA')}
+      ${thSort('ebitdaPct','EBITDA %')}
+      ${thSort('ebit','EBIT')}
+      ${thSort('ebitPct','EBIT %')}
+      ${thSort('rating','Google ★')}
+      <th style="text-align:center;">Action</th>
+    </tr></thead>
+    <tbody>`;
+
+  sorted.forEach((row, i) => {
+    const rank  = i + 1;
+    const isMe  = row.isMe;
+
+    // Rank badge
+    const badgeCls = isMe ? 'mine' : rank===1?'r1':rank===2?'r2':rank===3?'r3':'rn';
+    const rankNum  = isMe ? `#${rank} ★` : `#${rank}`;
+
+    // Delta vs my company
+    const myEbitdaPct = myRow?.ebitdaPct ?? null;
+    const deltaEbitda = (!isMe && myEbitdaPct !== null && row.ebitdaPct !== null) ? row.ebitdaPct - myEbitdaPct : null;
+
+    // Bar widths
+    const revBarPct    = maxSales > 0 ? (row.netSales / maxSales * 100) : 0;
+    const ebitdaBarPct = maxEbitda > 0 ? (Math.max(row.ebitda, 0) / maxEbitda * 100) : 0;
+    const ebitdaColor  = (row.ebitdaPct||0) > 10 ? 'var(--green)' : (row.ebitdaPct||0) > 5 ? 'var(--amber)' : 'var(--red)';
+    const ebitColor    = (row.ebitPct||0) > 8 ? 'var(--green)' : (row.ebitPct||0) > 3 ? 'var(--amber)' : 'var(--red)';
+
+    // Stars
+    let starsHtml;
+    if (row.reviewLoading) {
+      starsHtml = '<span class="loading-dots" style="color:var(--amber);"><span></span><span></span><span></span></span>';
+    } else if (row.rating !== null) {
+      const full  = Math.floor(row.rating);
+      const half  = row.rating % 1 >= 0.5 ? 1 : 0;
+      const empty = 5 - full - half;
+      starsHtml = `<div class="cb-stars">
+        ${'<span class="cb-star-fill">★</span>'.repeat(full)}
+        ${half ? '<span class="cb-star-fill" style="opacity:0.6;">★</span>' : ''}
+        ${'<span class="cb-star-empty">☆</span>'.repeat(empty)}
+        <span class="cb-star-num">${row.rating.toFixed(1)}</span>
+      </div>
+      <div class="cb-review-count">${row.reviewCount ? row.reviewCount.toLocaleString() + ' reviews' : ''}</div>`;
+    } else {
+      starsHtml = '<span style="font-size:9px;color:var(--text3);">—</span>';
+    }
+
+    // Action button
+    const actionBtn = isMe
+      ? '<span class="cb-btn-ma is-mine">You</span>'
+      : `<button class="cb-btn-ma" onclick="cbLoadIntoMATab('${row.orgNr}')" title="Load ${row.name} into M&A Screener">🎯 M&A Tab</button>`;
+
+    html += `<tr class="${isMe ? 'cb-is-mine' : ''}">
+      <td><span class="cb-rank-badge ${badgeCls}">${rankNum}</span></td>
+      <td>
+        <div style="font-weight:600;color:var(--text);">${row.name}${row.isDemo?'<span style="font-size:8px;color:var(--amber);margin-left:4px;">DEMO</span>':''}
+          ${row.auditorRemark ? '<span style="font-size:8px;color:var(--red);margin-left:4px;">⚠ REMARK</span>' : ''}
+        </div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px;">${row.orgNr} · FY${row.fiscalYear || '—'}</div>
+      </td>
+      <td>
+        <div class="cb-metric-val">${fmtSEK(row.netSales)}</div>
+        <div class="cb-metric-bar-wrap"><div class="cb-metric-bar" style="width:${revBarPct.toFixed(0)}%;background:var(--blue);"></div></div>
+      </td>
+      <td>
+        <div class="cb-metric-val" style="color:${(row.opCostPct||0)>85?'var(--red)':(row.opCostPct||0)>75?'var(--amber)':'var(--text)'}">${fmtPct(row.opCostPct)}</div>
+      </td>
+      <td>
+        <div class="cb-metric-val">${fmtSEK(row.ebitda)}</div>
+        <div class="cb-metric-bar-wrap"><div class="cb-metric-bar" style="width:${ebitdaBarPct.toFixed(0)}%;background:${ebitdaColor};"></div></div>
+      </td>
+      <td>
+        <div class="cb-metric-val" style="color:${ebitdaColor};font-weight:600;">${fmtPct(row.ebitdaPct)}</div>
+        ${deltaEbitda !== null ? `<span class="cb-delta-badge ${deltaEbitda > 0.5 ? 'up' : deltaEbitda < -0.5 ? 'down' : 'same'}">${deltaEbitda > 0 ? '+' : ''}${deltaEbitda.toFixed(1)}pp vs you</span>` : ''}
+      </td>
+      <td>
+        <div class="cb-metric-val">${fmtSEK(row.ebit)}</div>
+      </td>
+      <td>
+        <div class="cb-metric-val" style="color:${ebitColor};font-weight:600;">${fmtPct(row.ebitPct)}</div>
+      </td>
+      <td>${starsHtml}</td>
+      <td style="text-align:center;">${actionBtn}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('cbRankTableWrap').innerHTML = html;
+  document.getElementById('cbRankSubtitle').textContent =
+    `${sorted.length} companies · Sorted by ${CB_SORT_OPTIONS.find(s=>s.key===cbSortKey)?.label || cbSortKey} · ${cbSortDir === 'desc' ? 'Highest first' : 'Lowest first'}`;
+}
+
+function cbRenderSummaryChips() {
+  if (!cbRankData.length || !cbMyCompany) return;
+  const el = document.getElementById('cbSummaryChips');
+  el.style.display = 'flex';
+
+  const sorted = [...cbRankData].sort((a, b) => (b.ebitdaPct || 0) - (a.ebitdaPct || 0));
+  const myRank = sorted.findIndex(r => r.isMe) + 1;
+  const total  = sorted.length;
+  const myData = cbRankData.find(r => r.isMe);
+  const above  = sorted.filter(r => !r.isMe && (r.ebitdaPct || 0) > (myData?.ebitdaPct || 0)).length;
+  const below  = sorted.filter(r => !r.isMe && (r.ebitdaPct || 0) < (myData?.ebitdaPct || 0)).length;
+  const best   = sorted[0];
+  const gap    = best && myData ? (best.ebitdaPct - myData.ebitdaPct) : null;
+
+  const rankColor = myRank <= Math.ceil(total / 3) ? 'green' : myRank <= Math.ceil(total * 2 / 3) ? 'amber' : 'red';
+
+  const chipStyle = (color) => {
+    const map = {
+      green: 'background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,0.25);',
+      red:   'background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,0.25);',
+      amber: 'background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,0.25);',
+      grey:  'background:var(--bg4);color:var(--text3);border:1px solid var(--border);',
+    };
+    return map[color] + 'padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.02em;';
+  };
+
+  el.innerHTML = `
+    <span style="${chipStyle(rankColor)}">Your rank: #${myRank} of ${total}</span>
+    <span style="${chipStyle(above === 0 ? 'green' : 'red')}">${above} ahead of you</span>
+    <span style="${chipStyle('green')}">${below} behind you</span>
+    ${gap !== null && gap > 0.5 ? `<span style="${chipStyle('amber')}">Gap to #1: ${gap.toFixed(1)}pp EBITDA</span>` : gap !== null && gap <= 0 ? `<span style="${chipStyle('green')}">You lead on EBITDA margin</span>` : ''}
+  `;
+}
+
+function cbLoadIntoMATab(orgNr) {
+  document.getElementById('orgInput').value = orgNr;
+  showToast(`🎯 Loading ${orgNr} into M&A tab…`);
+  loadCompanyByOrg(orgNr).then(() => {
+    switchTab('ma');
+    if (typeof runMAScreen === 'function') runMAScreen();
+  });
+}
+
+function cbExportCSV() {
+  if (!cbRankData.length) { showToast('⚠ No data to export'); return; }
+  const sorted = [...cbRankData].sort((a, b) => (b[cbSortKey] || 0) - (a[cbSortKey] || 0));
+  const headers = ['Rank','Company','Org Nr','FY','Revenue','Op. Cost %','EBITDA','EBITDA %','EBIT','EBIT %','Net Profit','Google Rating','Review Count','Is Mine'];
+  const rows = sorted.map((r, i) => [
+    i + 1, r.name, r.orgNr, r.fiscalYear,
+    r.netSales, r.opCostPct?.toFixed(1), r.ebitda, r.ebitdaPct?.toFixed(1),
+    r.ebit, r.ebitPct?.toFixed(1), r.netProfit,
+    r.rating || '', r.reviewCount || '',
+    r.isMe ? 'YES' : 'NO'
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v ?? ''}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'vcfo_competitor_bench.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('✓ CSV exported');
+}
+
+function cbClearAll() {
+  cbRankData = [];
+  cbMyCompany = null;
+  cbCompetitors = [];
+
+  document.getElementById('cbMyCompanyHero').style.display = 'none';
+  document.getElementById('cbBtnLoadMine').textContent = 'Load My Company';
+  document.getElementById('cbOrgInput').value = '';
+  document.getElementById('cbDotBV').style.background = 'var(--text3)';
+  document.getElementById('cbTxtBV').textContent = 'Bolagsverket: not connected';
+  document.getElementById('cbSummaryChips').style.display = 'none';
+  document.getElementById('cbSummaryChips').innerHTML = '';
+  document.getElementById('cbRankSubtitle').textContent = 'Add your company and competitors to generate the ranking';
+  document.getElementById('cbRankTableWrap').innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;color:var(--text3);font-size:12px;gap:10px;">
+      <div style="font-size:40px;opacity:0.3;">⚔</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text2);">No benchmark data yet</div>
+      <div>Load your company and add competitors on the left, then click Run Benchmark</div>
+    </div>`;
+
+  cbUpdateCount();
+  cbRenderCompetitorList();
+  cbRenderPresets(cbActiveSNI);
+  cbCheckRunBtn();
+  cbRenderSortBtns();
 }
 
 // Initialize presets on first tab visit
