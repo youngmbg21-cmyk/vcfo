@@ -3555,13 +3555,8 @@ async function loadCompanyByOrg(raw, knownName) {
   showToast(`${isLive ? '✓ LIVE' : '⚠ ESTIMATED'} ${d.name} · FY${d.fiscalYear}`);
   updateChatPills();
 
-  // Auto-render trend panel if multi-year data is available
-  if (Object.keys(historyData).length >= 2) {
-    renderTrendPanel();
-    const btn = document.getElementById('btnLoadAllYears');
-    if (btn) btn.style.display = 'none';
-  } else if (availableYears.length >= 2) {
-    // historyData wasn't pre-populated — load all years explicitly
+  // Always load all available years for trend analysis and M&A scoring
+  if (availableYears.length >= 2) {
     loadAllYears();
   }
 }
@@ -4441,7 +4436,7 @@ function computeAndRenderDeterministicMA(d) {
   let trendBonus = 0;
   let trendLabel = '';
   const trendYears = Object.keys(historyData).sort();
-  if (trendYears.length >= 3) {
+  if (trendYears.length >= 4 || (trendYears.length >= 2 && availableYears.length < 4)) {
     const firstYr = historyData[trendYears[0]];
     const lastYr  = historyData[trendYears[trendYears.length - 1]];
     const firstSales = firstYr?.netSales || 0;
