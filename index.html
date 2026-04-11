@@ -4635,13 +4635,13 @@ function renderValuationCard(d) {
     return;
   }
 
-  // Step 1: Size-based multiple range
+  // Step 1: Size-based multiple range (thresholds in SEK, converted from USD at ~10.5 SEK/USD)
   let sizeLow, sizeHigh, sizeLabel;
-  if (ebitda < 250_000)        { sizeLow = 1.5; sizeHigh = 2.5; sizeLabel = '< 250k'; }
-  else if (ebitda < 750_000)   { sizeLow = 2.0; sizeHigh = 3.5; sizeLabel = '250k–750k'; }
-  else if (ebitda < 1_500_000) { sizeLow = 3.0; sizeHigh = 5.5; sizeLabel = '750k–1.5M'; }
-  else if (ebitda < 5_000_000) { sizeLow = 4.0; sizeHigh = 9.0; sizeLabel = '1.5M–5M'; }
-  else                         { sizeLow = 5.0; sizeHigh = 12.0; sizeLabel = '> 5M'; }
+  if (ebitda < 2_500_000)        { sizeLow = 1.5; sizeHigh = 2.5; sizeLabel = '< 2.5M SEK'; }
+  else if (ebitda < 7_500_000)   { sizeLow = 2.0; sizeHigh = 3.5; sizeLabel = '2.5M–7.5M SEK'; }
+  else if (ebitda < 15_000_000)  { sizeLow = 3.0; sizeHigh = 5.5; sizeLabel = '7.5M–15M SEK'; }
+  else if (ebitda < 50_000_000)  { sizeLow = 4.0; sizeHigh = 9.0; sizeLabel = '15M–50M SEK'; }
+  else                           { sizeLow = 5.0; sizeHigh = 12.0; sizeLabel = '> 50M SEK'; }
 
   // Step 2: Industry-adjusted multiple from SNI code
   const sniCode = parseInt((d.sni || '').replace(/[^0-9]/g, '').slice(0, 2)) || 0;
