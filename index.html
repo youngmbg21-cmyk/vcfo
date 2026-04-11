@@ -1961,6 +1961,14 @@ body.light-mode {
       <div>Load a company to view the full iXBRL financial data</div>
     </div>
     <div id="finContent" style="display:none;">
+      <!-- Revenue-to-Net-Profit waterfall chart (full width, above cards) -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title">Revenue → Net Profit Waterfall</div>
+        <div id="finWfYearBar" class="cf-year-bar" style="display:none;"></div>
+        <div style="position:relative;height:320px;">
+          <canvas id="finWaterfallChart"></canvas>
+        </div>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
         <div class="card" style="overflow-x:auto;">
           <div class="card-title">Income Statement (Resultaträkning)</div>
@@ -2934,6 +2942,7 @@ function toggleTheme() {
   if (radarChartInst) { const c = radarChartInst.canvas; const l = radarChartInst.data.labels; const d = radarChartInst.data.datasets; radarChartInst.destroy(); radarChartInst = null; drawRadar(c, l, d); }
   if (barChartInst)   renderBarChart();
   if (cfWaterfallChartInst) renderCashFlow();
+  if (finWaterfallInst) { const yr = finWfSelectedYear || (companyData ? companyData.fiscalYear : null); if (yr && historyData[yr]) renderFinWaterfall(historyData[yr]); else if (companyData) renderFinWaterfall(companyData); }
 }
 
 function applyTheme() {
@@ -4512,6 +4521,125 @@ function renderFinancialsTab(d) {
     ? `<div class="flag-item critical"><div class="flag-sev critical">⚠ REMARK</div><div class="flag-body"><div class="flag-title">Anmärkning — Late Filing (ABL 7 kap. 10 §)</div><div class="flag-detail">${d.auditorRemarkDetail || 'Annual report submitted after statutory deadline.'}</div></div></div>`
     : `<div class="flag-item ok"><div class="flag-sev ok">✓ CLEAN</div><div class="flag-body"><div class="flag-title">No auditor remarks</div><div class="flag-detail">Annual report filed on time. Auditor issued unqualified opinion.</div></div></div>`;
   document.getElementById('finAuditor').innerHTML = `<div class="flag-list">${remarkHtml}</div>`;
+
+  // Render revenue-to-net-profit waterfall chart
+  finWfSelectedYear = d.fiscalYear;
+  renderFinWaterfall(d);
+  renderFinWfYearBar();
+}
+
+// ── Financials Waterfall — Revenue → Net Profit ──
+let finWaterfallInst = null;
+let finWfSelectedYear = null;
+
+function renderFinWfYearBar() {
+  const bar = document.getElementById('finWfYearBar');
+  if (!bar) return;
+  const years = Object.keys(historyData || {}).sort();
+  if (years.length <= 1) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  const activeYear = finWfSelectedYear || (companyData ? companyData.fiscalYear : null);
+  bar.innerHTML = years.map(yr =>
+    `<button class="cf-year-pill${yr === activeYear ? ' active' : ''}" onclick="finWfSwitchYear('${yr}')">${yr}</button>`
+  ).join('');
+}
+
+function finWfSwitchYear(year) {
+  finWfSelectedYear = year;
+  const d = historyData[year] || companyData;
+  if (d) renderFinWaterfall(d);
+  renderFinWfYearBar();
+}
+
+function renderFinWaterfall(d) {
+  const canvas = document.getElementById('finWaterfallChart');
+  if (!canvas || !d) return;
+
+  const isLight   = document.body.classList.contains('light-mode');
+  const tickColor = isLight ? '#334155' : '#FFFFFF';
+  const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
+
+  const labels = ['Net Sales', '− COGS', '− Personnel', '− Deprec.', '− Other Op.', 'EBIT', '− Fin. Costs', '− Tax', 'Net Profit'];
+  const raw    = d.rawMaterials || 0;
+  const pers   = d.personnel || 0;
+  const depr   = d.depreciation || 0;
+  const other  = d.otherOpCosts || 0;
+  const finNet = (d.financialExpenses || 0) - (d.financialIncome || 0);
+  const tax    = d.tax || 0;
+  const ebit   = d.opProfit || 0;
+  const netP   = d.netProfit || 0;
+
+  const values = [d.netSales || 0, -raw, -pers, -depr, -other, ebit, -finNet, -tax, netP];
+
+  // Waterfall base computation
+  const base = [];
+  let running = 0;
+  for (let i = 0; i < values.length; i++) {
+    if (i === 0 || i === 5 || i === 8) { base.push(0); running = values[i]; }
+    else {
+      const v = values[i];
+      if (v < 0) { base.push(running + v); running += v; }
+      else       { base.push(running);    running += v; }
+    }
+  }
+  const segment = values.map(v => Math.abs(v));
+
+  const colors = values.map((v, i) => {
+    if (i === 0) return 'rgba(0,200,255,0.7)';   // Net Sales — blue
+    if (i === 5) return 'rgba(0,200,255,0.55)';   // EBIT — blue lighter
+    if (i === 8) return netP >= 0 ? 'rgba(0,255,136,0.7)' : 'rgba(255,69,96,0.7)'; // Net Profit
+    return v >= 0 ? 'rgba(0,255,136,0.5)' : 'rgba(255,69,96,0.5)';
+  });
+  const borders = values.map((v, i) => {
+    if (i === 0 || i === 5) return '#3b82f6';
+    if (i === 8) return netP >= 0 ? '#10b981' : '#ef4444';
+    return v >= 0 ? '#10b981' : '#ef4444';
+  });
+
+  const draw = () => {
+    if (finWaterfallInst) finWaterfallInst.destroy();
+    finWaterfallInst = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Base', data: base, backgroundColor: 'transparent', borderWidth: 0, barPercentage: 0.6 },
+          { label: 'Amount', data: segment, backgroundColor: colors, borderColor: borders, borderWidth: 1, borderRadius: 3, barPercentage: 0.6 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { stacked: true, ticks: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' } }, grid: { display: false } },
+          y: { stacked: true, ticks: { color: tickColor, font: { size: 9, family: 'JetBrains Mono' }, callback: v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(0)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'k'; return v; } }, grid: { color: gridColor } }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { ...chartTooltipStyle(isLight), callbacks: { title: ctx => ctx[0]?.label ?? '', label: ctx => { if(ctx.datasetIndex===0) return ''; return `${labels[ctx.dataIndex]}: ${fmtSEK(values[ctx.dataIndex])}`; } } }
+        }
+      },
+      plugins: [{
+        id: 'finWfLabels',
+        afterDatasetsDraw(chart) {
+          const { ctx: c, scales: { y } } = chart;
+          const meta = chart.getDatasetMeta(1);
+          c.save();
+          c.font = '9px JetBrains Mono';
+          c.textAlign = 'center';
+          c.textBaseline = 'bottom';
+          c.fillStyle = tickColor;
+          base.forEach((b, i) => {
+            const el = meta.data[i];
+            if (!el) return;
+            const top = b + segment[i];
+            c.fillText(fmtSEK(values[i]), el.x, y.getPixelForValue(top) - 4);
+          });
+          c.restore();
+        }
+      }]
+    });
+  };
+  if (typeof Chart === 'undefined') { loadChartJS(draw); } else { draw(); }
 }
 
 function buildRatioRows(d) {
@@ -7267,15 +7395,16 @@ function buildChatContext() {
 
   // ── Tab labels & descriptions ──
   const TAB_INFO = {
-    company:    { name:'Company Overview',     desc:'Shows the loaded company\'s key financial snapshot — net sales, profit, equity, KPI cards, and quick-action buttons to run the CFO Audit or M&A Screen.' },
-    cfo:        { name:'CFO Audit',            desc:'Internal financial health audit. Shows rule-based flags for Revenue Quality, Efficiency Drift (ROS trend), and Aggressive Payouts. The AI Audit button generates a 3-concern narrative using Claude.' },
-    ma:         { name:'M&A Screener',         desc:'Acquisition due diligence. Shows a 0–100 Buy/Pass score based on 4 dimensions: Profitability (25pts), Compliance (25pts), Balance Sheet (25pts), Asset Quality (25pts). Also checks the auditor Anmärkning, asset depreciation, and debt maturity.' },
-    financials: { name:'Financials',           desc:'Full income statement, balance sheet summary, key ratio table with thresholds, and auditor notes for the loaded company.' },
-    cashflow:   { name:'Cash Flow',            desc:'Waterfall bridge from Net Profit to Free Cash Flow. Shows depreciation add-back, working capital change, and CapEx deduction. Includes cash conversion, FCF margin, and FCF yield metrics.' },
-    compare:    { name:'Compare & Benchmark',  desc:'Load up to 5 companies side-by-side. Shows a radar chart, M&A score bar chart, metrics table with best/worst highlighting, and a risk flag matrix. Benchmarks against the selected SNI sector median.' },
-    benchmarks: { name:'Benchmarks (SCB Live)',desc:'Pulls official sector median ratios from Statistics Sweden (SCB) via their free PxWeb API. Once fetched, these real numbers replace the built-in estimates in the Compare tab. Select sectors, year, and company size, then click Fetch.' },
-    watchlist:  { name:'Watchlist Portfolio',   desc:'Pinned companies persist across sessions in localStorage. Shows M&A score, key ratios, and verdict for each saved company. Load or compare directly from here.' },
-    guide:      { name:'Guide',                desc:'Reference documentation for formulas, API configuration, and scoring methodology.' },
+    company:            { name:'Company Overview',     desc:'Shows the loaded company\'s key financial snapshot — net sales, profit, equity, KPI cards, and quick-action buttons to run the CFO Audit or M&A Screen. Displays a LIVE or NO DATA badge.' },
+    financials:         { name:'Financials',           desc:'Revenue-to-Net-Profit waterfall chart (with year toggle), full income statement, balance sheet summary, key ratio table (ROS, ROE, D/E, Current Ratio, Payout Ratio, Revenue/Employee, Personnel Cost/Employee) with sector benchmarks, and auditor notes.' },
+    cashflow:           { name:'Cash Flow',            desc:'Waterfall bridge from Net Profit to Free Cash Flow. Shows depreciation add-back, working capital change, and CapEx deduction. Includes cash conversion, FCF margin, FCF yield, and dividends/FCF metrics. Year toggle and multi-year comparison mode.' },
+    cfo:                { name:'CFO Audit',            desc:'Internal financial health audit. Rule-based flags for Revenue Quality, Efficiency Drift (ROS trend), Aggressive Payouts, Hidden Liabilities, and Asset Quality. AI Audit generates a 3-concern narrative using Claude.' },
+    ma:                 { name:'M&A Screener',         desc:'Acquisition due diligence. 0–100 Buy/Pass score: Profitability (25pts), Compliance (25pts), Balance Sheet (25pts), Asset Quality (25pts). Checks auditor Anmärkning, asset depreciation, and debt maturity.' },
+    'competitor-bench': { name:'Competitor Bench',     desc:'Load your company and up to 20 competitors. Ranking table with sortable columns: Revenue, Op. Cost%, EBITDA, EBITDA%, EBIT, EBIT%, Revenue/Employee, Personnel Cost/Employee, and Google ★ ratings (via SerpApi). Competitors are auto-saved to localStorage and classified by SNI industry.' },
+    compare:            { name:'Compare & Benchmark',  desc:'Load up to 5 companies side-by-side. Radar chart, M&A score bar chart, metrics table with best/worst highlighting, and risk flag matrix. Benchmarks against selected SNI sector median.' },
+    watchlist:          { name:'Watchlist Portfolio',   desc:'Pinned companies persist across sessions in localStorage. Shows M&A score, key ratios, and verdict for each saved company.' },
+    benchmarks:         { name:'Benchmarks (SCB Live)', desc:'Pulls official sector median ratios from Statistics Sweden (SCB) via their free PxWeb API. Once fetched, these real numbers replace the built-in estimates.' },
+    guide:              { name:'Guide',                desc:'Reference documentation for formulas, API configuration, and scoring methodology.' },
   };
 
   const tab     = TAB_INFO[activeTab] || TAB_INFO.company;
@@ -7292,33 +7421,51 @@ Today: ${today}
 Current screen: ${tabName}
 What this screen does: ${tabDesc}
 
-APP STRUCTURE (all tabs):
-- 🏢 Company: Load a Swedish company by org. number (format 556000-1234). See key financials at a glance.
-- 📊 CFO Audit: Run an internal health check. Rule engine + AI analysis of 3 operational concerns.
-- 🎯 M&A Screener: Get a 0–100 acquisition fit score with Buy/Pass verdict. Checks compliance, assets, debt.
-- 📋 Financials: Full income statement and balance sheet with ratio benchmarks.
-- ⚖ Compare: Add up to 5 companies to compare side-by-side with radar chart and flag matrix.
-- 📡 Benchmarks: Fetch live SCB sector medians to use as the comparison baseline in the Compare tab.
+APP STRUCTURE (tabs in order):
+- 🏢 Company: Load a Swedish company by org. number (format 556000-1234). See key financials and KPI cards at a glance.
+- 📋 Financials: Revenue-to-Net-Profit waterfall chart with year toggle, full income statement, balance sheet, key ratio table, and auditor notes.
+- 💧 Cash Flow: Waterfall bridge from Net Profit → Free Cash Flow with year toggle and multi-year comparison.
+- 📊 CFO Audit: Rule-engine flags + AI analysis of 3 operational concerns (Revenue Quality, Efficiency Drift, Aggressive Payouts).
+- 🎯 M&A Screener: 0–100 acquisition fit score (BUY/HOLD/PASS) across 4 dimensions.
+- ⚔ Competitor Bench: Rank up to 20 competitors side-by-side across Revenue, EBITDA%, EBIT%, Rev/Employee, Pers. Cost/Emp, and Google ratings.
+- ⚖ Compare: Load up to 5 companies for radar chart, M&A score bar chart, and risk flag matrix.
+- ★ Watchlist: Pinned companies persist across sessions. Quick-load or compare.
+- 📡 Benchmarks: Fetch live SCB sector medians from Statistics Sweden.
 - 📖 Guide: Reference docs for formulas and methodology.
 
 HOW TO USE THE APP (step by step):
-1. Enter a Swedish org. number in the top search bar (e.g. 556000-1234) and click LOAD.
+1. Enter a Swedish org. number or company name in the top search bar. A live dropdown appears as you type.
 2. The Company tab populates with key financials. Click "Run CFO Audit" or "Screen for M&A".
-3. To compare companies, click "⚖ Add to Compare" on the Company tab, then switch to Compare tab and add more.
-4. To use real sector benchmarks instead of estimates, go to the Benchmarks tab and click Fetch from SCB.
-5. The chatbot (that's me) is always aware of what's on screen and what data is loaded — ask me anything.
+3. Switch to Financials tab to see the revenue-to-profit waterfall and key ratios.
+4. Use Cash Flow tab to visualise how Net Profit converts to Free Cash Flow.
+5. Use Competitor Bench tab to add competitors by name/org.nr, run a benchmark ranking, and compare workforce efficiency.
+6. To compare companies side-by-side, click "⚖ Add to Compare" on the Company tab, then switch to Compare tab.
+7. To use real sector benchmarks, go to Benchmarks tab and click Fetch from SCB.
+8. The chatbot (that's me) is always aware of what's on screen — ask me anything.
 
-KEY CONCEPTS:
-- Org. number: Swedish company identifier, format 556000-1234. Required to load any company.
-- iXBRL: Digital annual report format used by Bolagsverket (Swedish Companies Registration Office). Source of all financial data.
-- Anmärkning: Official auditor remark for late filing under ABL 7:10§. A red flag for both CFO audit and M&A.
-- ROS (Return on Sales): Operating profit ÷ Net sales. Measures how efficiently the company converts revenue to profit.
-- M&A Score: 0–100. Above 65 = BUY, 40–65 = HOLD, below 40 = PASS.
-- SNI code: Swedish industry classification. Used to select the right benchmark sector in the Compare tab.
-- SCB: Statistics Sweden. Provides free official sector median ratios via their PxWeb API (Benchmarks tab).
-- Demo companies: Click the demo buttons on the Company tab to load pre-filled examples without needing a real org. number.
-- Name search: Type a company name (e.g. "Sandvik", "NCC") and press SEARCH. Claude AI will identify the company and org. number. Or type the org. number directly.
-- Multi-year history: After loading a company, the fiscal year buttons appear. Click "Load All Years" to see trend charts (FY2020–present).
+KEY CONCEPTS & FORMULAS:
+- Org. number: Swedish company ID (format 556000-1234). Required to load any company.
+- iXBRL: Digital annual report from Bolagsverket. Source of all financial data.
+- Anmärkning: Official auditor remark for late filing under ABL 7:10§. Red flag.
+- ROS (Return on Sales): EBIT ÷ Net Sales × 100. Threshold: > 8% = OK.
+- ROE (Return on Equity): Net Profit ÷ Equity × 100. Threshold: > 12% = OK.
+- Debt/Equity (D/E): (Long-term Debt + Current Liabilities) ÷ Equity. Threshold: < 2.0x = OK.
+- Current Ratio: Current Assets ÷ Current Liabilities. Threshold: > 1.5x = OK.
+- Payout Ratio: Dividends ÷ Net Profit × 100. Threshold: < 80% = OK.
+- Revenue / Employee: Net Sales ÷ Avg. Employees. Benchmarked per SNI sector.
+- Personnel Cost / Employee: Total Personnel Costs ÷ Avg. Employees. Flagged if > 120% of sector median.
+- EBITDA: Operating Profit + Depreciation. EBITDA% = EBITDA ÷ Net Sales × 100.
+- EBIT: Operating Profit. Same as Rörelseresultat.
+- Free Cash Flow (FCF): Net Profit + Depreciation − Δ Working Capital − CapEx.
+- Cash Conversion: FCF ÷ EBITDA × 100. > 80% = strong.
+- FCF Margin: FCF ÷ Net Sales × 100. > 8% = strong.
+- M&A Score: 0–100 composite. >65 = BUY, 40–65 = HOLD, <40 = PASS. Breakdown: Profitability (25pts), Compliance (25pts), Balance Sheet (25pts), Asset Quality (25pts).
+- SNI code: Swedish industry classification (2–5 digits). Maps to sector benchmarks.
+- SCB: Statistics Sweden. Provides official sector median ratios via PxWeb API.
+- Key Ratios "FLAG" status: appears when a ratio falls outside its benchmark threshold. "OK" when it meets or exceeds the threshold.
+- Revenue-to-Net-Profit waterfall: visualises Net Sales → −COGS → −Personnel → −Depreciation → −Other Op. Costs → EBIT → −Financial Costs → −Tax → Net Profit.
+- Live search: type a company name in either the main search bar or the Competitor Bench add field — a live dropdown appears after 2 characters with a 300ms debounce.
+- Saved competitors: in the Competitor Bench tab, added companies are auto-saved to localStorage and auto-classified by their SNI industry code from the filing.
 `;
 
   // ── Loaded company ──
@@ -7345,6 +7492,7 @@ KEY RATIOS:
   ROS: ${ros !== null ? ros+'%' : '—'} (prior year: ${prevROS !== null ? prevROS+'%' : '—'})
   ROE: ${roe !== null ? roe+'%' : '—'} | D/E: ${de !== null ? de+'x' : '—'} | Current Ratio: ${cr !== null ? cr+'x' : '—'}
   Payout Ratio: ${payout !== null ? payout+'%' : '—'} | Asset Depreciation: ${assetDep !== null ? assetDep+'%' : '—'}
+  Employees: ${d.employees || '—'} | Personnel Costs: ${fmtSEK(d.personnel)} | Rev/Employee: ${d.employees ? fmtSEK(Math.round(d.netSales/d.employees)) : '—'} | Pers.Cost/Employee: ${d.employees && d.personnel ? fmtSEK(Math.round(d.personnel/d.employees)) : '—'}
 
 BALANCE SHEET:
   Total Assets: ${fmtSEK(d.totalAssets)} | Equity: ${fmtSEK(d.equity)}
@@ -7418,7 +7566,9 @@ FLAGS:
   } else if (activeTab === 'benchmarks') {
     ctx += `\nThe Benchmarks tab fetches live sector median ratios from Statistics Sweden (SCB). Select which sectors you need, choose a year and company size class, then click "Fetch from SCB". It calls SCB's free PxWeb API one sector at a time (about 30 seconds total for all sectors). Once done, the Compare tab automatically uses these real numbers. The results show ● LIVE for real SCB data and ● EST. for fallback estimates. The app caches the last fetch so it works offline.`;
   } else if (activeTab === 'financials') {
-    ctx += `\nThe Financials tab shows the full income statement with current year vs prior year, the balance sheet, a key ratios table with pass/fail thresholds, and auditor notes. The ▲/▼ indicators show whether each ratio is above or below the benchmark threshold.`;
+    ctx += `\nThe Financials tab opens with a Revenue-to-Net-Profit waterfall chart showing how Net Sales reduces through COGS, Personnel, Depreciation, Other Op. Costs to EBIT, then Financial Costs and Tax to reach Net Profit. Year toggle buttons above the chart let the user switch between fiscal years to see how the cost structure changed. Below the waterfall are four cards: Income Statement (current vs prior year), Balance Sheet summary, Key Ratios table (ROS, ROE, D/E, Current Ratio, Payout Ratio, Revenue/Employee, Personnel Cost/Employee — each with sector benchmark and OK/FLAG status), and Auditor Notes.`;
+  } else if (activeTab === 'competitor-bench') {
+    ctx += `\nThe Competitor Bench tab lets the user load their own company and add up to 20 competitors. The left sidebar has a search field (live dropdown as you type), and a saved competitors panel grouped by industry (auto-classified from each company's SNI code). Click "Run Benchmark" to generate a ranking table sorted by EBITDA%, EBIT%, Revenue, ROE%, Rev/Employee, Personnel Cost/Employee, or Google ratings (via SerpApi). Companies are auto-saved to localStorage for next session.`;
   }
 
   ctx += `\n\nIMPORTANT: Always reference specific numbers from the data above when answering financial questions. When answering app/how-to questions, give step-by-step instructions referencing the actual buttons and tab names. Never say "I don't have access to" — you have full context above.`;
