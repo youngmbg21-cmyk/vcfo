@@ -4436,7 +4436,9 @@ function computeAndRenderDeterministicMA(d) {
   let trendBonus = 0;
   let trendLabel = '';
   const trendYears = Object.keys(historyData).sort();
-  if (trendYears.length >= 4 || (trendYears.length >= 2 && availableYears.length < 4)) {
+  if (trendYears.length < 2) {
+    trendLabel = isSv ? 'Trenddata laddas...' : 'Trend data loading...';
+  } else if (trendYears.length >= 4 || (trendYears.length >= 2 && availableYears.length < 4)) {
     const firstYr = historyData[trendYears[0]];
     const lastYr  = historyData[trendYears[trendYears.length - 1]];
     const firstSales = firstYr?.netSales || 0;
@@ -4452,6 +4454,8 @@ function computeAndRenderDeterministicMA(d) {
     else if (salesCAGR < -3 && profitTrend < -15) { trendBonus = -8; trendLabel = isSv ? 'Nedåtgående trend' : 'Declining trend'; }
     else if (salesCAGR < 0 || profitTrend < -10) { trendBonus = -4; trendLabel = isSv ? 'Svag trend' : 'Weakening trend'; }
     else { trendBonus = 0; trendLabel = isSv ? 'Neutral trend' : 'Neutral trend'; }
+  } else {
+    trendLabel = isSv ? 'Trenddata laddas (' + trendYears.length + '/' + availableYears.length + ' år)...' : 'Trend loading (' + trendYears.length + '/' + availableYears.length + ' yrs)...';
   }
 
   const total = Math.max(0, Math.min(100, profScore + compScore + bsScore + effScore - hiddenDebtPenalty + trendBonus));
@@ -4481,10 +4485,10 @@ function computeAndRenderDeterministicMA(d) {
     { label: isSv ? 'Balansräkning'   : 'Balance Sheet', score: bsScore,            max:25 },
     { label: isSv ? 'Tillgångskvalitet': 'Asset Quality',score: effScore,           max:25 },
     ...(hiddenDebtPenalty > 0 ? [{ label: isSv ? 'Dold skuld (avdrag)' : 'Hidden Debt (penalty)', score: -hiddenDebtPenalty, max:0, isPenalty:true }] : []),
-    ...(trendBonus !== 0 ? [{ label: trendLabel, score: trendBonus, max:0, isPenalty: trendBonus < 0, isBonus: trendBonus > 0 }] : []),
+    ...(trendLabel ? [{ label: trendLabel + (trendBonus > 0 ? ' (+'+trendBonus+')' : trendBonus < 0 ? ' ('+trendBonus+')' : ' (±0)'), score: trendBonus, max:0, isPenalty: trendBonus < 0, isBonus: trendBonus > 0, isNeutral: trendBonus === 0 }] : []),
   ].map(s => {
-    const isExtra = s.isPenalty || s.isBonus;
-    const extraColor = s.isBonus ? 'var(--green)' : 'var(--purple)';
+    const isExtra = s.isPenalty || s.isBonus || s.isNeutral;
+    const extraColor = s.isBonus ? 'var(--green)' : s.isNeutral ? 'var(--text3)' : 'var(--purple)';
     return `
     <div class="score-item">
       <span class="score-item-label" style="${isExtra ? 'color:'+extraColor : ''}">${s.label}</span>
@@ -4492,7 +4496,7 @@ function computeAndRenderDeterministicMA(d) {
         <div class="gauge-fill" style="width:${isExtra ? 100 : s.score/s.max*100}%;background:${isExtra ? extraColor : colorFn(s.score/s.max*100)};"></div>
       </div>
       <span class="score-item-val ${isExtra ? '' : s.score/s.max>=0.65?'pos':s.score/s.max>=0.4?'amb':'neg'}" style="${isExtra ? 'color:'+extraColor : ''}">
-        ${isExtra ? (s.score > 0 ? '+' : '−') + Math.abs(s.score) : s.score+'/'+s.max}
+        ${isExtra ? (s.score > 0 ? '+'+s.score : s.score < 0 ? '−'+Math.abs(s.score) : '±0') : s.score+'/'+s.max}
       </span>
     </div>`;
   }).join('');
