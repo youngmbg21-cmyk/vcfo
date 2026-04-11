@@ -450,8 +450,27 @@ function parseAllabolagMultiYear(html, orgNr, companyName) {
     }
   }
 
-  // Step 6: Build per-year objects (values in tkr, scale ×1000)
-  const scale = 1000;
+  // Step 6: Detect the filing denomination from the header row
+  // The header cell typically contains "RESULTATRÄKNING ( Belopp i 1000 )" or "Belopp i 1 000 000"
+  let scale = 1000; // default TKR
+  if (headerIdx >= 0) {
+    const headerText = allRows[headerIdx][0].toLowerCase().replace(/\s/g, '');
+    // Check for explicit denomination markers
+    if (headerText.includes('beloppitusen') || headerText.includes('beloppikr') || headerText.includes('beloppi1000)')) {
+      scale = 1000;
+    } else if (headerText.includes('beloppi1000000') || headerText.includes('beloppimilj') || headerText.includes('beloppimkr') || headerText.includes('beloppimsek')) {
+      scale = 1000000;
+    } else {
+      // Try to extract numeric value from "Belopp i NNNN"
+      const denomMatch = allRows[headerIdx][0].replace(/\s/g, '').match(/[Bb]elopp\s*i\s*(\d+)/);
+      if (denomMatch) {
+        const parsed = parseInt(denomMatch[1]);
+        if (parsed >= 1000000) scale = 1000000;
+        else if (parsed >= 1000) scale = 1000;
+        else scale = parsed || 1000;
+      }
+    }
+  }
   const yearObjects = years.map(yr => ({
     name: companyName || `Company ${orgNr}`,
     registrationNumber: orgNr,

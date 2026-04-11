@@ -4730,24 +4730,21 @@ function renderFinCompareChart() {
   const tickColor = isLight ? '#334155' : '#FFFFFF';
   const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
 
-  const components = ['Net Sales', 'Op. Costs', 'EBIT', 'Fin. Net', 'Tax', 'Net Profit'];
+  const components = ['Net Sales', 'Op. Costs', 'EBIT', 'Tax & Fin.', 'Net Profit'];
   const sortedYears = [...wfCompareYears].sort();
 
   const datasets = sortedYears.map((yr, yi) => {
     const d = historyData[yr];
     if (!d) return null;
-    const netSales = d.netSales || 0;
-    const ebit     = d.opProfit || 0;
-    const opCosts  = -(netSales - ebit);
-    const finInc   = d.financialIncome || 0;
-    const finExp   = d.financialExpenses || 0;
-    const finNet   = finInc - finExp;
-    const tax      = d.tax ? -(Math.abs(d.tax)) : -(ebit + finNet - (d.netProfit || 0));
-    const netP     = d.netProfit || 0;
+    const netSales  = d.netSales || 0;
+    const ebit      = d.opProfit || 0;
+    const opCosts   = -(netSales - ebit);
+    const netP      = d.netProfit || 0;
+    const belowLine = netP - ebit;
     const clr = CF_COMPARE_COLORS[yi % CF_COMPARE_COLORS.length];
     return {
       label: yr,
-      data: [netSales, opCosts, ebit, finNet, tax < 0 ? tax : 0, netP],
+      data: [netSales, opCosts, ebit, belowLine, netP],
       backgroundColor: clr.bg,
       borderColor: clr.border,
       borderWidth: 1,
@@ -4817,47 +4814,30 @@ function renderFinWaterfall(d) {
   // 1. Net Sales (opening)
   bars.push({ en: 'Net Sales', sv: 'Nettoomsättning', value: netSales, role: 'revenue' });
 
-  // 2. Other Revenue (if > 0)
-  const otherRev = findRow(['övrig omsättning', 'övriga rörelseintäkter']);
-  if (otherRev && otherRev > 0) bars.push({ en: 'Other Revenue', sv: 'Övrig omsättning', value: otherRev, role: 'step' });
-
-  // 3. Operating Costs (derived: total revenue - EBIT)
-  const totalRev = netSales + (otherRev && otherRev > 0 ? otherRev : 0);
-  const opCosts  = totalRev - ebit;
-  if (opCosts > 0) bars.push({ en: 'Operating Costs', sv: 'Rörelsekostnader', value: -opCosts, role: 'step' });
-
-  // 4. EBIT (subtotal)
-  bars.push({ en: 'EBIT', sv: 'Rörelseresultat', value: ebit, role: 'subtotal' });
-
-  // 5-6. Financial Income / Costs
-  const finInc = findRow(['ränteintäkter', 'finansiella intäkter']) ?? (d.financialIncome || null);
-  const finExp = findRow(['räntekostnader', 'finansiella kostnader']) ?? (d.financialExpenses || null);
-  if (finInc != null && Math.abs(finInc) > 0) bars.push({ en: 'Financial Income', sv: 'Finansiella intäkter', value: Math.abs(finInc), role: 'step' });
-  if (finExp != null && Math.abs(finExp) > 0) bars.push({ en: 'Financial Costs', sv: 'Finansiella kostnader', value: -Math.abs(finExp), role: 'step' });
-
-  // 7. Tax
-  const taxVal = findRow(['skatt på årets resultat', 'inkomstskatt']) ?? (d.tax || null);
-  if (taxVal != null && Math.abs(taxVal) > 0) {
-    bars.push({ en: 'Tax', sv: 'Skatt', value: -Math.abs(taxVal), role: 'step' });
-  } else {
-    // Derive tax: EBIT + financials - Net Profit
-    const impliedPreTax = ebit + (finInc ? Math.abs(finInc) : 0) - (finExp ? Math.abs(finExp) : 0);
-    const derivedTax = impliedPreTax - netP;
-    if (derivedTax > 1000) bars.push({ en: 'Tax', sv: 'Skatt (beräknad)', value: -derivedTax, role: 'step' });
+  // 2. Operating Costs (derived: Net Sales - EBIT = total operating costs)
+  const opCosts = netSales - ebit;
+  if (netSales > 0 && opCosts > 0) {
+    bars.push({ en: 'Operating Costs', sv: 'Rörelsekostnader', value: -opCosts, role: 'step' });
   }
 
-  // 8. Residual: if steps after EBIT don't reach Net Profit, insert adjustment
-  const ebitIdx = bars.findIndex(b => b.role === 'subtotal');
-  if (ebitIdx >= 0) {
-    let sumAfter = 0;
-    for (let j = ebitIdx + 1; j < bars.length; j++) sumAfter += bars[j].value;
-    const residual = netP - ebit - sumAfter;
-    if (Math.abs(residual) > Math.max(Math.abs(ebit) * 0.005, 1000)) {
-      bars.push({ en: 'Other Items', sv: 'Övriga poster', value: residual, role: 'step' });
+  // 3. EBIT (subtotal)
+  bars.push({ en: 'EBIT', sv: 'Rörelseresultat', value: ebit, role: 'subtotal' });
+
+  // 4. Below-the-line: derive the net adjustment from EBIT → Net Profit
+  //    This includes financial items, tax, group contributions, etc.
+  //    Showing them individually is unreliable for holding/group companies
+  //    where intercompany items can be larger than revenue.
+  const belowLine = netP - ebit;
+  if (Math.abs(belowLine) > 0) {
+    if (belowLine < 0) {
+      bars.push({ en: 'Tax & Financials', sv: 'Skatt & finansnetto', value: belowLine, role: 'step' });
+    } else {
+      // Positive (unusual) — could be net financial income exceeding tax
+      bars.push({ en: 'Net Financial Items', sv: 'Finansnetto', value: belowLine, role: 'step' });
     }
   }
 
-  // 9. Net Profit (closing)
+  // 5. Net Profit (closing)
   bars.push({ en: 'Net Profit', sv: 'Årets resultat', value: netP, role: 'closing' });
 
   // ── Chart arrays ──
