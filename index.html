@@ -1548,6 +1548,7 @@ body.light-mode {
   <div class="tab" id="tab-compare-btn"          onclick="switchTab('compare')" data-i18n="tab_compare">⚖ Compare</div>
   <div class="tab" id="tab-benchmarks-btn"       onclick="switchTab('benchmarks')" data-i18n="tab_benchmarks">📡 Benchmarks</div>
   <div class="tab" id="tab-watchlist-btn"        onclick="switchTab('watchlist')" data-i18n="tab_watchlist">★ Watchlist</div>
+  <div class="tab" id="tab-competitor-bench-btn" onclick="switchTab('competitor-bench')">⚔ Competitor Bench</div>
   <div class="tab" id="tab-guide-btn"            onclick="switchTab('guide')" style="margin-left:auto;" data-i18n="tab_guide">📖 Guide</div>
 </div>
 
@@ -1983,6 +1984,11 @@ body.light-mode {
     <div id="wlGrid" class="wl-grid" style="display:none;">
       <!-- Rendered by JS -->
     </div>
+  </div>
+
+  <!-- ===== COMPETITOR BENCH TAB ===== -->
+  <div id="tab-competitor-bench" style="display:none;">
+    <!-- Content will be built in later steps -->
   </div>
 
   <!-- ===== GUIDE TAB ===== -->
@@ -2814,7 +2820,7 @@ let activeTab = 'company';
 
 function switchTab(name) {
   activeTab = name;
-  ['company','cfo','ma','financials','cashflow','compare','benchmarks','watchlist','guide'].forEach(t => {
+  ['company','cfo','ma','financials','cashflow','compare','benchmarks','watchlist','competitor-bench','guide'].forEach(t => {
     document.getElementById('tab-' + t).style.display = (t === name) ? 'block' : 'none';
     document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === name);
   });
