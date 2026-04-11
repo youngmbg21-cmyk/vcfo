@@ -8029,7 +8029,30 @@ function renderWaterfallChart(cf) {
             }
           }
         }
-      }
+      },
+      plugins: [{
+        id: 'waterfallLabels',
+        afterDatasetsDraw(chart) {
+          const { ctx, scales: { y } } = chart;
+          // Use Amount dataset (index 1) bar elements for x-center pixel positions
+          const amountMeta = chart.getDatasetMeta(1);
+          ctx.save();
+          ctx.font = '9px JetBrains Mono';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillStyle = tickColor;
+          adjBase.forEach((baseVal, i) => {
+            const el = amountMeta.data[i];
+            if (!el) return;
+            // top of the visible bar in data-units is always adjBase + segment
+            const topValue = baseVal + segment[i];
+            const xPos = el.x;
+            const yPos = y.getPixelForValue(topValue);
+            ctx.fillText(fmtSEK(values[i]), xPos, yPos - 4);
+          });
+          ctx.restore();
+        }
+      }]
     });
   };
 
