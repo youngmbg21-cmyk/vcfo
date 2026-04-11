@@ -2025,6 +2025,64 @@ body.light-mode {
           </div>
         </div>
 
+        <!-- Competitors card -->
+        <div class="card">
+          <div class="card-title">
+            Competitors
+            <span id="cbCompCount">0 / 10</span>
+          </div>
+
+          <!-- Search input + Add button -->
+          <div style="margin-bottom:12px;">
+            <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;">Add by Name or Org. Nr.</div>
+            <div style="display:flex;gap:6px;">
+              <input type="text" id="cbCompSearchInput" placeholder="e.g. Sturehof or 556000-1234"
+                onkeydown="if(event.key==='Enter') cbAddCompetitorBySearch()"
+                style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
+              <button class="btn-secondary" onclick="cbAddCompetitorBySearch()" style="flex-shrink:0;">Add</button>
+            </div>
+          </div>
+
+          <!-- Filter pills -->
+          <div style="margin-bottom:12px;">
+            <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;">Filter Presets by Industry</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;" id="cbSniPills">
+              <button onclick="cbFilterPresets(this,'all')" class="cb-sni-pill active" style="background:var(--blue-dim);border:1px solid rgba(59,130,246,0.4);color:var(--blue);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">All</button>
+              <button onclick="cbFilterPresets(this,'56')" class="cb-sni-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Restaurants</button>
+              <button onclick="cbFilterPresets(this,'47')" class="cb-sni-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Retail</button>
+              <button onclick="cbFilterPresets(this,'69')" class="cb-sni-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Professional</button>
+              <button onclick="cbFilterPresets(this,'41')" class="cb-sni-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Construction</button>
+              <button onclick="cbFilterPresets(this,'62')" class="cb-sni-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">ICT</button>
+              <button onclick="cbFilterPresets(this,'55')" class="cb-sni-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Hotels</button>
+            </div>
+          </div>
+
+          <!-- Scrollable preset + added list -->
+          <div style="max-height:340px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;padding-right:2px;">
+
+            <!-- Quick-add presets -->
+            <div style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Quick-add from list</div>
+            <div id="cbPresetList"></div>
+
+            <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+
+            <!-- Added competitors -->
+            <div style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">
+              Added Competitors
+            </div>
+            <div id="cbCompetitorList">
+              <div style="font-size:10px;color:var(--text3);text-align:center;padding:16px 0;">
+                No competitors added yet
+              </div>
+            </div>
+          </div>
+
+          <!-- Run Benchmark button -->
+          <button id="cbBtnRunBench" onclick="cbRunBenchmark()" style="display:none;background:var(--blue-dim);border:1px solid rgba(59,130,246,0.3);color:var(--blue);border-radius:6px;padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;width:100%;margin-top:8px;">
+            ⚔ Run Benchmark
+          </button>
+        </div>
+
       </div>
 
       <!-- Right main panel -->
@@ -8213,6 +8271,7 @@ async function cbLoadMyCompany() {
   }
 
   cbRenderMyCompanyHero(d);
+  cbCheckRunBtn();
 }
 
 function cbRenderMyCompanyHero(d) {
@@ -8243,6 +8302,273 @@ function cbRenderMyCompanyHero(d) {
     </div>
   `;
 }
+
+// ============================================================
+// COMPETITOR BENCH — Competitors logic
+// ============================================================
+const CB_MAX_COMPETITORS = 10;
+let cbCompetitors = [];
+let cbActiveSNI   = 'all';
+
+const CB_PRESETS = [
+  { name:'Operakällaren AB',        orgNr:'556013-0731', sni:'56' },
+  { name:'Sturehof AB',             orgNr:'556076-6724', sni:'56' },
+  { name:'Restaurang Prinsen',      orgNr:'556027-3044', sni:'56' },
+  { name:'Grands Veranda',          orgNr:'556052-8124', sni:'56' },
+  { name:'Berns Salonger',          orgNr:'556008-4623', sni:'56' },
+  { name:'Aifur AB',                orgNr:'556546-2143', sni:'56' },
+  { name:'Fotografiska Restaurang', orgNr:'559030-1234', sni:'56' },
+
+  { name:'Grand Hôtel',             orgNr:'556005-0822', sni:'55' },
+  { name:'At Six',                  orgNr:'559041-3311', sni:'55' },
+  { name:'Nordic Hotels',           orgNr:'556640-2010', sni:'55' },
+
+  { name:'Acne Studios',            orgNr:'556700-5685', sni:'47' },
+  { name:'J. Lindeberg',            orgNr:'556542-3418', sni:'47' },
+  { name:'Gina Tricot',             orgNr:'556488-2695', sni:'47' },
+  { name:'Kappahl AB',              orgNr:'556441-2244', sni:'47' },
+
+  { name:'KPMG AB',                 orgNr:'556043-4465', sni:'69' },
+  { name:'PwC Sverige',             orgNr:'516408-0095', sni:'69' },
+  { name:'Mannheimer Swartling',    orgNr:'556497-3857', sni:'69' },
+  { name:'Deloitte AB',             orgNr:'556401-6775', sni:'69' },
+
+  { name:'NCC AB',                  orgNr:'556034-5174', sni:'41' },
+  { name:'Skanska Sverige AB',      orgNr:'556033-9023', sni:'41' },
+  { name:'JM AB',                   orgNr:'556045-2197', sni:'41' },
+  { name:'Peab AB',                 orgNr:'556061-4614', sni:'41' },
+
+  { name:'Klarna Bank AB',          orgNr:'556737-0431', sni:'62' },
+  { name:'Spotify AB',              orgNr:'556703-7485', sni:'62' },
+  { name:'King.com Ltd (SE)',       orgNr:'559016-2516', sni:'62' },
+  { name:'iZettle AB',              orgNr:'556806-0852', sni:'62' },
+];
+
+const CB_SNI_LABELS = {
+  '56':'Restaurants', '55':'Hotels', '47':'Retail',
+  '69':'Professional Services', '41':'Construction', '62':'ICT / Software'
+};
+
+function cbRenderPresets(sniFilter) {
+  const filtered = sniFilter === 'all'
+    ? CB_PRESETS
+    : CB_PRESETS.filter(p => p.sni === sniFilter || (sniFilter === '41' && ['41','42','43'].includes(p.sni)));
+
+  const groups = {};
+  filtered.forEach(p => {
+    const grp = CB_SNI_LABELS[p.sni] || 'Other';
+    if (!groups[grp]) groups[grp] = [];
+    groups[grp].push(p);
+  });
+
+  const addedOrgs = cbCompetitors.map(c => c.orgNr.replace(/[^0-9]/g, ''));
+  let html = '';
+  for (const [grp, items] of Object.entries(groups)) {
+    html += `<div style="margin-bottom:10px;">
+      <div style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;">${grp}</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;">
+        ${items.map(p => {
+          const clean = p.orgNr.replace(/[^0-9]/g, '');
+          const isAdded = addedOrgs.includes(clean);
+          const baseStyle = isAdded
+            ? 'background:var(--green-dim);border:1px solid rgba(16,185,129,0.3);color:var(--green);cursor:default;'
+            : 'background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;';
+          return `<span style="${baseStyle}border-radius:3px;padding:2px 8px;font-size:9px;"
+            ${isAdded ? '' : `onclick="cbAddFromPreset('${p.orgNr}','${p.name.replace(/'/g, "\\'")}')" title="${p.orgNr}"`}>
+            ${p.name}${isAdded ? ' ✓' : ''}
+          </span>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+  document.getElementById('cbPresetList').innerHTML = html || '<div style="font-size:10px;color:var(--text3);">No presets for this industry</div>';
+}
+
+function cbFilterPresets(btn, sni) {
+  cbActiveSNI = sni;
+  document.querySelectorAll('.cb-sni-pill').forEach(p => {
+    p.classList.remove('active');
+    p.style.background = 'var(--bg3)';
+    p.style.borderColor = 'var(--border)';
+    p.style.color = 'var(--text3)';
+  });
+  btn.classList.add('active');
+  btn.style.background = 'var(--blue-dim)';
+  btn.style.borderColor = 'rgba(59,130,246,0.4)';
+  btn.style.color = 'var(--blue)';
+  cbRenderPresets(sni);
+}
+
+async function cbAddCompetitorBySearch() {
+  const val = document.getElementById('cbCompSearchInput').value.trim();
+  if (!val) return;
+  document.getElementById('cbCompSearchInput').value = '';
+
+  const isOrgNr = /^\d[\d\-]{7,}/.test(val);
+  if (isOrgNr) {
+    await cbAddByOrg(val, null);
+  } else {
+    // Try AI-assisted name lookup
+    if (anthropicKey) {
+      await cbAddByName(val);
+    } else {
+      showToast('⚠ Set your Anthropic key to search by name, or enter org. number directly');
+    }
+  }
+}
+
+async function cbAddByName(name) {
+  if (cbCompetitors.length >= CB_MAX_COMPETITORS) { showToast(`⚠ Maximum ${CB_MAX_COMPETITORS} competitors`); return; }
+
+  // Add placeholder entry
+  const placeholder = { orgNr: '', name: name, status: 'resolving', data: null };
+  cbCompetitors.push(placeholder);
+  cbRenderCompetitorList();
+
+  try {
+    const body = {
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 200,
+      messages: [{ role: 'user', content: `What is the Swedish organisation number (organisationsnummer) for the company "${name}"? Reply with ONLY the 10-digit org number in format XXXXXX-XXXX. If you are not sure, reply "UNKNOWN".` }]
+    };
+    const resp = await callAnthropic(body, anthropicKey);
+    const text = (resp.content && resp.content[0] && resp.content[0].text) || '';
+    const match = text.match(/(\d{6})-?(\d{4})/);
+    if (match) {
+      const orgNr = match[1] + '-' + match[2];
+      placeholder.orgNr = orgNr;
+      placeholder.status = 'loading';
+      cbRenderCompetitorList();
+      await cbFetchCompetitorData(placeholder);
+    } else {
+      placeholder.status = 'error';
+      placeholder.name = name + ' (not found)';
+      cbRenderCompetitorList();
+      showToast('⚠ Could not resolve org number for "' + name + '"');
+    }
+  } catch (e) {
+    placeholder.status = 'error';
+    placeholder.name = name + ' (error)';
+    cbRenderCompetitorList();
+    showToast('⚠ AI lookup failed: ' + e.message);
+  }
+}
+
+async function cbAddByOrg(orgNrRaw, knownName) {
+  const clean = orgNrRaw.replace(/[^0-9]/g, '');
+  if (clean.length < 10) { showToast('⚠ Invalid org. number'); return; }
+  if (cbCompetitors.length >= CB_MAX_COMPETITORS) { showToast(`⚠ Maximum ${CB_MAX_COMPETITORS} competitors`); return; }
+
+  // Check duplicate
+  if (cbCompetitors.some(c => c.orgNr.replace(/[^0-9]/g, '') === clean)) {
+    showToast('⚠ Already added'); return;
+  }
+
+  const orgNr = clean.slice(0, 6) + '-' + clean.slice(6);
+  const entry = { orgNr: orgNr, name: knownName || orgNr, status: 'loading', data: null };
+  cbCompetitors.push(entry);
+  cbRenderCompetitorList();
+  cbRenderPresets(cbActiveSNI);
+
+  await cbFetchCompetitorData(entry);
+}
+
+async function cbAddFromPreset(orgNr, name) {
+  await cbAddByOrg(orgNr, name);
+}
+
+async function cbFetchCompetitorData(entry) {
+  const clean = entry.orgNr.replace(/[^0-9]/g, '');
+  try {
+    const apiData = await fetchBolagsverket(clean);
+    const isLive = apiData && (
+      apiData.name || apiData.companyName || apiData.registrationNumber ||
+      apiData.netSales || apiData.revenues || apiData.totalAssets ||
+      apiData.equity || apiData.operatingProfit || apiData.reports
+    );
+    let d;
+    if (isLive) {
+      d = mapAPIResponse(apiData, clean);
+      d._isLive = true;
+    } else {
+      d = DEMO_COMPANIES[clean] || buildGenericDemo(clean);
+      d._isLive = false;
+    }
+    entry.data = d;
+    entry.name = d.name;
+    entry.status = 'loaded';
+  } catch (e) {
+    entry.status = 'error';
+  }
+  cbUpdateCount();
+  cbRenderCompetitorList();
+  cbRenderPresets(cbActiveSNI);
+  cbCheckRunBtn();
+}
+
+function cbRemoveCompetitor(idx) {
+  cbCompetitors.splice(idx, 1);
+  cbUpdateCount();
+  cbRenderCompetitorList();
+  cbRenderPresets(cbActiveSNI);
+  cbCheckRunBtn();
+}
+
+function cbUpdateCount() {
+  const el = document.getElementById('cbCompCount');
+  if (el) el.textContent = cbCompetitors.length + ' / ' + CB_MAX_COMPETITORS;
+}
+
+function cbRenderCompetitorList() {
+  const el = document.getElementById('cbCompetitorList');
+  if (cbCompetitors.length === 0) {
+    el.innerHTML = '<div style="font-size:10px;color:var(--text3);text-align:center;padding:16px 0;">No competitors added yet</div>';
+    return;
+  }
+  el.innerHTML = cbCompetitors.map((c, i) => {
+    let statusHtml = '';
+    if (c.status === 'loading' || c.status === 'resolving') {
+      statusHtml = '<span style="font-size:9px;color:var(--amber);">loading…</span>';
+    } else if (c.status === 'loaded') {
+      statusHtml = '<span style="font-size:9px;color:var(--green);">✓ loaded</span>';
+    } else {
+      statusHtml = '<span style="font-size:9px;color:var(--red);">✕ error</span>';
+    }
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;${c.status === 'loading' || c.status === 'resolving' ? 'opacity:0.6;' : ''}">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.name}</div>
+        <div style="font-size:9px;color:var(--text3);">${c.orgNr || '—'}</div>
+      </div>
+      ${statusHtml}
+      <button onclick="cbRemoveCompetitor(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:3px;flex-shrink:0;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">&times;</button>
+    </div>`;
+  }).join('');
+}
+
+function cbCheckRunBtn() {
+  const btn = document.getElementById('cbBtnRunBench');
+  const hasCompany = !!cbMyCompany;
+  const hasCompetitors = cbCompetitors.some(c => c.status === 'loaded');
+  btn.style.display = (hasCompany && hasCompetitors) ? 'block' : 'none';
+}
+
+function cbRunBenchmark() {
+  // Placeholder — will be built in a later step
+  showToast('⚔ Benchmark will be implemented in a later step');
+}
+
+// Initialize presets on first tab visit
+(function() {
+  const origSwitch = switchTab;
+  let cbPresetsRendered = false;
+  switchTab = function(name) {
+    origSwitch(name);
+    if (name === 'competitor-bench' && !cbPresetsRendered) {
+      cbPresetsRendered = true;
+      cbRenderPresets('all');
+    }
+  };
+})();
 
 </script>
 </body>
