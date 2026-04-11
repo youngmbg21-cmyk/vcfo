@@ -70,50 +70,96 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers: corsHeaders, body: '' };
   }
 
-  // Debug: show parsed rows and year mapping
+  // Debug: full diagnostic of what the parser extracts for a given org number
   if (event.queryStringParameters?.debug) {
     const testOrg = (event.queryStringParameters.debug || '').replace(/[^0-9]/g, '');
     if (!testOrg || testOrg.length < 6) {
       return { statusCode: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ version: 'v8', note: 'Pass org number: ?debug=5590016076' }) };
+        body: JSON.stringify({ version: 'v9-diagnostic', note: 'Pass org number: ?debug=5590016076' }) };
     }
     try {
       const res = await serverFetch(`https://www.allabolag.se/${testOrg}/bokslut`);
       const html = await res.text();
 
-      // Show what the parser sees
-      const yearMatches = html.match(/resultat(20\d{2})-\d{2}/g) || [];
-      const years = [...new Set(yearMatches.map(m => m.match(/(20\d{2})/)[1]))].sort((a,b) => b-a);
+      // Run the full parser
+      const parsed = parseAllabolagMultiYear(html, testOrg, 'DEBUG');
 
-      // Extract sample rows
-      const sampleRows = [];
+      // Also extract ALL table rows so we can see what the parser sees
+      const allTableRows = [];
       const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
       let trMatch;
-      let rowCount = 0;
-      while ((trMatch = trRegex.exec(html)) !== null && rowCount < 30) {
+      while ((trMatch = trRegex.exec(html)) !== null) {
         const cells = [];
         const cellRegex = /<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi;
         let cellMatch;
         while ((cellMatch = cellRegex.exec(trMatch[1])) !== null) {
-          cells.push(cellMatch[1].replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim());
+          cells.push(cellMatch[1].replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim());
         }
-        if (cells.length >= 2) {
-          const isFinancial = cells[0].toLowerCase().match(/omsättning|resultat|tillgångar|kapital|balans/);
-          if (isFinancial) {
-            sampleRows.push({ label: cells[0], values: cells.slice(1), cellCount: cells.length });
-            rowCount++;
-          }
-        }
+        if (cells.length >= 2) allTableRows.push(cells);
       }
+
+      // Build diagnostic: show which rows the parser found
+      const latestYear = parsed?.years?.[0];
+      const diagnostic = {
+        version: 'v9-diagnostic',
+        source: 'allabolag.se',
+        url: `https://www.allabolag.se/${testOrg}/bokslut`,
+        pageSize: html.length,
+        totalTableRows: allTableRows.length,
+        yearsDetected: parsed ? parsed.years.map(y => y.financialYear) : [],
+        latestYear: latestYear?.financialYear || null,
+
+        // Show all rows the parser sees (first 60)
+        allRows: allTableRows.slice(0, 60).map((cells, idx) => ({
+          rowIndex: idx,
+          label: cells[0],
+          values: cells.slice(1, 4),  // first 3 year columns
+          cellCount: cells.length,
+        })),
+
+        // Named field extraction results
+        fieldResults: latestYear ? {
+          netSales:         { value: latestYear.netSales,         status: latestYear.netSales ? 'OK' : 'ZERO' },
+          operatingProfit:  { value: latestYear.operatingProfit,  status: latestYear.operatingProfit ? 'OK' : 'ZERO' },
+          netIncome:        { value: latestYear.netIncome,        status: latestYear.netIncome ? 'OK' : 'ZERO' },
+          costOfGoods:      { value: latestYear.costOfGoods,      status: latestYear.costOfGoods != null ? 'OK' : 'NULL — not found in filing' },
+          personnel:        { value: latestYear.personnel,        status: latestYear.personnel ? 'OK' : 'ZERO' },
+          depreciation:     { value: latestYear.depreciation,     status: latestYear.depreciation ? 'OK' : 'ZERO' },
+          otherExtCosts:    { value: latestYear.otherExtCosts,    status: latestYear.otherExtCosts != null ? 'OK' : 'NULL — not found in filing' },
+          financialIncome:  { value: latestYear.financialIncome,  status: latestYear.financialIncome != null ? 'OK' : 'NULL' },
+          financialExpenses:{ value: latestYear.financialExpenses, status: latestYear.financialExpenses != null ? 'OK' : 'NULL' },
+          tax:              { value: latestYear.tax,              status: latestYear.tax != null ? 'OK' : 'NULL' },
+          employees:        { value: latestYear.employees,        status: latestYear.employees != null ? 'OK' : 'NULL — not found in filing' },
+          totalAssets:      { value: latestYear.totalAssets,       status: latestYear.totalAssets ? 'OK' : 'ZERO' },
+          equity:           { value: latestYear.equity,           status: latestYear.equity ? 'OK' : 'ZERO' },
+        } : 'No year data parsed',
+
+        // Income statement rows for dynamic waterfall
+        incomeStatementRows: latestYear?.incomeStatement || [],
+
+        // Math check: do the costs add up to revenue - EBIT?
+        mathCheck: latestYear ? (() => {
+          const rev = latestYear.netSales;
+          const ebit = latestYear.operatingProfit;
+          const costs = (latestYear.costOfGoods || 0) + latestYear.personnel +
+            latestYear.depreciation + (latestYear.otherExtCosts || 0);
+          const gap = rev - costs - ebit;
+          return {
+            netSales: rev,
+            knownCosts: costs,
+            ebit: ebit,
+            gap: gap,
+            gapExplanation: Math.abs(gap) < 1000 ? 'OK — costs + EBIT = Net Sales'
+              : `MISSING ${(gap/1000).toFixed(0)} tkr of costs between Net Sales and EBIT`,
+            incomeRowCount: latestYear.incomeStatement?.length || 0,
+          };
+        })() : null,
+      };
 
       return {
         statusCode: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          version: 'v8-debug',
-          yearsFromScope: years,
-          financialRows: sampleRows.slice(0, 15),
-        }, null, 2),
+        body: JSON.stringify(diagnostic, null, 2),
       };
     } catch(e) {
       return { statusCode: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: e.message }) };

@@ -1963,7 +1963,10 @@ body.light-mode {
     <div id="finContent" style="display:none;">
       <!-- Revenue-to-Net-Profit waterfall chart (full width, above cards) -->
       <div class="card" style="margin-bottom:16px;">
-        <div class="card-title">Revenue → Net Profit Waterfall</div>
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+          Revenue → Net Profit Waterfall
+          <button id="finWfDiagBtn" style="display:none;background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:9px;color:var(--text3);cursor:pointer;font-family:'JetBrains Mono',monospace;" onclick="showFinWfDiag()" title="Show data diagnostic">Diagnostic</button>
+        </div>
         <div id="finWfYearBar" class="cf-year-bar" style="display:none;"></div>
         <div style="position:relative;height:320px;">
           <canvas id="finWaterfallChart"></canvas>
@@ -4531,6 +4534,77 @@ function renderFinancialsTab(d) {
   finWfSelectedYear = d.fiscalYear;
   renderFinWaterfall(d);
   renderFinWfYearBar();
+
+  // Show diagnostic button
+  const diagBtn = document.getElementById('finWfDiagBtn');
+  if (diagBtn) diagBtn.style.display = 'inline-block';
+}
+
+// Show waterfall data diagnostic panel
+function showFinWfDiag() {
+  const yr = finWfSelectedYear || (companyData ? companyData.fiscalYear : null);
+  const d  = (yr && historyData[yr]) || companyData;
+  if (!d) return;
+
+  const rows = d._incomeRows;
+  const rev  = d.netSales || 0;
+  const ebit = d.opProfit || 0;
+  const netP = d.netProfit || 0;
+  const knownCosts = (d.rawMaterials || 0) + (d.personnel || 0) + (d.depreciation || 0) + (d.otherOpCosts || 0);
+  const gap = rev - knownCosts - ebit;
+
+  let html = `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:10px;font-size:10px;font-family:'JetBrains Mono',monospace;max-height:300px;overflow-y:auto;">`;
+  html += `<div style="font-weight:700;margin-bottom:8px;color:var(--text);">Data Diagnostic — FY${d.fiscalYear} · ${d.name}</div>`;
+  html += `<div style="margin-bottom:6px;color:var(--text2);">Source: allabolag.se (NOT iXBRL) · Data in SEK</div>`;
+
+  // Named fields
+  html += `<div style="font-weight:600;color:var(--blue);margin:8px 0 4px;">Named Fields (keyword extraction):</div>`;
+  const fields = [
+    ['Net Sales',        d.netSales],
+    ['COGS/Raw Mat.',    d.rawMaterials],
+    ['Personnel',        d.personnel],
+    ['Depreciation',     d.depreciation],
+    ['Other Ext. Costs', d.otherOpCosts],
+    ['EBIT',             d.opProfit],
+    ['Fin. Income',      d.financialIncome],
+    ['Fin. Expenses',    d.financialExpenses],
+    ['Tax',              d.tax],
+    ['Net Profit',       d.netProfit],
+    ['Employees',        d.employees],
+  ];
+  fields.forEach(([name, val]) => {
+    const status = val === null ? '<span style="color:var(--amber);">NULL</span>' : val === 0 ? '<span style="color:var(--text3);">0</span>' : `<span style="color:var(--green);">${fmtSEK(val)}</span>`;
+    html += `<div style="display:flex;justify-content:space-between;padding:1px 0;"><span>${name}</span>${status}</div>`;
+  });
+
+  // Math check
+  html += `<div style="font-weight:600;color:var(--blue);margin:8px 0 4px;">Math Check (Revenue → EBIT):</div>`;
+  html += `<div>Net Sales: ${fmtSEK(rev)}</div>`;
+  html += `<div>Known costs: ${fmtSEK(knownCosts)}</div>`;
+  html += `<div>EBIT: ${fmtSEK(ebit)}</div>`;
+  html += `<div style="color:${Math.abs(gap) > 1000 ? 'var(--red)' : 'var(--green)'};">Gap: ${fmtSEK(gap)} ${Math.abs(gap) > 1000 ? '← MISSING COSTS' : '✓ balanced'}</div>`;
+
+  // Income statement rows
+  html += `<div style="font-weight:600;color:var(--blue);margin:8px 0 4px;">Income Statement Rows (from filing, ${rows ? rows.length : 0} rows):</div>`;
+  if (rows && rows.length > 0) {
+    rows.forEach(r => {
+      html += `<div style="display:flex;justify-content:space-between;padding:1px 0;"><span style="color:var(--text2);">${r.label}</span><span>${fmtSEK(r.value)}</span></div>`;
+    });
+  } else {
+    html += `<div style="color:var(--amber);">No income statement rows available — waterfall uses named fields only</div>`;
+  }
+
+  html += `<div style="margin-top:8px;"><button onclick="this.closest('.card').querySelector('[id=finWfDiagPanel]').remove()" style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-size:9px;color:var(--text3);cursor:pointer;">Close</button></div>`;
+  html += `</div>`;
+
+  // Remove old panel if exists
+  const old = document.getElementById('finWfDiagPanel');
+  if (old) old.remove();
+
+  const panel = document.createElement('div');
+  panel.id = 'finWfDiagPanel';
+  panel.innerHTML = html;
+  document.getElementById('finWaterfallChart').parentElement.after(panel);
 }
 
 // ── Financials Waterfall — Revenue → Net Profit ──
