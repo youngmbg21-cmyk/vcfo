@@ -1572,7 +1572,7 @@ body.light-mode {
         <option value="latest">Latest</option>
       </select>
     </div>
-    <div style="font-size:10px;color:var(--text3);" id="apiHint">SE Registry · Bolagsverket iXBRL</div>
+    <div style="font-size:10px;color:var(--text3);" id="apiHint">SE Registry · UC AB via allabolag.se</div>
     <!-- Search results dropdown -->
     <div id="searchDropdown" style="display:none;position:fixed;top:48px;left:50%;transform:translateX(-50%);width:420px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:500;overflow:hidden;"></div>
   </div>
@@ -1589,7 +1589,7 @@ body.light-mode {
 <div class="api-status-bar">
   <div class="api-indicator">
     <div class="api-dot na" id="bvDot"></div>
-    <span class="api-text" id="bvText">Bolagsverket: Standby</span>
+    <span class="api-text" id="bvText">allabolag.se: Standby</span>
   </div>
   <div class="ticker-sep">·</div>
   <div class="api-indicator">
@@ -1607,13 +1607,13 @@ body.light-mode {
 <div class="ticker-strip">
   <span class="ticker-label">VCFO</span>
   <span class="ticker-sep">·</span>
-  <span class="ticker-info">iXBRL Financial Health & Acquisition Screener</span>
+  <span class="ticker-info">Financial Health & Acquisition Screener</span>
   <span class="ticker-sep">·</span>
   <span class="ticker-info">Feature A: CFO Operational Audit</span>
   <span class="ticker-sep">·</span>
   <span class="ticker-info">Feature B: M&A Acquisition Fit Screener</span>
   <span class="ticker-sep">·</span>
-  <span class="ticker-info">Data Source: Bolagsverket Annual Reports (iXBRL v4.7)</span>
+  <span class="ticker-info">Data Source: UC AB via allabolag.se</span>
   <span class="ticker-sep">·</span>
   <span class="ticker-info">AI: Claude Sonnet — Anthropic</span>
 </div>
@@ -1641,7 +1641,7 @@ body.light-mode {
       <div class="icon">🏢</div>
       <div style="font-size:14px;font-weight:600;color:var(--text);" data-i18n="search_heading">Search for any Swedish company</div>
       <div style="font-size:11px;color:var(--text2);margin-top:6px;" data-i18n="search_sub">Type a company name or org. number in the search bar above</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:4px;" data-i18n="search_hint">e.g. "Sandvik" · "NCC" · "556000-1234" · Data: Bolagsverket iXBRL 2020–present</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px;" data-i18n="search_hint">e.g. "Sandvik" · "NCC" · "556000-1234" · Data: allabolag.se 2020–present</div>
       <div style="margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:8px;">
         <div style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text3);" data-i18n="demo_or">Or load a demo</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
@@ -1674,8 +1674,8 @@ body.light-mode {
           <div class="company-name" id="heroName">—</div>
           <div class="company-meta" id="heroMeta">Org. nr. — · —</div>
           <div id="estimatedBanner" style="display:none;background:rgba(255,184,0,0.12);border:1px solid rgba(255,184,0,0.35);border-radius:6px;padding:8px 12px;margin-top:8px;">
-            <div style="font-size:11px;font-weight:600;color:var(--amber);">⚠ No Data Available — No iXBRL Filing Found</div>
-            <div style="font-size:10px;color:var(--text3);margin-top:3px;">Bolagsverket has no digital filing for this entity. All figures are shown as 0 kr because no real data could be retrieved. Load a different org. number or verify the entity in the Swedish Companies Register.</div>
+            <div style="font-size:11px;font-weight:600;color:var(--amber);">⚠ No Data Available — No Filing Found</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:3px;">No filing found on allabolag.se for this entity. All figures are shown as 0 kr because no real data could be retrieved. Load a different org. number or verify the entity in the Swedish Companies Register.</div>
           </div>
           <div class="separator"></div>
           <div class="stats-grid-2">
@@ -1852,7 +1852,7 @@ body.light-mode {
               </div>
             </div>
             <div class="ai-output-body" id="cfoAIOutput">
-              <div style="color:var(--text3);">Click "Run AI Audit" to generate a deep AI analysis of the 3 most critical operational concerns, leveraging the iXBRL data mapped to the CFO audit framework.</div>
+              <div style="color:var(--text3);">Click "Run AI Audit" to generate a deep AI analysis of the 3 most critical operational concerns based on the company's annual report data.</div>
             </div>
             <div class="progress-bar" style="margin:0 16px 12px;"><div class="progress-fill" id="cfoProgress" style="width:0%"></div></div>
           </div>
@@ -1958,7 +1958,7 @@ body.light-mode {
   <div id="tab-financials" style="display:none;">
     <div id="finEmpty" class="empty-state">
       <div class="icon">📋</div>
-      <div>Load a company to view the full iXBRL financial data</div>
+      <div>Load a company to view financial data</div>
     </div>
     <div id="finContent" style="display:none;">
       <!-- Revenue-to-Net-Profit waterfall chart (full width, above cards) -->
@@ -2111,7 +2111,7 @@ body.light-mode {
           <div style="display:flex;flex-direction:column;gap:5px;">
             <div style="display:flex;align-items:center;gap:6px;font-size:10px;">
               <div style="width:5px;height:5px;border-radius:50%;background:var(--text3);" id="cbDotBV"></div>
-              <span id="cbTxtBV" style="color:var(--text3);">Bolagsverket: not connected</span>
+              <span id="cbTxtBV" style="color:var(--text3);">allabolag.se: not connected</span>
             </div>
             <div style="display:flex;align-items:center;gap:6px;font-size:10px;">
               <div style="width:5px;height:5px;border-radius:50%;background:var(--red);" id="cbDotSerp"></div>
@@ -2227,7 +2227,7 @@ body.light-mode {
   <div id="tab-guide" style="display:none;">
     <div style="max-width:760px;">
       <div style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:800;color:var(--amber);margin-bottom:4px;">VCFO Terminal — User Guide</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:24px;">Financial Health & Acquisition Screener · Powered by Bolagsverket iXBRL v4.7 + Claude AI</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:24px;">Financial Health & Acquisition Screener · Data: UC AB via allabolag.se + Claude AI</div>
 
       <div class="guide-section">
         <div class="guide-title">🏢 Feature A — CFO Operational Audit</div>
@@ -2253,7 +2253,7 @@ body.light-mode {
       <div class="guide-section">
         <div class="guide-title">🔌 API Configuration</div>
         <div class="guide-body">
-          <strong style="color:var(--amber);">Bolagsverket iXBRL v4.7</strong> — The primary data source. Accessed via the open Swedish companies registry. Organisation numbers follow the format 556000-1234.<br><br>
+          <strong style="color:var(--amber);">allabolag.se (UC AB)</strong> — The primary data source. Financial data is sourced from UC AB's processed annual reports, accessed via allabolag.se. Organisation numbers follow the format 556000-1234.<br><br>
           <strong style="color:var(--amber);">Anthropic Claude API</strong> — Powers the AI CFO Audit narrative and M&A recommendation. Set your API key in ⚙ API Keys. The tool uses claude-sonnet-4-20250514 for structured JSON output.<br><br>
           <strong style="color:var(--amber);">CORS Note</strong> — The Bolagsverket API may require a proxy in some environments. The tool attempts a direct fetch first and falls back to demo data if blocked.
         </div>
@@ -2307,7 +2307,7 @@ body.light-mode {
         </div>
         <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
           <span id="benchmarkSourceBadge"></span>
-          <span style="font-size:10px;color:var(--text3);" id="benchmarkSourceNote">Source: SCB/Bolagsverket sector statistics 2022–2023</span>
+          <span style="font-size:10px;color:var(--text3);" id="benchmarkSourceNote">Source: SCB sector statistics</span>
           <button class="btn-secondary" style="font-size:9px;padding:3px 8px;" onclick="openSettings()">⚙ Set live URL</button>
         </div>
       </div>
@@ -2569,7 +2569,7 @@ const STRINGS = {
     search_mode_name:   'NAME',
     search_mode_org:    'ORG.NR',
     search_btn:         'SEARCH',
-    api_hint:           'SE Registry · Bolagsverket iXBRL',
+    api_hint:           'SE Registry · UC AB via allabolag.se',
 
     // Tabs
     tab_company:        '🏢 Company',
@@ -2585,7 +2585,7 @@ const STRINGS = {
     // Company empty state
     search_heading:     'Search for any Swedish company',
     search_sub:         'Type a company name or org. number in the search bar above',
-    search_hint:        'e.g. "Sandvik" · "NCC" · "556000-1234" · Data: Bolagsverket iXBRL 2020–present',
+    search_hint:        'e.g. "Sandvik" · "NCC" · "556000-1234" · Data: allabolag.se 2020–present',
     demo_or:            'Or load a demo',
     demo_volvo:         'Demo: Volvo AB',
     demo_hm:            'Demo: H&M',
@@ -2712,7 +2712,7 @@ const STRINGS = {
     status_ready:           'Ready — search for a company or load a demo',
     status_loading:         'Loading…',
     status_loaded:          'Loaded',
-    status_fetching_bv:     'Querying Bolagsverket iXBRL v4.7…',
+    status_fetching_bv:     'Fetching from allabolag.se…',
 
     // CFO flag text
     flag_auditor_title:     'Auditor Remark: Late Filing (Revenue Risk)',
@@ -2750,7 +2750,7 @@ const STRINGS = {
     search_mode_name:   'NAMN',
     search_mode_org:    'ORG.NR',
     search_btn:         'SÖK',
-    api_hint:           'SE Register · Bolagsverket iXBRL',
+    api_hint:           'SE Register · UC AB via allabolag.se',
 
     // Tabs
     tab_company:        '🏢 Företag',
@@ -2766,7 +2766,7 @@ const STRINGS = {
     // Company empty state
     search_heading:     'Sök efter vilket svenskt företag som helst',
     search_sub:         'Skriv ett företagsnamn eller organisationsnummer i sökfältet ovan',
-    search_hint:        't.ex. "Sandvik" · "NCC" · "556000-1234" · Data: Bolagsverket iXBRL 2020–nu',
+    search_hint:        't.ex. "Sandvik" · "NCC" · "556000-1234" · Data: allabolag.se 2020–nu',
     demo_or:            'Eller ladda en demo',
     demo_volvo:         'Demo: Volvo AB',
     demo_hm:            'Demo: H&M',
@@ -2893,7 +2893,7 @@ const STRINGS = {
     status_ready:           'Redo — sök efter ett företag eller ladda en demo',
     status_loading:         'Laddar…',
     status_loaded:          'Laddad',
-    status_fetching_bv:     'Hämtar från Bolagsverket iXBRL v4.7…',
+    status_fetching_bv:     'Hämtar från allabolag.se…',
 
     // CFO flag text
     flag_auditor_title:     'Revisorsmärkning: Sen inlämning (intäktsrisk)',
@@ -3183,7 +3183,7 @@ function colorClass(n, goodHigh=true) {
 }
 
 // ============================================================
-// BOLAGSVERKET iXBRL API v4.7 FETCH
+// ALLABOLAG.SE DATA FETCH (UC AB source)
 // ============================================================
 // ============================================================
 // CORS PROXY CHAIN — auto-fallback through 4 proxies
@@ -3348,7 +3348,7 @@ async function fetchBolagsverket(orgNum) {
 
   setStatusBar(t('status_fetching_bv'), 'loading');
   document.getElementById('bvDot').className  = 'api-dot na';
-  document.getElementById('bvText').textContent = `Bolagsverket: Fetching FY${fetchYear}…`;
+  document.getElementById('bvText').textContent = `allabolag.se: Fetching FY${fetchYear}…`;
 
   // Tier 1: Netlify Function proxy (server-side, no CORS, year cascade)
   const netlifyUrl = getBolagsverketProxyUrl();
@@ -3377,7 +3377,7 @@ async function fetchBolagsverket(orgNum) {
             ? ` (resolved to FY${wrapper.resolvedYear})`
             : '';
           document.getElementById('bvDot').className   = 'api-dot ok';
-          document.getElementById('bvText').textContent = `Bolagsverket: Connected · FY${resolvedYr}${yearNote} (${wrapper.source || 'live'})`;
+          document.getElementById('bvText').textContent = `allabolag.se · FY${resolvedYr}${yearNote}`;
           return wrapper.latestReport;
         } else {
           // Proxy reached Bolagsverket successfully but no data found for this company
@@ -3385,7 +3385,7 @@ async function fetchBolagsverket(orgNum) {
             ? ` · Available years: ${wrapper.availableYears.join(', ')}`
             : '';
           document.getElementById('bvDot').className   = 'api-dot err';
-          document.getElementById('bvText').textContent = `Bolagsverket: No iXBRL filing found${avail}`;
+          document.getElementById('bvText').textContent = `allabolag.se: No filing found${avail}`;
           // If there are available years but not the one requested, update the UI
           if (wrapper.availableYears?.length && !wrapper.availableYears.includes(fetchYear)) {
             updateFetchYearHint(wrapper.availableYears);
@@ -3414,7 +3414,7 @@ async function fetchBolagsverket(orgNum) {
         const data = await res.json().catch(() => null);
         if (data) {
           document.getElementById('bvDot').className   = 'api-dot ok';
-          document.getElementById('bvText').textContent = 'Bolagsverket: Connected (proxy)';
+          document.getElementById('bvText').textContent = 'allabolag.se: Connected';
           return data;
         }
       }
@@ -3422,7 +3422,7 @@ async function fetchBolagsverket(orgNum) {
   }
 
   document.getElementById('bvDot').className   = 'api-dot err';
-  document.getElementById('bvText').textContent = 'Bolagsverket: CORS blocked — using structured demo';
+  document.getElementById('bvText').textContent = 'allabolag.se: Connection failed';
   return null;
 }
 
@@ -3924,13 +3924,13 @@ async function loadCompanyByOrg(raw, knownName) {
   const bvText = document.getElementById('bvText');
   if (bvText) {
     if (isLive) {
-      bvText.innerHTML = `<span style="color:var(--green);">● LIVE</span> Bolagsverket · FY${d.fiscalYear}`;
+      bvText.innerHTML = `<span style="color:var(--green);">●</span> allabolag.se · FY${d.fiscalYear}`;
     } else {
-      bvText.innerHTML = `<span style="color:var(--amber);">● NO DATA</span> — No iXBRL filing found for this company. All figures shown as 0 kr.`;
+      bvText.innerHTML = `<span style="color:var(--amber);">● NO DATA</span> — No filing found on allabolag.se for this company. All figures shown as 0 kr.`;
     }
   }
 
-  showToast(`${isLive ? '✓ LIVE' : '⚠ NO DATA'} ${d.name} · FY${d.fiscalYear}`);
+  showToast(`${isLive ? '✓ Loaded' : '⚠ NO DATA'} ${d.name} · FY${d.fiscalYear}`);
   updateChatPills();
 
   // Always load all available years for trend analysis and M&A scoring
@@ -4409,7 +4409,7 @@ function renderCompanyTab(d) {
   const badge = document.getElementById('heroBadge');
   if (badge) {
     const dataLabel = d._isLive
-      ? `SE · ${(d.type||'AB').toUpperCase()} · <span style="color:var(--green);font-size:9px;">● LIVE</span>`
+      ? `SE · ${(d.type||'AB').toUpperCase()} · <span style="color:var(--green);font-size:9px;">● DATA</span>`
       : `SE · ${(d.type||'AB').toUpperCase()} · <span style="color:var(--amber);font-size:9px;">⚠ NO DATA</span>`;
     badge.innerHTML = dataLabel;
   }
@@ -7636,7 +7636,7 @@ HOW TO USE THE APP (step by step):
 
 KEY CONCEPTS & FORMULAS:
 - Org. number: Swedish company ID (format 556000-1234). Required to load any company.
-- iXBRL: Digital annual report from Bolagsverket. Source of all financial data.
+- Data source: Financial data comes from UC AB via allabolag.se, which processes Bolagsverket annual report filings. Not a direct Bolagsverket API connection.
 - Anmärkning: Official auditor remark for late filing under ABL 7:10§. Red flag.
 - ROS (Return on Sales): EBIT ÷ Net Sales × 100. Threshold: > 8% = OK.
 - ROE (Return on Equity): Net Profit ÷ Equity × 100. Threshold: > 12% = OK.
@@ -7941,7 +7941,7 @@ function updateChatSuggestions() {
       ? ['Explain the income statement','What does the current ratio tell me?','How does this balance sheet compare to sector?']
       : ['What does the Financials tab show?','How do I load a company?'];
   } else if (activeTab === 'guide') {
-    suggestions = ['How do I use this app?','Explain the M&A scoring model','What is iXBRL?'];
+    suggestions = ['How do I use this app?','Explain the M&A scoring model','Where does the data come from?'];
   } else {
     // company tab
     if (companyData) {
@@ -8828,7 +8828,7 @@ async function cbLoadMyCompany() {
   const dotBV = document.getElementById('cbDotBV');
   const txtBV = document.getElementById('cbTxtBV');
   dotBV.style.background = 'var(--amber)';
-  txtBV.textContent = 'Bolagsverket: fetching…';
+  txtBV.textContent = 'allabolag.se: fetching…';
   txtBV.style.color = 'var(--text3)';
 
   const apiData = await cbFetchBV(raw);
@@ -8854,11 +8854,11 @@ async function cbLoadMyCompany() {
   // Update BV status dot
   if (d._isLive) {
     dotBV.style.background = 'var(--green)';
-    txtBV.textContent = 'Bolagsverket: connected';
+    txtBV.textContent = 'allabolag.se: connected';
     txtBV.style.color = 'var(--text3)';
   } else {
     dotBV.style.background = 'var(--text3)';
-    txtBV.textContent = 'Bolagsverket: not connected';
+    txtBV.textContent = 'allabolag.se: not connected';
     txtBV.style.color = 'var(--text3)';
   }
 
@@ -9545,7 +9545,7 @@ function cbClearAll() {
   document.getElementById('cbBtnLoadMine').textContent = 'Load My Company';
   document.getElementById('cbOrgInput').value = '';
   document.getElementById('cbDotBV').style.background = 'var(--text3)';
-  document.getElementById('cbTxtBV').textContent = 'Bolagsverket: not connected';
+  document.getElementById('cbTxtBV').textContent = 'allabolag.se: not connected';
   document.getElementById('cbSummaryChips').style.display = 'none';
   document.getElementById('cbSummaryChips').innerHTML = '';
   document.getElementById('cbRankSubtitle').textContent = 'Add your company and competitors to generate the ranking';
