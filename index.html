@@ -1525,6 +1525,12 @@ body.light-mode {
       </div>
     </div>
 
+    <div class="modal-field">
+      <label class="modal-label">SerpApi Key <span style="color:var(--text3);font-weight:400;">(optional — Google ratings in Competitor Bench)</span></label>
+      <input class="modal-input" id="serpKeyInput" type="password" placeholder="SerpApi key for Google Maps ratings" style="margin:0;">
+      <div class="modal-note">Get your key at <a href="https://serpapi.com" target="_blank" style="color:var(--amber);">serpapi.com</a> — powers Google ★ ratings in the Competitor Bench tab.</div>
+    </div>
+
     <!-- Proxy auto-detection status -->
     <div id="proxyAutoDetect" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:10px 12px;margin-bottom:16px;font-size:10px;color:var(--text3);line-height:1.7;">
       <strong style="color:var(--blue);">Proxy status:</strong> <span id="proxyStatusText">Detecting...</span><br>
@@ -2524,6 +2530,7 @@ body.light-mode {
 // ============================================================
 let anthropicKey = ''; try { anthropicKey = localStorage.getItem('vcfo_anthropic') || ''; } catch(e) {}
 let ANTHROPIC_PROXY_URL = ''; try { ANTHROPIC_PROXY_URL = localStorage.getItem('vcfo_proxy_url') || ''; } catch(e) {}
+let serpApiKey = ''; try { serpApiKey = localStorage.getItem('vcfo_serp') || ''; } catch(e) {}
 let companyData  = null;
 let maScore      = null;
 let cfoRunning   = false;
@@ -3045,6 +3052,7 @@ function switchTab(name) {
 function openSettings() {
   document.getElementById('anthropicKeyInput').value = anthropicKey;
   document.getElementById('proxyUrlInput').value     = ANTHROPIC_PROXY_URL;
+  document.getElementById('serpKeyInput').value       = serpApiKey;
   document.getElementById('anthropicStatus').style.display = 'none';
   document.getElementById('settingsModal').classList.add('open');
 
@@ -3067,11 +3075,14 @@ function closeSettings() {
 function saveSettings() {
   anthropicKey        = document.getElementById('anthropicKeyInput').value.trim();
   ANTHROPIC_PROXY_URL = document.getElementById('proxyUrlInput').value.trim();
+  serpApiKey           = document.getElementById('serpKeyInput').value.trim();
   try { localStorage.setItem('vcfo_anthropic', anthropicKey); } catch(e) {}
   try { localStorage.setItem('vcfo_proxy_url', ANTHROPIC_PROXY_URL); } catch(e) {}
+  try { localStorage.setItem('vcfo_serp', serpApiKey); } catch(e) {}
   closeSettings();
   showToast(t('toast_settings_saved'));
   updateAIStatus();
+  cbUpdateSerpStatus();
 }
 
 async function testAnthropicModal() {
@@ -8689,9 +8700,10 @@ function cbRunBenchmark() {
   const loadedComps = cbCompetitors.filter(c => c.status === 'loaded' && c.data);
   if (loadedComps.length === 0) { showToast('⚠ Add at least one competitor'); return; }
 
+  const hasSerpKey = !!serpApiKey;
   const allEntries = [
-    { ...cbMyCompany, _isMe: true, orgNr: cbMyCompany.orgNr, rating: null, reviewCount: null, reviewLoading: false },
-    ...loadedComps.map(c => ({ ...c.data, _isMe: false, orgNr: c.orgNr, rating: null, reviewCount: null, reviewLoading: false }))
+    { ...cbMyCompany, _isMe: true, orgNr: cbMyCompany.orgNr, rating: null, reviewCount: null, reviewLoading: hasSerpKey },
+    ...loadedComps.map(c => ({ ...c.data, _isMe: false, orgNr: c.orgNr, rating: null, reviewCount: null, reviewLoading: hasSerpKey }))
   ];
 
   cbRankData = allEntries.map(d => {
@@ -8723,6 +8735,11 @@ function cbRunBenchmark() {
   cbRenderSummaryChips();
   cbRenderSortBtns();
   showToast(`⚔ Ranked ${cbRankData.length} companies by ${CB_SORT_OPTIONS.find(s=>s.key===cbSortKey)?.label || cbSortKey}`);
+
+  // Fetch Google ratings async if SerpApi key is set
+  if (hasSerpKey) {
+    cbFetchAllRatings(allEntries, loadedComps);
+  }
 }
 
 function cbSetSortKey(key) {
@@ -8808,6 +8825,8 @@ function cbRenderRankTable() {
         <span class="cb-star-num">${row.rating.toFixed(1)}</span>
       </div>
       <div class="cb-review-count">${row.reviewCount ? row.reviewCount.toLocaleString() + ' reviews' : ''}</div>`;
+    } else if (!serpApiKey) {
+      starsHtml = '<span style="font-size:9px;color:var(--text3);">No key</span>';
     } else {
       starsHtml = '<span style="font-size:9px;color:var(--text3);">—</span>';
     }
@@ -8891,6 +8910,82 @@ function cbRenderSummaryChips() {
   `;
 }
 
+// ============================================================
+// COMPETITOR BENCH — Google ratings via SerpApi
+// ============================================================
+async function cbFetchGoogleRating(companyName, city) {
+  if (!serpApiKey) return { rating: null, reviewCount: null, source: 'no-key' };
+
+  const query = encodeURIComponent(`${companyName} ${city || 'Stockholm'}`);
+  const url   = `https://serpapi.com/search.json?engine=google_maps&q=${query}&api_key=${serpApiKey}&hl=en&gl=se`;
+
+  try {
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const res   = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`SerpApi ${res.status}`);
+    const data = await res.json();
+
+    const all = [...(data.local_results || [])];
+    if (data.place_results) all.unshift(data.place_results);
+    if (all.length === 0) return { rating: null, reviewCount: null, source: 'no-results' };
+
+    const place = all[0];
+    return {
+      rating:      place.rating || null,
+      reviewCount: place.reviews || place.reviews_original || null,
+      source:      'serpapi',
+    };
+  } catch (e) {
+    console.warn('SerpApi error:', e.message);
+    return { rating: null, reviewCount: null, source: 'error' };
+  }
+}
+
+async function cbFetchAllRatings(allEntries, loadedComps) {
+  for (const entry of allEntries) {
+    const result = await cbFetchGoogleRating(entry.name, 'Stockholm');
+
+    // Update the matching row in cbRankData
+    const row = cbRankData.find(r => r.orgNr === entry.orgNr);
+    if (row) {
+      row.rating        = result.rating;
+      row.reviewCount   = result.reviewCount;
+      row.reviewLoading = false;
+    }
+    // Update competitor cache too
+    if (!entry._isMe) {
+      const comp = loadedComps.find(c => c.orgNr === entry.orgNr);
+      if (comp) {
+        comp.rating      = result.rating;
+        comp.reviewCount = result.reviewCount;
+      }
+    }
+
+    // Re-render immediately so each result appears as it arrives
+    cbRenderRankTable();
+
+    // Short pause between requests to respect rate limits
+    await new Promise(r => setTimeout(r, 350));
+  }
+}
+
+function cbUpdateSerpStatus() {
+  const dot = document.getElementById('cbDotSerp');
+  const txt = document.getElementById('cbTxtSerp');
+  if (!dot || !txt) return;
+  if (serpApiKey) {
+    dot.style.background = 'var(--green)';
+    txt.textContent = 'SerpApi: key set ✓';
+    txt.style.color = 'var(--green)';
+  } else {
+    dot.style.background = 'var(--red)';
+    txt.textContent = 'SerpApi: no key — Google ratings unavailable';
+    txt.style.color = 'var(--red)';
+  }
+}
+
 function cbLoadIntoMATab(orgNr) {
   document.getElementById('orgInput').value = orgNr;
   showToast(`🎯 Loading ${orgNr} into M&A tab…`);
@@ -8957,6 +9052,7 @@ function cbClearAll() {
     if (name === 'competitor-bench' && !cbPresetsRendered) {
       cbPresetsRendered = true;
       cbRenderPresets('all');
+      cbUpdateSerpStatus();
     }
   };
 })();
