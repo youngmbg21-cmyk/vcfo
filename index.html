@@ -2922,6 +2922,10 @@ function toggleTheme() {
   try { localStorage.setItem('vcfo_theme', isLight ? 'light' : 'dark'); } catch(e) {}
   const btn = document.getElementById('themeToggleBtn');
   if (btn) btn.textContent = isLight ? '☽' : '☀';
+  // Re-render any live charts so their hardcoded colours update
+  if (radarChartInst) { const c = radarChartInst.canvas; const l = radarChartInst.data.labels; const d = radarChartInst.data.datasets; radarChartInst.destroy(); radarChartInst = null; drawRadar(c, l, d); }
+  if (barChartInst)   renderBarChart();
+  if (cfWaterfallChartInst) renderCashFlow();
 }
 
 function applyTheme() {
@@ -5960,6 +5964,9 @@ function renderRadarChart() {
 }
 
 function drawRadar(canvas, labels, datasets) {
+  const isLight  = document.body.classList.contains('light-mode');
+  const tickColor = isLight ? '#334155' : '#FFFFFF';
+  const gridColor = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)';
   radarChartInst = new Chart(canvas, {
     type: 'radar',
     data: { labels, datasets },
@@ -5969,14 +5976,14 @@ function drawRadar(canvas, labels, datasets) {
       scales: {
         r: {
           min: 0, max: 100,
-          ticks:    { display: false },
-          grid:     { color: 'rgba(255,255,255,0.06)' },
-          angleLines:{ color: 'rgba(255,255,255,0.06)' },
-          pointLabels: { color: '#FFFFFF', font: { size: 10, family: 'JetBrains Mono' } },
+          ticks:       { display: false },
+          grid:        { color: gridColor },
+          angleLines:  { color: gridColor },
+          pointLabels: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' } },
         }
       },
       plugins: {
-        legend: { labels: { color: '#FFFFFF', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 12 } },
+        legend: { labels: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 12 } },
       }
     }
   });
@@ -6001,6 +6008,9 @@ function renderBarChart() {
   if (barChartInst) barChartInst.destroy();
 
   const drawBar = () => {
+    const isLight   = document.body.classList.contains('light-mode');
+    const tickColor = isLight ? '#334155' : '#FFFFFF';
+    const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
     barChartInst = new Chart(canvas, {
       type: 'bar',
       data: {
@@ -6020,10 +6030,10 @@ function renderBarChart() {
         scales: {
           y: {
             min: 0, max: 100,
-            grid:  { color: 'rgba(255,255,255,0.04)' },
-            ticks: { color: '#FFFFFF', font: { size: 10, family: 'JetBrains Mono' } },
+            grid:  { color: gridColor },
+            ticks: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' } },
           },
-          x: { ticks: { color: '#FFFFFF', font: { size: 10, family: 'JetBrains Mono' } }, grid: { display: false } }
+          x: { ticks: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' } }, grid: { display: false } }
         },
         plugins: {
           legend: { display: false },
