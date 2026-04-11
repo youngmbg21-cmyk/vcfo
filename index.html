@@ -4633,198 +4633,106 @@ function finWfSwitchYear(year) {
 function renderFinWaterfall(d) {
   const canvas = document.getElementById('finWaterfallChart');
   if (!canvas || !d) return;
+  if (!d.netSales && !d.opProfit) {
+    if (finWaterfallInst) { finWaterfallInst.destroy(); finWaterfallInst = null; }
+    const c2d = canvas.getContext('2d'); c2d.clearRect(0, 0, canvas.width, canvas.height);
+    const isL = document.body.classList.contains('light-mode');
+    c2d.fillStyle = isL ? '#94a3b8' : '#475569'; c2d.font = '12px DM Sans'; c2d.textAlign = 'center';
+    c2d.fillText('No financial data available for this year', canvas.width / 2, canvas.height / 2);
+    return;
+  }
 
   const isLight    = document.body.classList.contains('light-mode');
   const tickColor  = isLight ? '#334155' : '#FFFFFF';
   const gridColor  = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
+  const mutedColor = isLight ? '#94a3b8' : '#64748b';
 
-  // ── Swedish → English label translation + classification ──
-  // category: 'revenue' | 'cost' | 'subtotal' | 'financial' | 'tax' | 'netprofit' | 'skip'
-  const CLASSIFY = [
-    // ── Skip: non-financial metadata, dates, section headers ──
-    { kw: 'startdatum',                cat: 'skip' },
-    { kw: 'slutdatum',                 cat: 'skip' },
-    { kw: 'belopp i',                  cat: 'skip' },
-    { kw: 'rörelsens intäkter',        cat: 'skip' },
-    { kw: 'rörelsens kostnader',       cat: 'skip' },
-    { kw: 'finansiella poster',        cat: 'skip' },
-    { kw: 'bokslutsdispositioner',     cat: 'skip' },
-    { kw: 'resultaträkning',           cat: 'skip' },
-    // ── Revenue ──
-    { kw: 'nettoomsättning',           cat: 'revenue',   en: 'Net Sales' },
-    { kw: 'nettoomstning',             cat: 'revenue',   en: 'Net Sales' },
-    // ── Revenue subtotal (some filings show "Summa intäkter" or "Omsättning") ──
-    { kw: 'summa rörelseintäkter',     cat: 'skip' },  // redundant if Net Sales already shown
-    { kw: 'summa intäkter',            cat: 'skip' },
-    { kw: 'omsättning',               cat: 'skip' },  // total turnover — redundant with Net Sales
-    // ── Operating costs ──
-    { kw: 'råvaror och förnödenheter', cat: 'cost',      en: 'Raw Materials' },
-    { kw: 'handelsvaror',              cat: 'cost',      en: 'COGS' },
-    { kw: 'kostnad sålda varor',       cat: 'cost',      en: 'COGS' },
-    { kw: 'kostnad för sålda',         cat: 'cost',      en: 'COGS' },
-    { kw: 'varukostnad',               cat: 'cost',      en: 'COGS' },
-    { kw: 'övriga rörelseintäkter',    cat: 'cost',      en: 'Other Op. Income' },  // positive but still operating
-    { kw: 'övrig omsättning',          cat: 'cost',      en: 'Other Revenue' },
-    { kw: 'förändring av lager',       cat: 'cost',      en: 'Inventory Change' },
-    { kw: 'personalkostnader',         cat: 'cost',      en: 'Personnel Costs' },
-    { kw: 'löner och andra',           cat: 'cost',      en: 'Personnel Costs' },
-    { kw: 'avskrivningar',             cat: 'cost',      en: 'Depreciation' },
-    { kw: 'av- och nedskrivningar',    cat: 'cost',      en: 'Depreciation' },
-    { kw: 'nedskrivningar',            cat: 'cost',      en: 'Write-downs' },
-    { kw: 'övriga externa kostnader',  cat: 'cost',      en: 'Other External Costs' },
-    { kw: 'övriga rörelsekostnader',   cat: 'cost',      en: 'Other Op. Costs' },
-    { kw: 'rörelsekostnader',          cat: 'cost',      en: 'Operating Costs' },  // aggregated single line
-    { kw: 'övriga kostnader',          cat: 'cost',      en: 'Other Costs' },
-    { kw: 'lokalkostnader',            cat: 'cost',      en: 'Premises Costs' },
-    // ── Subtotals (EBIT and intermediate profit lines) ──
-    { kw: 'rörelseresultat',           cat: 'subtotal',  en: 'EBIT' },
-    { kw: 'bruttoresultat',            cat: 'subtotal',  en: 'Gross Profit' },
-    // ── Financial items (below EBIT) ──
-    { kw: 'ränteintäkter',             cat: 'financial', en: 'Interest Income' },
-    { kw: 'finansiella intäkter',      cat: 'financial', en: 'Financial Income' },
-    { kw: 'räntekostnader',            cat: 'financial', en: 'Interest Expense' },
-    { kw: 'finansiella kostnader',     cat: 'financial', en: 'Financial Costs' },
-    { kw: 'resultat från andelar',     cat: 'financial', en: 'Income from Participations' },
-    { kw: 'resultat från finansiella', cat: 'subtotal',  en: 'Profit after Financials' },
-    { kw: 'resultat efter finans',     cat: 'subtotal',  en: 'Profit after Financials' },
-    // ── Tax ──
-    { kw: 'skatt på årets resultat',   cat: 'tax',       en: 'Income Tax' },
-    { kw: 'inkomstskatt',              cat: 'tax',       en: 'Income Tax' },
-    { kw: 'skatt',                     cat: 'tax',       en: 'Tax' },
-    // ── Net profit (closing bar) ──
-    { kw: 'årets resultat',            cat: 'netprofit', en: 'Net Profit' },
-    // ── Catch-all subtotals ──
-    { kw: 'resultat före skatt',       cat: 'subtotal',  en: 'Profit before Tax' },
-    { kw: 'resultat före bokslut',     cat: 'subtotal',  en: 'Profit before Appropriations' },
-  ];
+  const rows     = d._incomeRows;
+  const netSales = d.netSales || 0;
+  const ebit     = d.opProfit || 0;
+  const netP     = d.netProfit || 0;
 
-  function classify(label) {
-    const low = label.toLowerCase();
-    for (const rule of CLASSIFY) {
-      if (low.includes(rule.kw)) return { cat: rule.cat, en: rule.en || label };
-    }
-    // Unknown line — treat as a cost/income step if it has a value
-    return { cat: 'cost', en: label };
-  }
-
-  // ── Build bars ──
-  // Each: { en, sv, value, role: 'revenue'|'cost'|'subtotal'|'financial'|'tax'|'netprofit' }
-  const bars = [];
-  const rows = d._incomeRows;
-
-  if (rows && rows.length >= 2) {
-    // ── Dynamic path: classify each filing row ──
-    let hasRevenue = false;
+  // Helper: find a value from incomeRows by keyword
+  function findRow(kws) {
+    if (!rows || !rows.length) return null;
     for (const r of rows) {
-      const { cat, en } = classify(r.label);
-      if (cat === 'skip') continue;
-      const v = r.value;
-      if (cat === 'revenue') {
-        bars.push({ en, sv: r.label, value: v, role: 'revenue' });
-        hasRevenue = true;
-      } else if (cat === 'subtotal') {
-        bars.push({ en, sv: r.label, value: v, role: 'subtotal' });
-      } else if (cat === 'financial') {
-        if (v !== 0) bars.push({ en, sv: r.label, value: v, role: 'financial' });
-      } else if (cat === 'tax') {
-        if (v !== 0) bars.push({ en, sv: r.label, value: v < 0 ? v : -v, role: 'tax' });
-      } else if (cat === 'netprofit') {
-        bars.push({ en, sv: r.label, value: v, role: 'netprofit' });
-      } else { // cost
-        if (v !== 0) bars.push({ en, sv: r.label, value: v < 0 ? v : -Math.abs(v), role: 'cost' });
-      }
+      const low = r.label.toLowerCase();
+      if (kws.some(kw => low.includes(kw))) return r.value;
     }
-    // If revenue wasn't detected (unusual), insert Net Sales from named field
-    if (!hasRevenue && d.netSales) {
-      bars.unshift({ en: 'Net Sales', sv: 'Nettoomsättning', value: d.netSales, role: 'revenue' });
-    }
+    return null;
+  }
+
+  // ── Build bars: only use fields allabolag reliably provides ──
+  const bars = [];
+
+  // 1. Net Sales (opening)
+  bars.push({ en: 'Net Sales', sv: 'Nettoomsättning', value: netSales, role: 'revenue' });
+
+  // 2. Other Revenue (if > 0)
+  const otherRev = findRow(['övrig omsättning', 'övriga rörelseintäkter']);
+  if (otherRev && otherRev > 0) bars.push({ en: 'Other Revenue', sv: 'Övrig omsättning', value: otherRev, role: 'step' });
+
+  // 3. Operating Costs (derived: total revenue - EBIT)
+  const totalRev = netSales + (otherRev && otherRev > 0 ? otherRev : 0);
+  const opCosts  = totalRev - ebit;
+  if (opCosts > 0) bars.push({ en: 'Operating Costs', sv: 'Rörelsekostnader', value: -opCosts, role: 'step' });
+
+  // 4. EBIT (subtotal)
+  bars.push({ en: 'EBIT', sv: 'Rörelseresultat', value: ebit, role: 'subtotal' });
+
+  // 5-6. Financial Income / Costs
+  const finInc = findRow(['ränteintäkter', 'finansiella intäkter']) ?? (d.financialIncome || null);
+  const finExp = findRow(['räntekostnader', 'finansiella kostnader']) ?? (d.financialExpenses || null);
+  if (finInc != null && Math.abs(finInc) > 0) bars.push({ en: 'Financial Income', sv: 'Finansiella intäkter', value: Math.abs(finInc), role: 'step' });
+  if (finExp != null && Math.abs(finExp) > 0) bars.push({ en: 'Financial Costs', sv: 'Finansiella kostnader', value: -Math.abs(finExp), role: 'step' });
+
+  // 7. Tax
+  const taxVal = findRow(['skatt på årets resultat', 'inkomstskatt']) ?? (d.tax || null);
+  if (taxVal != null && Math.abs(taxVal) > 0) {
+    bars.push({ en: 'Tax', sv: 'Skatt', value: -Math.abs(taxVal), role: 'step' });
   } else {
-    // ── Fallback: named fields ──
-    const netSales = d.netSales || 0;
-    const ebit     = d.opProfit || 0;
-    const netP     = d.netProfit || 0;
-    bars.push({ en: 'Net Sales', sv: 'Nettoomsättning', value: netSales, role: 'revenue' });
-    if (d.rawMaterials)  bars.push({ en: 'COGS',             sv: 'Råvaror', value: -Math.abs(d.rawMaterials), role: 'cost' });
-    if (d.personnel)     bars.push({ en: 'Personnel Costs',  sv: 'Personalkostnader', value: -Math.abs(d.personnel), role: 'cost' });
-    if (d.depreciation)  bars.push({ en: 'Depreciation',     sv: 'Avskrivningar', value: -Math.abs(d.depreciation), role: 'cost' });
-    if (d.otherOpCosts)  bars.push({ en: 'Other Op. Costs',  sv: 'Övriga kostnader', value: -Math.abs(d.otherOpCosts), role: 'cost' });
-    if (bars.length === 1 && netSales > 0 && ebit !== netSales) {
-      bars.push({ en: 'Operating Costs', sv: 'Rörelsekostnader', value: -(netSales - ebit), role: 'cost' });
-    }
-    bars.push({ en: 'EBIT', sv: 'Rörelseresultat', value: ebit, role: 'subtotal' });
-    if (d.financialIncome && d.financialIncome > 0)   bars.push({ en: 'Financial Income', sv: 'Finansiella intäkter', value: d.financialIncome, role: 'financial' });
-    if (d.financialExpenses && d.financialExpenses > 0) bars.push({ en: 'Financial Costs', sv: 'Finansiella kostnader', value: -d.financialExpenses, role: 'financial' });
-    if (d.tax && d.tax > 0)  bars.push({ en: 'Tax', sv: 'Skatt', value: -d.tax, role: 'tax' });
-    bars.push({ en: 'Net Profit', sv: 'Årets resultat', value: netP, role: 'netprofit' });
+    // Derive tax: EBIT + financials - Net Profit
+    const impliedPreTax = ebit + (finInc ? Math.abs(finInc) : 0) - (finExp ? Math.abs(finExp) : 0);
+    const derivedTax = impliedPreTax - netP;
+    if (derivedTax > 1000) bars.push({ en: 'Tax', sv: 'Skatt (beräknad)', value: -derivedTax, role: 'step' });
   }
 
-  if (bars.length < 2) return;
-
-  // ── Mathematical validation — insert residual bars to close gaps ──
-  // Walk between each pair of anchor/subtotal bars. If the steps between
-  // them don't sum to the difference, insert a residual bar.
-  for (let pass = 0; pass < 2; pass++) {
-    let changed = false;
-    let i = 0;
-    while (i < bars.length) {
-      if (bars[i].role !== 'revenue' && bars[i].role !== 'subtotal' && bars[i].role !== 'netprofit') { i++; continue; }
-      const startValue = bars[i].value;
-      // Find next anchor
-      let anchorEnd = -1;
-      for (let j = i + 1; j < bars.length; j++) {
-        if (bars[j].role === 'subtotal' || bars[j].role === 'netprofit') { anchorEnd = j; break; }
-      }
-      if (anchorEnd === -1) { i++; continue; }
-      const endValue = bars[anchorEnd].value;
-      // Sum all step bars between them
-      let stepSum = 0;
-      for (let j = i + 1; j < anchorEnd; j++) stepSum += bars[j].value;
-      // Expected: startValue + stepSum ≈ endValue
-      const residual = endValue - startValue - stepSum;
-      if (Math.abs(residual) > Math.max(Math.abs(startValue) * 0.005, 1000)) {
-        const isAboveLine = bars[anchorEnd].en === 'EBIT' || bars[anchorEnd].en === 'Gross Profit';
-        bars.splice(anchorEnd, 0, {
-          en: isAboveLine ? 'Other Costs' : 'Other Items',
-          sv: 'Övriga poster (beräknat)',
-          value: residual,
-          role: isAboveLine ? 'cost' : 'financial',
-        });
-        changed = true;
-      }
-      i = anchorEnd + 1;
+  // 8. Residual: if steps after EBIT don't reach Net Profit, insert adjustment
+  const ebitIdx = bars.findIndex(b => b.role === 'subtotal');
+  if (ebitIdx >= 0) {
+    let sumAfter = 0;
+    for (let j = ebitIdx + 1; j < bars.length; j++) sumAfter += bars[j].value;
+    const residual = netP - ebit - sumAfter;
+    if (Math.abs(residual) > Math.max(Math.abs(ebit) * 0.005, 1000)) {
+      bars.push({ en: 'Other Items', sv: 'Övriga poster', value: residual, role: 'step' });
     }
-    if (!changed) break;
   }
+
+  // 9. Net Profit (closing)
+  bars.push({ en: 'Net Profit', sv: 'Årets resultat', value: netP, role: 'closing' });
 
   // ── Chart arrays ──
   const labels   = bars.map(b => b.en);
-  const svLabels = bars.map(b => b.sv || b.en);
+  const svLabels = bars.map(b => b.sv);
   const values   = bars.map(b => b.value);
-  const isAnchor = bars.map(b => b.role === 'revenue' || b.role === 'subtotal' || b.role === 'netprofit');
+  const isAnch   = bars.map(b => b.role === 'revenue' || b.role === 'subtotal' || b.role === 'closing');
 
-  // Waterfall base computation
-  const base = [];
-  let running = 0;
+  const base = []; let running = 0;
   for (let i = 0; i < bars.length; i++) {
-    if (isAnchor[i]) { base.push(0); running = values[i]; }
-    else {
-      const v = values[i];
-      if (v < 0) { base.push(running + v); running += v; }
-      else       { base.push(running);     running += v; }
-    }
+    if (isAnch[i]) { base.push(0); running = values[i]; }
+    else { const v = values[i]; if (v < 0) { base.push(running + v); running += v; } else { base.push(running); running += v; } }
   }
   const segment = values.map(v => Math.abs(v));
 
-  // Colours
   const colors = bars.map((b, i) => {
-    if (b.role === 'revenue')   return 'rgba(0,200,255,0.7)';
-    if (b.role === 'subtotal')  return values[i] >= 0 ? 'rgba(0,200,255,0.55)' : 'rgba(255,69,96,0.55)';
-    if (b.role === 'netprofit') return values[i] >= 0 ? 'rgba(0,255,136,0.7)'  : 'rgba(255,69,96,0.7)';
+    if (b.role === 'revenue')  return 'rgba(0,200,255,0.7)';
+    if (b.role === 'subtotal') return values[i] >= 0 ? 'rgba(0,200,255,0.55)' : 'rgba(255,69,96,0.55)';
+    if (b.role === 'closing')  return values[i] >= 0 ? 'rgba(0,255,136,0.7)' : 'rgba(255,69,96,0.7)';
     return values[i] >= 0 ? 'rgba(0,255,136,0.5)' : 'rgba(255,69,96,0.5)';
   });
   const borders = bars.map((b, i) => {
     if (b.role === 'revenue' || b.role === 'subtotal') return values[i] >= 0 ? '#3b82f6' : '#ef4444';
-    if (b.role === 'netprofit') return values[i] >= 0 ? '#10b981' : '#ef4444';
+    if (b.role === 'closing') return values[i] >= 0 ? '#10b981' : '#ef4444';
     return values[i] >= 0 ? '#10b981' : '#ef4444';
   });
 
@@ -4832,31 +4740,21 @@ function renderFinWaterfall(d) {
     if (finWaterfallInst) finWaterfallInst.destroy();
     finWaterfallInst = new Chart(canvas, {
       type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          { label: 'Base', data: base, backgroundColor: 'transparent', borderWidth: 0, barPercentage: 0.55 },
-          { label: 'Amount', data: segment, backgroundColor: colors, borderColor: borders, borderWidth: 1, borderRadius: 3, barPercentage: 0.55 }
-        ]
-      },
+      data: { labels, datasets: [
+        { label: 'Base', data: base, backgroundColor: 'transparent', borderWidth: 0, barPercentage: 0.55 },
+        { label: 'Amount', data: segment, backgroundColor: colors, borderColor: borders, borderWidth: 1, borderRadius: 3, barPercentage: 0.55 }
+      ]},
       options: {
         responsive: true, maintainAspectRatio: false,
         scales: {
-          x: { stacked: true, ticks: { color: tickColor, font: { size: bars.length > 10 ? 8 : 10, family: 'JetBrains Mono' }, maxRotation: 45, minRotation: 0 }, grid: { display: false } },
+          x: { stacked: true, ticks: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' } }, grid: { display: false } },
           y: { stacked: true, ticks: { color: tickColor, font: { size: 9, family: 'JetBrains Mono' }, callback: v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(0)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'k'; return v; } }, grid: { color: gridColor } }
         },
         plugins: {
           legend: { display: false },
           tooltip: { ...chartTooltipStyle(isLight), callbacks: {
-            title: ctx => {
-              const idx = ctx[0]?.dataIndex;
-              if (idx == null) return '';
-              return `${labels[idx]}  (${svLabels[idx]})`;
-            },
-            label: ctx => {
-              if (ctx.datasetIndex === 0) return '';
-              return fmtSEK(values[ctx.dataIndex]);
-            }
+            title: ctx => { const i = ctx[0]?.dataIndex; return i != null ? `${labels[i]}  (${svLabels[i]})` : ''; },
+            label: ctx => ctx.datasetIndex === 0 ? '' : fmtSEK(values[ctx.dataIndex])
           }}
         }
       },
@@ -4865,17 +4763,10 @@ function renderFinWaterfall(d) {
         afterDatasetsDraw(chart) {
           const { ctx: c, scales: { y } } = chart;
           const meta = chart.getDatasetMeta(1);
-          c.save();
-          c.font = bars.length > 10 ? '8px JetBrains Mono' : '9px JetBrains Mono';
-          c.textAlign = 'center';
-          c.textBaseline = 'bottom';
-          c.fillStyle = tickColor;
-          base.forEach((b, i) => {
-            const el = meta.data[i];
-            if (!el) return;
-            const top = b + segment[i];
-            c.fillText(fmtSEK(values[i]), el.x, y.getPixelForValue(top) - 4);
-          });
+          c.save(); c.font = '9px JetBrains Mono'; c.textAlign = 'center'; c.textBaseline = 'bottom'; c.fillStyle = tickColor;
+          base.forEach((b, i) => { const el = meta.data[i]; if (!el) return; c.fillText(fmtSEK(values[i]), el.x, y.getPixelForValue(b + segment[i]) - 4); });
+          c.font = 'italic 9px DM Sans'; c.fillStyle = mutedColor; c.textAlign = 'right';
+          c.fillText('Source: allabolag.se \u2014 operating cost breakdown not available at line item level', chart.chartArea.right, chart.chartArea.bottom + 14);
           c.restore();
         }
       }]
@@ -8270,38 +8161,46 @@ const CF_COMPARE_COLORS = [
 
 function computeCashFlow(d) {
   if (!d) return null;
-  const netProfit      = d.netProfit || 0;
-  const depreciation   = d.depreciation || 0;
+  const netProfit    = d.netProfit || 0;
+  const depreciation = d.depreciation || 0;
+  const hasDepr      = depreciation !== 0;
 
   // Working capital: (Current Assets - Cash) - Current Liabilities
-  const wcCurrent      = (d.totalCurrentAssets || 0) - (d.cashEquivalents || 0) - (d.currentLiabilities || 0);
+  const wcCurrent = (d.totalCurrentAssets || 0) - (d.cashEquivalents || 0) - (d.currentLiabilities || 0);
 
-  // Try to get actual prior year WC from historyData
   const currentYr  = parseInt(d.fiscalYear);
   const priorYrKey = String(currentYr - 1);
   const prev       = historyData[priorYrKey] || null;
 
-  let wcPrior;
+  let deltaWC    = null;
+  let wcSource   = 'unavailable';
   if (prev) {
-    wcPrior = (prev.totalCurrentAssets || 0) - (prev.cashEquivalents || 0) - (prev.currentLiabilities || 0);
-  } else {
-    // Fallback: estimate 95% of current as rough delta proxy
-    wcPrior = wcCurrent * 0.95;
+    const wcPrior = (prev.totalCurrentAssets || 0) - (prev.cashEquivalents || 0) - (prev.currentLiabilities || 0);
+    deltaWC  = wcCurrent - wcPrior;
+    wcSource = 'calculated';
   }
-  const deltaWC = wcCurrent - wcPrior;
 
-  // CapEx estimate: ~1.2x depreciation (replacement + modest growth)
-  const capex = Math.round(depreciation * 1.2);
+  // CapEx: change in fixed assets + depreciation (est.)
+  let capex       = null;
+  let capexSource = 'unavailable';
+  if (prev && hasDepr) {
+    capex = ((d.totalFixedAssets || 0) - (prev.totalFixedAssets || 0)) + depreciation;
+    if (capex < 0) capex = 0;
+    capexSource = 'est.';
+  } else if (hasDepr) {
+    capex = Math.round(depreciation * 1.2);
+    capexSource = 'est.';
+  }
 
-  const fcf = netProfit + depreciation - deltaWC - capex;
+  const fcf = netProfit + depreciation - (deltaWC || 0) - (capex || 0);
 
-  // Conversion metrics
   const cashConversion = netProfit !== 0 ? (fcf / netProfit * 100) : null;
   const fcfMargin      = d.netSales > 0 ? (fcf / d.netSales * 100) : null;
   const fcfYield       = d.totalAssets > 0 ? (fcf / d.totalAssets * 100) : null;
 
   return {
-    netProfit, depreciation, deltaWC, capex, fcf,
+    netProfit, depreciation, hasDepr, deltaWC, capex, fcf,
+    wcSource, capexSource,
     cashConversion, fcfMargin, fcfYield,
   };
 }
@@ -8447,117 +8346,80 @@ function renderWaterfallChart(cf) {
   const isLight   = document.body.classList.contains('light-mode');
   const tickColor = isLight ? '#334155' : '#FFFFFF';
   const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
+  const mutedColor = isLight ? '#94a3b8' : '#64748b';
 
-  const labels = ['Net Profit', '+ Deprec.', '- Δ Work. Cap.', '- CapEx', 'Free Cash Flow'];
-  const values  = [cf.netProfit, cf.depreciation, -cf.deltaWC, -cf.capex, cf.fcf];
+  // Build bars dynamically — only include components that are available
+  const bars = [];
+  bars.push({ label: 'Net Profit', value: cf.netProfit, anchor: true });
+  if (cf.hasDepr && cf.depreciation !== 0)
+    bars.push({ label: '+ Depreciation', value: cf.depreciation });
+  if (cf.deltaWC != null)
+    bars.push({ label: (cf.deltaWC >= 0 ? '− ' : '+ ') + 'Δ Working Cap.', value: -cf.deltaWC, est: cf.wcSource !== 'calculated' });
+  if (cf.capex != null && cf.capex !== 0)
+    bars.push({ label: '− CapEx' + (cf.capexSource === 'est.' ? ' (est.)' : ''), value: -cf.capex, est: true });
+  bars.push({ label: 'Free Cash Flow', value: cf.fcf, anchor: true });
 
-  // For waterfall: invisible base bars + colored segment bars
-  const base    = [0, cf.netProfit, cf.netProfit + cf.depreciation,
-    cf.netProfit + cf.depreciation - cf.deltaWC, 0];
+  const labels  = bars.map(b => b.label);
+  const values  = bars.map(b => b.value);
   const segment = values.map(v => Math.abs(v));
 
-  // For negative segments, adjust the base down
-  const adjBase = values.map((v, i) => {
-    if (i === 0 || i === 4) return 0; // start & end bars start from 0
-    return v >= 0 ? base[i] : base[i] + v;
-  });
+  // Waterfall base
+  const adjBase = [];
+  let running = 0;
+  for (let i = 0; i < bars.length; i++) {
+    if (bars[i].anchor) { adjBase.push(0); running = values[i]; }
+    else {
+      const v = values[i];
+      if (v < 0) { adjBase.push(running + v); running += v; }
+      else       { adjBase.push(running);     running += v; }
+    }
+  }
 
-  const colors = values.map((v, i) => {
-    if (i === 4) return cf.fcf >= 0 ? 'rgba(0,255,136,0.7)' : 'rgba(255,69,96,0.7)'; // FCF
-    if (i === 0) return 'rgba(0,200,255,0.7)'; // Net Profit
-    return v >= 0 ? 'rgba(0,255,136,0.5)' : 'rgba(255,69,96,0.5)';
+  const colors = bars.map((b, i) => {
+    if (b.anchor && i === 0) return 'rgba(0,200,255,0.7)';
+    if (b.anchor) return cf.fcf >= 0 ? 'rgba(0,255,136,0.7)' : 'rgba(255,69,96,0.7)';
+    return values[i] >= 0 ? 'rgba(0,255,136,0.5)' : 'rgba(255,69,96,0.5)';
   });
-
-  const borderColors = values.map((v, i) => {
-    if (i === 4) return cf.fcf >= 0 ? '#10b981' : '#ef4444';
-    if (i === 0) return '#3b82f6';
-    return v >= 0 ? '#10b981' : '#ef4444';
+  const borderColors = bars.map((b, i) => {
+    if (b.anchor && i === 0) return '#3b82f6';
+    if (b.anchor) return cf.fcf >= 0 ? '#10b981' : '#ef4444';
+    return values[i] >= 0 ? '#10b981' : '#ef4444';
   });
 
   const draw = () => {
     if (cfWaterfallChartInst) cfWaterfallChartInst.destroy();
     cfWaterfallChartInst = new Chart(canvas, {
       type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Base',
-            data: adjBase,
-            backgroundColor: 'transparent',
-            borderWidth: 0,
-            barPercentage: 0.6,
-          },
-          {
-            label: 'Amount',
-            data: segment,
-            backgroundColor: colors,
-            borderColor: borderColors,
-            borderWidth: 1,
-            borderRadius: 3,
-            barPercentage: 0.6,
-          }
-        ]
-      },
+      data: { labels, datasets: [
+        { label: 'Base', data: adjBase, backgroundColor: 'transparent', borderWidth: 0, barPercentage: 0.6 },
+        { label: 'Amount', data: segment, backgroundColor: colors, borderColor: borderColors, borderWidth: 1, borderRadius: 3, barPercentage: 0.6 }
+      ]},
       options: {
-        responsive: true,
-        maintainAspectRatio: true,
+        responsive: true, maintainAspectRatio: true,
         scales: {
-          x: {
-            stacked: true,
-            ticks: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' } },
-            grid: { display: false }
-          },
-          y: {
-            stacked: true,
-            ticks: {
-              color: tickColor,
-              font: { size: 9, family: 'JetBrains Mono' },
-              callback: v => {
-                const abs = Math.abs(v);
-                if (abs >= 1e6) return (v / 1e6).toFixed(0) + 'M';
-                if (abs >= 1e3) return (v / 1e3).toFixed(0) + 'k';
-                return v;
-              }
-            },
-            grid: { color: gridColor }
-          }
+          x: { stacked: true, ticks: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' } }, grid: { display: false } },
+          y: { stacked: true, ticks: { color: tickColor, font: { size: 9, family: 'JetBrains Mono' }, callback: v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(0)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'k'; return v; } }, grid: { color: gridColor } }
         },
         plugins: {
           legend: { display: false },
-          tooltip: {
-            ...chartTooltipStyle(isLight),
-            callbacks: {
-              title: ctx => ctx[0]?.label ?? '',
-              label: ctx => {
-                if (ctx.datasetIndex === 0) return ''; // hide base
-                const idx = ctx.dataIndex;
-                return `${labels[idx]}: ${fmtSEK(values[idx])}`;
-              }
-            }
-          }
+          tooltip: { ...chartTooltipStyle(isLight), callbacks: {
+            title: ctx => ctx[0]?.label ?? '',
+            label: ctx => { if (ctx.datasetIndex === 0) return ''; return `${labels[ctx.dataIndex]}: ${fmtSEK(values[ctx.dataIndex])}`; }
+          }}
         }
       },
       plugins: [{
         id: 'waterfallLabels',
         afterDatasetsDraw(chart) {
           const { ctx, scales: { y } } = chart;
-          // Use Amount dataset (index 1) bar elements for x-center pixel positions
-          const amountMeta = chart.getDatasetMeta(1);
-          ctx.save();
-          ctx.font = '9px JetBrains Mono';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'bottom';
-          ctx.fillStyle = tickColor;
-          adjBase.forEach((baseVal, i) => {
-            const el = amountMeta.data[i];
-            if (!el) return;
-            // top of the visible bar in data-units is always adjBase + segment
-            const topValue = baseVal + segment[i];
-            const xPos = el.x;
-            const yPos = y.getPixelForValue(topValue);
-            ctx.fillText(fmtSEK(values[i]), xPos, yPos - 4);
+          const meta = chart.getDatasetMeta(1);
+          ctx.save(); ctx.font = '9px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillStyle = tickColor;
+          adjBase.forEach((bv, i) => {
+            const el = meta.data[i]; if (!el) return;
+            ctx.fillText(fmtSEK(values[i]), el.x, y.getPixelForValue(bv + segment[i]) - 4);
           });
+          ctx.font = 'italic 9px DM Sans'; ctx.fillStyle = mutedColor; ctx.textAlign = 'right';
+          ctx.fillText('Source: allabolag.se \u2014 CapEx and working capital are estimated from balance sheet changes', chart.chartArea.right, chart.chartArea.bottom + 14);
           ctx.restore();
         }
       }]
