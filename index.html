@@ -9058,7 +9058,6 @@ const CB_SORT_OPTIONS = [
   { key:'roePct',     label:'ROE %' },
   { key:'revPerEmp',  label:'Rev/Emp' },
   { key:'persPerEmp', label:'Pers/Emp' },
-  { key:'rating',     label:'Google ★' },
 ];
 
 function cbComputeMetrics(d) {
@@ -9080,10 +9079,9 @@ function cbRunBenchmark() {
   const loadedComps = cbCompetitors.filter(c => c.status === 'loaded' && c.data);
   if (loadedComps.length === 0) { showToast('⚠ Add at least one competitor'); return; }
 
-  const hasSerpKey = !!serpApiKey;
   const allEntries = [
-    { ...cbMyCompany, _isMe: true, orgNr: cbMyCompany.orgNr, rating: null, reviewCount: null, reviewLoading: hasSerpKey },
-    ...loadedComps.map(c => ({ ...c.data, _isMe: false, orgNr: c.orgNr, rating: null, reviewCount: null, reviewLoading: hasSerpKey }))
+    { ...cbMyCompany, _isMe: true, orgNr: cbMyCompany.orgNr },
+    ...loadedComps.map(c => ({ ...c.data, _isMe: false, orgNr: c.orgNr }))
   ];
 
   cbRankData = allEntries.map(d => {
@@ -9094,7 +9092,6 @@ function cbRunBenchmark() {
       isMe:        d._isMe,
       fiscalYear:  d.fiscalYear,
       isLive:      d._isLive,
-      isDemo:      d._isDemo,
       netSales:    d.netSales,
       opCosts:     m.opCosts,
       ebitda:      m.ebitda,
@@ -9107,9 +9104,6 @@ function cbRunBenchmark() {
       revPerEmp:   m.revPerEmp,
       persPerEmp:  m.persPerEmp,
       employees:   d.employees,
-      rating:      d.rating,
-      reviewCount: d.reviewCount,
-      reviewLoading: d.reviewLoading,
       auditorRemark: d.auditorRemark,
     };
   });
@@ -9118,11 +9112,6 @@ function cbRunBenchmark() {
   cbRenderSummaryChips();
   cbRenderSortBtns();
   showToast(`⚔ Ranked ${cbRankData.length} companies by ${CB_SORT_OPTIONS.find(s=>s.key===cbSortKey)?.label || cbSortKey}`);
-
-  // Fetch Google ratings async if SerpApi key is set
-  if (hasSerpKey) {
-    cbFetchAllRatings(allEntries, loadedComps);
-  }
 }
 
 function cbSetSortKey(key) {
@@ -9172,7 +9161,6 @@ function cbRenderRankTable() {
       ${thSort('ebitPct','EBIT %')}
       ${thSort('revPerEmp','Rev/Emp')}
       ${thSort('persPerEmp','Pers/Emp')}
-      ${thSort('rating','Google ★')}
       <th style="text-align:center;">Action</th>
     </tr></thead>
     <tbody>`;
@@ -9194,27 +9182,6 @@ function cbRenderRankTable() {
     const ebitdaBarPct = maxEbitda > 0 ? (Math.max(row.ebitda, 0) / maxEbitda * 100) : 0;
     const ebitdaColor  = (row.ebitdaPct||0) > 10 ? 'var(--green)' : (row.ebitdaPct||0) > 5 ? 'var(--amber)' : 'var(--red)';
     const ebitColor    = (row.ebitPct||0) > 8 ? 'var(--green)' : (row.ebitPct||0) > 3 ? 'var(--amber)' : 'var(--red)';
-
-    // Stars
-    let starsHtml;
-    if (row.reviewLoading) {
-      starsHtml = '<span class="loading-dots" style="color:var(--amber);"><span></span><span></span><span></span></span>';
-    } else if (row.rating !== null) {
-      const full  = Math.floor(row.rating);
-      const half  = row.rating % 1 >= 0.5 ? 1 : 0;
-      const empty = 5 - full - half;
-      starsHtml = `<div class="cb-stars">
-        ${'<span class="cb-star-fill">★</span>'.repeat(full)}
-        ${half ? '<span class="cb-star-fill" style="opacity:0.6;">★</span>' : ''}
-        ${'<span class="cb-star-empty">☆</span>'.repeat(empty)}
-        <span class="cb-star-num">${row.rating.toFixed(1)}</span>
-      </div>
-      <div class="cb-review-count">${row.reviewCount ? row.reviewCount.toLocaleString() + ' reviews' : ''}</div>`;
-    } else if (!serpApiKey) {
-      starsHtml = '<span style="font-size:9px;color:var(--text3);">No key</span>';
-    } else {
-      starsHtml = '<span style="font-size:9px;color:var(--text3);">—</span>';
-    }
 
     // Action button
     const actionBtn = isMe
@@ -9257,7 +9224,6 @@ function cbRenderRankTable() {
       <td>
         <div class="cb-metric-val">${row.persPerEmp !== null ? fmtSEK(Math.round(row.persPerEmp)) : '<span style="color:var(--text3);">—</span>'}</div>
       </td>
-      <td>${starsHtml}</td>
       <td style="text-align:center;">${actionBtn}</td>
     </tr>`;
   });
