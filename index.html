@@ -1986,6 +1986,143 @@ body.light-mode {
     </div>
   </div>
 
+  <!-- ===== COMPETITOR BENCH TAB ===== -->
+  <div id="tab-competitor" style="display:none;">
+  <div class="three-col">
+
+    <!-- LEFT SIDEBAR: Your Company + Competitors stacked -->
+    <div class="left-sidebar">
+
+      <!-- Your Company -->
+      <div class="card">
+        <div class="card-title">Your Company <span>BENCHMARK BASE</span></div>
+        <div class="field">
+          <label>Org. Number</label>
+          <input class="input" id="myOrgInput" type="text" placeholder="556000-1234" maxlength="14"
+            oninput="this.value=this.value.replace(/[^0-9\-]/g,'')"
+            onkeydown="if(event.key==='Enter') loadMyCompany()">
+        </div>
+        <button class="btn-primary" onclick="loadMyCompany()" id="btnLoadMine">
+          Load My Company
+        </button>
+        <div id="myCompanyHero" style="display:none;" class="my-company-hero"></div>
+
+        <!-- API key status inline -->
+        <div class="sep" style="margin-top:12px;"></div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:10px;">
+            <div class="status-dot na" id="dotBV"></div>
+            <span id="txtBV" style="color:var(--text3);">Bolagsverket: not connected</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:10px;">
+            <div class="status-dot na" id="dotSerp"></div>
+            <span id="txtSerp" style="color:var(--text3);">SerpApi: not configured</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Competitors -->
+      <div class="card">
+        <div class="card-title">
+          Competitors
+          <span id="compCount">0 / 10</span>
+        </div>
+
+        <!-- Search -->
+        <div class="field">
+          <label>Add by Name or Org. Nr.</label>
+          <div style="display:flex;gap:6px;">
+            <input class="input" id="compSearchInput" type="text"
+              placeholder="e.g. Sturehof or 556000-1234"
+              style="flex:1;"
+              onkeydown="if(event.key==='Enter') addCompetitorBySearch()">
+            <button class="btn-secondary" onclick="addCompetitorBySearch()" style="flex-shrink:0;">Add</button>
+          </div>
+        </div>
+
+        <!-- SNI filter -->
+        <div class="field">
+          <label>Filter Presets by Industry</label>
+          <div class="sni-pills" id="sniPills">
+            <button class="sni-pill active" data-sni="all" onclick="filterPresets(this,'all')">All</button>
+            <button class="sni-pill" data-sni="56" onclick="filterPresets(this,'56')">Restaurants</button>
+            <button class="sni-pill" data-sni="47" onclick="filterPresets(this,'47')">Retail</button>
+            <button class="sni-pill" data-sni="69" onclick="filterPresets(this,'69')">Professional</button>
+            <button class="sni-pill" data-sni="41" onclick="filterPresets(this,'41')">Construction</button>
+            <button class="sni-pill" data-sni="62" onclick="filterPresets(this,'62')">ICT</button>
+            <button class="sni-pill" data-sni="55" onclick="filterPresets(this,'55')">Hotels</button>
+          </div>
+        </div>
+
+        <!-- Scrollable preset + added list -->
+        <div class="competitors-scroll">
+          <!-- Preset companies -->
+          <div id="presetsSection">
+            <div style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Quick-add from list</div>
+            <div id="presetList"></div>
+          </div>
+
+          <div class="sep"></div>
+
+          <!-- Added competitors -->
+          <div style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">
+            Added Competitors
+          </div>
+          <div id="competitorList">
+            <div style="font-size:10px;color:var(--text3);text-align:center;padding:16px 0;">
+              No competitors added yet
+            </div>
+          </div>
+        </div>
+
+        <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" id="loadProgress" style="width:0%"></div></div>
+
+        <button class="btn-add" id="btnRunBench" onclick="runBenchmark()" style="display:none;margin-top:8px;">
+          ⚔ Run Benchmark
+        </button>
+      </div>
+
+    </div><!-- /left-sidebar -->
+
+    <!-- RIGHT: Ranking Table -->
+    <div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:16px;font-weight:800;color:var(--text);">Competitive Ranking</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px;" id="rankSubtitle">
+              Add your company and competitors to generate the ranking
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-secondary" style="font-size:10px;" onclick="exportCSV()">⬇ Export CSV</button>
+            <button class="btn-secondary" style="font-size:10px;" onclick="clearAll()">✕ Clear</button>
+          </div>
+        </div>
+
+        <!-- Summary chips -->
+        <div class="summary-chips" id="summaryChips" style="display:none;"></div>
+
+        <!-- Sort controls -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+          <span style="font-size:10px;color:var(--text3);">Sort by:</span>
+          <div id="sortBtns" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+        </div>
+
+        <!-- Table -->
+        <div id="rankTableWrap">
+          <div class="empty-state">
+            <div class="icon">⚔</div>
+            <div class="title">No benchmark data yet</div>
+            <div>Load your company and add competitors on the left, then click Run Benchmark</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
   <!-- ===== GUIDE TAB ===== -->
   <div id="tab-guide" style="display:none;">
     <div style="max-width:760px;">
