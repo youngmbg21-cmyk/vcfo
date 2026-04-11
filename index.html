@@ -1666,6 +1666,10 @@ body.light-mode {
           <div class="company-badge" id="heroBadge">SE · AKTIEBOLAG</div>
           <div class="company-name" id="heroName">—</div>
           <div class="company-meta" id="heroMeta">Org. nr. — · —</div>
+          <div id="estimatedBanner" style="display:none;background:rgba(255,184,0,0.12);border:1px solid rgba(255,184,0,0.35);border-radius:6px;padding:8px 12px;margin-top:8px;">
+            <div style="font-size:11px;font-weight:600;color:var(--amber);">⚠ Estimated Data — No iXBRL Filing Found</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:3px;">Bolagsverket has no digital filing for this entity. All figures shown are system-generated placeholders and do not reflect the company's actual financials. Load a different org. number or verify the entity in the Swedish Companies Register.</div>
+          </div>
           <div class="separator"></div>
           <div class="stats-grid-2">
             <div class="stat-item"><div class="stat-label" data-i18n="stat_net_sales">Net Sales</div><div class="stat-value amber" id="sNetSales">—</div></div>
@@ -3486,8 +3490,65 @@ function onFetchYearChange() {
 // "ESTIMATED DATA" badge) only when allabolag has no data for a company.
 const DEMO_COMPANIES = {};
 
-// Generic fallback for unknown org numbers
+// Generic fallback for unknown org numbers — values are deterministic
+// per org number so the same company always shows the same estimates,
+// but different companies show different data.
 function buildGenericDemo(orgNr) {
+  // ── Deterministic PRNG seeded from the org number digits ──
+  const digits = orgNr.replace(/[^0-9]/g, '');
+  let _s = 0;
+  for (let i = 0; i < digits.length; i++) _s = ((_s << 5) - _s + digits.charCodeAt(i)) | 0;
+  const rng = () => { _s = (_s * 1103515245 + 12345) & 0x7fffffff; return (_s >>> 16) / 32768; };
+
+  // Revenue base: 8 Mkr – 120 Mkr  (wide SME range)
+  const netSales = Math.round((8_000_000 + rng() * 112_000_000) / 1000) * 1000;
+
+  // Operating margin 4 %–22 %
+  const rosRate   = 0.04 + rng() * 0.18;
+  const opProfit  = Math.round(netSales * rosRate);
+
+  // Cost breakdown (approximate to fill waterfall chart)
+  const totalCosts  = netSales - opProfit;
+  const rawShare    = 0.20 + rng() * 0.25;
+  const persShare   = 0.25 + rng() * 0.20;
+  const deprShare   = 0.01 + rng() * 0.04;
+  const rawMaterials = Math.round(totalCosts * rawShare);
+  const personnel    = Math.round(totalCosts * persShare);
+  const depreciation = Math.round(totalCosts * deprShare);
+  const otherOpCosts = Math.max(0, totalCosts - rawMaterials - personnel - depreciation);
+  const otherRevenue = Math.round(netSales * (0.005 + rng() * 0.02));
+
+  // Below operating profit
+  const financialIncome   = Math.round(netSales * rng() * 0.005);
+  const financialExpenses = Math.round(netSales * (0.005 + rng() * 0.015));
+  const profitBeforeTax   = opProfit + financialIncome - financialExpenses;
+  const tax               = Math.round(Math.max(0, profitBeforeTax) * 0.206);
+  const netProfit         = profitBeforeTax - tax;
+
+  // Balance sheet — sized relative to revenue
+  const assetRatio     = 0.35 + rng() * 0.60;
+  const totalAssets    = Math.round(netSales * assetRatio / 1000) * 1000;
+  const fixedShare     = 0.30 + rng() * 0.30;
+  const totalFixedAssets  = Math.round(totalAssets * fixedShare);
+  const totalCurrentAssets = totalAssets - totalFixedAssets;
+  const inventories    = Math.round(totalCurrentAssets * (0.05 + rng() * 0.25));
+  const cashEquivalents = Math.round(totalCurrentAssets * (0.10 + rng() * 0.30));
+  const receivables    = Math.max(0, totalCurrentAssets - inventories - cashEquivalents);
+
+  // Equity & liabilities
+  const equityRatio    = 0.25 + rng() * 0.35;
+  const equity         = Math.round(totalAssets * equityRatio / 1000) * 1000;
+  const totalLiabilities = totalAssets - equity;
+  const ltShare        = 0.30 + rng() * 0.40;
+  const longTermDebt   = Math.round(totalLiabilities * ltShare);
+  const currentLiabilities = totalLiabilities - longTermDebt;
+
+  // Prior year — slight variance
+  const prevGrowth   = 0.90 + rng() * 0.15;
+  const prevNetSales = Math.round(netSales * prevGrowth);
+  const prevOpProfit = Math.round(opProfit * (prevGrowth + (rng() - 0.5) * 0.1));
+  const prevNetProfit = Math.round(netProfit * (prevGrowth + (rng() - 0.5) * 0.1));
+
   return {
     name: `Company ${orgNr}`,
     orgNr: orgNr,
@@ -3495,44 +3556,45 @@ function buildGenericDemo(orgNr) {
     industry: 'Tjänster',
     sni: '69100',
     fiscalYear: String(new Date().getFullYear() - 1),
-    netSales: 28_400_000,
-    otherRevenue: 220_000,
-    rawMaterials: 8_200_000,
-    personnel: 9_100_000,
-    depreciation: 480_000,
-    otherOpCosts: 5_200_000,
-    opProfit: 3_906_185 * 1.36, // ~5.3M to demonstrate 14.17% ROS
-    financialIncome: 42_000,
-    financialExpenses: 380_000,
-    profitBeforeTax: 4_150_000,
-    tax: 910_000,
-    netProfit: 3_906_185,
-    totalFixedAssets: 4_800_000,
-    inventories: 1_200_000,
-    receivables: 4_800_000,
-    cashEquivalents: 2_200_000,
-    totalCurrentAssets: 8_200_000,
-    totalAssets: 13_000_000,
-    equity: 5_800_000,
-    provisions: 400_000,
-    longTermDebt: 3_200_000,
-    longTermDebtOver5y: 1_800_000,
-    currentLiabilities: 3_600_000,
-    totalLiabilities: 7_200_000,
-    dividendsPaid: 4_299_000,  // > net profit → triggers flag
-    inventarierBV: 0,          // fully depreciated → triggers flag
-    inventarierAcqCost: 3_200_000,
-    auditorRemark: true,
-    auditorRemarkDetail: 'Årsredovisningen för räkenskapsåret 2022 inlämnades efter sista dagen för ingivande (ABL 7 kap. 10 §).',
-    prevNetSales: 27_100_000,
-    prevOpProfit: 2_340_000,
-    prevNetProfit: 1_820_000,
-    prevROS: 8.64,
-    // Periodiseringsfonder — triggers hidden debt warning (exceeds 50% of cash)
-    periodiseringsfonder: 2_800_000,
+    netSales,
+    otherRevenue,
+    rawMaterials,
+    personnel,
+    depreciation,
+    otherOpCosts,
+    opProfit,
+    financialIncome,
+    financialExpenses,
+    profitBeforeTax,
+    tax,
+    netProfit,
+    totalFixedAssets,
+    inventories,
+    receivables,
+    cashEquivalents,
+    totalCurrentAssets,
+    totalAssets,
+    equity,
+    provisions: Math.round(totalAssets * 0.02 + rng() * totalAssets * 0.03),
+    longTermDebt,
+    longTermDebtOver5y: Math.round(longTermDebt * (0.3 + rng() * 0.3)),
+    currentLiabilities,
+    totalLiabilities,
+    dividendsPaid: Math.round(Math.max(0, netProfit) * (0.3 + rng() * 0.5)),
+    inventarierBV: Math.round(totalFixedAssets * (rng() * 0.4)),
+    inventarierAcqCost: Math.round(totalFixedAssets * (0.6 + rng() * 0.4)),
+    auditorRemark: rng() > 0.75,
+    auditorRemarkDetail: rng() > 0.75
+      ? 'Årsredovisningen inlämnades efter sista dagen för ingivande (ABL 7 kap. 10 §).' : '',
+    prevNetSales,
+    prevOpProfit,
+    prevNetProfit,
+    prevROS: prevNetSales ? (prevOpProfit / prevNetSales * 100) : null,
+    periodiseringsfonder: Math.round(cashEquivalents * (rng() * 0.6)),
     taxRateDeferred: 0.206,
     subsidiaries: [],
     andelarKoncern: 0,
+    _isEstimated: true,
   };
 }
 
@@ -4356,7 +4418,7 @@ function renderCompanyTab(d) {
   set('sFiscalYear',   d.fiscalYear);
   set('bvYear',        d.fiscalYear);
 
-  // DEMO vs LIVE data source badge
+  // DEMO vs LIVE data source badge + estimated warning banner
   const badge = document.getElementById('heroBadge');
   if (badge) {
     const dataLabel = d._isLive
@@ -4364,6 +4426,8 @@ function renderCompanyTab(d) {
       : `SE · ${(d.type||'AB').toUpperCase()} · <span style="color:var(--amber);font-size:9px;">⚠ ESTIMATED DATA</span>`;
     badge.innerHTML = dataLabel;
   }
+  const estBanner = document.getElementById('estimatedBanner');
+  if (estBanner) estBanner.style.display = d._isLive ? 'none' : 'block';
 
   const remarkEl = document.getElementById('sAuditorRemark');
   if (remarkEl) {
@@ -8970,7 +9034,7 @@ function cbRenderRankTable() {
     html += `<tr class="${isMe ? 'cb-is-mine' : ''}">
       <td><span class="cb-rank-badge ${badgeCls}">${rankNum}</span></td>
       <td>
-        <div style="font-weight:600;color:var(--text);">${row.name}${row.isDemo?'<span style="font-size:8px;color:var(--amber);margin-left:4px;">DEMO</span>':''}
+        <div style="font-weight:600;color:var(--text);">${row.name}${!row.isLive?'<span style="font-size:8px;color:var(--amber);margin-left:4px;">EST.</span>':''}
           ${row.auditorRemark ? '<span style="font-size:8px;color:var(--red);margin-left:4px;">⚠ REMARK</span>' : ''}
         </div>
         <div style="font-size:9px;color:var(--text3);margin-top:1px;">${row.orgNr} · FY${row.fiscalYear || '—'}</div>
