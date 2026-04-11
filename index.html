@@ -6045,6 +6045,8 @@ function exportCompareCSV() {
 
 const SCB_ENDPOINT = 'https://api.scb.se/OV0104/v1/doris/sv/ssd/NV/NV0109/NV0109O/NV0109T05Ar';
 
+let scbAvailableYears = null; // cached after first metadata fetch
+
 const BCH_SECTORS = [
   { key:'construction',  label:'Construction',          sniRange:'41-43', divisions:['41','42','43'] },
   { key:'manufacturing', label:'Manufacturing',          sniRange:'10-33', divisions:['10','15','20','22','25','28','29','30'] },
@@ -6058,7 +6060,7 @@ const BCH_SECTORS = [
   { key:'healthcare',    label:'Healthcare',              sniRange:'86-88', divisions:['86','87','88'] },
 ];
 
-const BCH_YEARS      = ['2024','2023','2022','2021'];
+let BCH_YEARS        = ['2024','2023','2022','2021'];  // updated dynamically from SCB metadata
 const BCH_SIZES      = [
   { code:'TOT',   label:'All sizes' },
   { code:'50-',   label:'50+ emp.'  },
@@ -6101,6 +6103,55 @@ function initBenchmarksTab() {
       bchLog(`Restored cached data: ${Object.keys(bchLastFetch.data).length} sectors · FY${bchLastFetch.year}`, 'ok');
     }
   } catch(e) {}
+  // Probe SCB for available years (non-blocking)
+  fetchSCBAvailableYears();
+}
+
+async function fetchSCBAvailableYears() {
+  if (scbAvailableYears) return;
+  try {
+    const res = await fetch(`/api/scb?url=${encodeURIComponent(SCB_ENDPOINT)}`, {
+      method: 'GET',
+    });
+    // GET on SCB endpoint returns metadata with available values
+    // But our proxy only allows POST — so we query with a minimal POST that asks for the table structure
+    // Alternative: just try a simple query for one division to see which years exist
+    const testBody = {
+      query: [
+        { code:'SNI2007',      selection:{ filter:'item', values:['41'] } },
+        { code:'Storleksklass',selection:{ filter:'item', values:['TOT'] } },
+        { code:'Nyckeltal',    selection:{ filter:'item', values:['N13'] } },
+        { code:'Kvartilar',    selection:{ filter:'item', values:['M'] } },
+        { code:'Tid',          selection:{ filter:'all',  values:['*'] } },
+      ],
+      response: { format:'json' }
+    };
+    const proxyRes = await fetch(`/api/scb?url=${encodeURIComponent(SCB_ENDPOINT)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testBody),
+    });
+    if (!proxyRes.ok) return;
+    const json = await proxyRes.json();
+    const rows = json?.data || [];
+    const years = new Set();
+    for (const row of rows) {
+      const keys = row.key || [];
+      // Tid is usually the last element in the key array
+      const yr = keys[keys.length - 1];
+      if (yr && /^\d{4}$/.test(yr)) years.add(yr);
+    }
+    if (years.size > 0) {
+      scbAvailableYears = [...years].sort().reverse();
+      BCH_YEARS = scbAvailableYears.slice(0, 6);
+      // Auto-select the latest available year
+      if (!BCH_YEARS.includes(bchYear)) {
+        bchYear = BCH_YEARS[0];
+      }
+      buildBchYearRow();
+      bchLog(`SCB has data for years: ${BCH_YEARS.join(', ')}`, 'info');
+    }
+  } catch(e) { /* non-blocking — keep default years */ }
 }
 
 function buildBchYearRow() {
@@ -6171,7 +6222,8 @@ async function fetchBenchmarks() {
       const data = await fetchOneSector(s);
       results[s.key] = { ...data, label:s.label, sni:s.sniRange, key:s.key, source:'SCB live' };
       liveCount++;
-      bchLog(`✓ ${s.label}: ROS ${data.ros!==null?data.ros.toFixed(1)+'%':'N/A'}, ROE ${data.roe!==null?data.roe.toFixed(1)+'%':'N/A'}, D/E ${data.de!==null?data.de.toFixed(2)+'x':'N/A'}`, 'ok');
+      const yrNote = data._resolvedYear ? ` (FY${data._resolvedYear})` : '';
+      bchLog(`✓ ${s.label}${yrNote}: ROS ${data.ros!==null?data.ros.toFixed(1)+'%':'N/A'}, ROE ${data.roe!==null?data.roe.toFixed(1)+'%':'N/A'}, D/E ${data.de!==null?data.de.toFixed(2)+'x':'N/A'}`, 'ok');
     } catch(e) {
       results[s.key] = buildFallbackForSector(s);
       estCount++;
@@ -6210,55 +6262,60 @@ async function fetchBenchmarks() {
 
 async function fetchOneSector(sector) {
   const metricCodes = Object.keys(BCH_METRICS);
-  const body = {
-    query: [
-      { code:'SNI2007',      selection:{ filter:'item', values: sector.divisions.slice(0,8) } },
-      { code:'Storleksklass',selection:{ filter:'item', values: [bchSize] } },
-      { code:'Nyckeltal',    selection:{ filter:'item', values: metricCodes } },
-      { code:'Kvartilar',    selection:{ filter:'item', values: ['M'] } },
-      { code:'Tid',          selection:{ filter:'item', values: [bchYear] } },
-    ],
-    response: { format:'json' }
-  };
 
-  let parsed = null;
+  // Try the selected year, then fall back to prior years if SCB returns 400
+  const yearsToTry = [bchYear];
+  if (scbAvailableYears) {
+    for (const y of scbAvailableYears) {
+      if (!yearsToTry.includes(y)) yearsToTry.push(y);
+      if (yearsToTry.length >= 3) break;
+    }
+  } else {
+    const yr = parseInt(bchYear);
+    if (!isNaN(yr)) {
+      if (!yearsToTry.includes(String(yr - 1))) yearsToTry.push(String(yr - 1));
+      if (!yearsToTry.includes(String(yr - 2))) yearsToTry.push(String(yr - 2));
+    }
+  }
+
   let lastErr = null;
 
-  // Tier 1: Netlify proxy (server-side, reliable)
-  try {
-    const proxyRes = await fetch(`/api/scb?url=${encodeURIComponent(SCB_ENDPOINT)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (proxyRes.ok) {
-      const json = await proxyRes.json();
-      parsed = parseSCBResponse(json);
-    } else {
-      lastErr = `Proxy returned ${proxyRes.status}`;
-    }
-  } catch(e) { lastErr = e.message; }
+  for (const tryYear of yearsToTry) {
+    const body = {
+      query: [
+        { code:'SNI2007',      selection:{ filter:'item', values: sector.divisions.slice(0,8) } },
+        { code:'Storleksklass',selection:{ filter:'item', values: [bchSize] } },
+        { code:'Nyckeltal',    selection:{ filter:'item', values: metricCodes } },
+        { code:'Kvartilar',    selection:{ filter:'item', values: ['M'] } },
+        { code:'Tid',          selection:{ filter:'item', values: [tryYear] } },
+      ],
+      response: { format:'json' }
+    };
 
-  // Tier 2: Try requesting JSON-stat2 format (some SCB endpoints prefer this)
-  if (!parsed || !hasAnyMetric(parsed)) {
     try {
-      const body2 = { ...body, response: { format: 'json-stat2' } };
       const proxyRes = await fetch(`/api/scb?url=${encodeURIComponent(SCB_ENDPOINT)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body2),
+        body: JSON.stringify(body),
       });
       if (proxyRes.ok) {
         const json = await proxyRes.json();
-        parsed = parseSCBResponse(json);
+        const parsed = parseSCBResponse(json);
+        if (hasAnyMetric(parsed)) {
+          if (tryYear !== bchYear) parsed._resolvedYear = tryYear;
+          return parsed;
+        }
+        lastErr = `No metric values in response for FY${tryYear}`;
+      } else if (proxyRes.status === 400) {
+        lastErr = `FY${tryYear} not available in SCB`;
+        continue; // try next year
+      } else {
+        lastErr = `Proxy returned ${proxyRes.status}`;
       }
-    } catch(e) { /* continue */ }
+    } catch(e) { lastErr = e.message; }
   }
 
-  // Validate: at least one metric must have a value
-  if (parsed && hasAnyMetric(parsed)) return parsed;
-
-  throw new Error(lastErr || 'No data returned for this sector/year');
+  throw new Error(lastErr || 'No data returned for this sector');
 }
 
 function hasAnyMetric(m) {
