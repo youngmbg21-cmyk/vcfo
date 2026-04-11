@@ -2106,14 +2106,16 @@ body.light-mode {
           </div>
 
           <!-- Search input + Add button -->
-          <div style="margin-bottom:12px;">
+          <div style="margin-bottom:12px;position:relative;">
             <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;">Add by Name or Org. Nr.</div>
             <div style="display:flex;gap:6px;">
               <input type="text" id="cbCompSearchInput" placeholder="e.g. Sturehof or 556000-1234"
-                onkeydown="if(event.key==='Enter') cbAddCompetitorBySearch()"
+                onkeydown="cbHandleSearchKey(event)"
+                oninput="cbHandleSearchInput(this.value)"
                 style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
               <button class="btn-secondary" onclick="cbAddCompetitorBySearch()" style="flex-shrink:0;">Add</button>
             </div>
+            <div id="cbSearchDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:450;overflow:hidden;max-height:240px;overflow-y:auto;"></div>
           </div>
 
           <!-- Filter pills -->
@@ -3567,11 +3569,15 @@ function handleSearchInput(val) {
   // Auto-detect mode
   if (/^[\d]/.test(val)) {
     searchMode = 'org';
-  } else if (val.length > 0) {
-    searchMode = 'name';
+    updateSearchModeUI();
+    closeSearchDropdown();
+  } else {
+    if (val.length > 0) searchMode = 'name';
+    updateSearchModeUI();
+    // Live dropdown after 2+ chars with 300 ms debounce
+    debounceSearch(val, document.getElementById('searchDropdown'),
+      (orgNr, name) => selectSearchResult(orgNr, name, null));
   }
-  updateSearchModeUI();
-  closeSearchDropdown();
 }
 
 function handleSearchKey(e) {
@@ -3595,28 +3601,37 @@ function handleSearchLoad() {
   }
 }
 
-// ── Search by name — server-side registry lookup with AI fallback ──
-async function searchByName(query) {
-  showSearchDropdown([{ type: 'loading', message: `Searching for "${query}"…` }]);
+// ── Shared live-search engine (used by main bar and Competitor Bench) ──
+let _lsTimer = null;
 
-  // Tier 1: Server-side search via Netlify Function (real registry data)
+function debounceSearch(query, ddEl, selectFn, delay) {
+  clearTimeout(_lsTimer);
+  if (!query || query.length < 2) { closeDropdown(ddEl); return; }
+  _lsTimer = setTimeout(() => runLiveSearch(query, ddEl, selectFn), delay ?? 300);
+}
+
+async function runLiveSearch(query, ddEl, selectFn) {
+  showDropdown(ddEl, [{ type: 'loading', message: `Searching for "${query}"…` }], selectFn);
   const serverResults = await searchByNameServer(query);
   if (serverResults && serverResults.length > 0) {
-    showSearchDropdown(serverResults.map(c => ({ type: 'result', ...c })));
+    showDropdown(ddEl, serverResults.map(c => ({ type: 'result', ...c })), selectFn);
     return;
   }
-
-  // Tier 2: AI-assisted search (fallback)
   if (anthropicKey) {
-    await searchByNameAI(query);
+    await searchByNameAI(query, ddEl, selectFn);
     return;
   }
-
-  // Tier 3: No results, no AI key
-  showSearchDropdown([{
+  showDropdown(ddEl, [{
     type: 'info',
     message: `No registry results for "${query}". Set your Anthropic API key in ⚙ Settings for AI-assisted search, or enter the org. number directly.`,
-  }]);
+  }], selectFn);
+}
+
+// ── Search by name — server-side registry lookup with AI fallback ──
+async function searchByName(query) {
+  const dd  = document.getElementById('searchDropdown');
+  const sel = (o, n) => selectSearchResult(o, n, null);
+  await runLiveSearch(query, dd, sel);
 }
 
 // ── Server-side registry search (Netlify Function) ──
@@ -3650,8 +3665,12 @@ async function searchByNameServer(query) {
 }
 
 // ── AI-assisted search (fallback when server search returns nothing) ──
-async function searchByNameAI(query) {
-  showSearchDropdown([{ type: 'loading', message: `AI searching for "${query}"…` }]);
+async function searchByNameAI(query, ddEl, selectFn) {
+  // Defaults keep backward-compat for any direct calls
+  if (!ddEl)     ddEl     = document.getElementById('searchDropdown');
+  if (!selectFn) selectFn = (o, n) => selectSearchResult(o, n, null);
+
+  showDropdown(ddEl, [{ type: 'loading', message: `AI searching for "${query}"…` }], selectFn);
 
   try {
     const data = await callAnthropic({
@@ -3691,31 +3710,28 @@ If you cannot confidently provide any org numbers for "${query}", return an empt
     const valid = companies.filter(c => c.orgNr && c.orgNr.length >= 10);
 
     if (!valid.length) {
-      showSearchDropdown([{
+      showDropdown(ddEl, [{
         type: 'info',
         message: `Could not find a verified org. number for "${query}". Try entering the 10-digit org. number directly (format: 556000-1234).`,
-      }]);
+      }], selectFn);
       return;
     }
 
-    showSearchDropdown(valid.map(c => ({ type: 'result', ...c, confidence: 'medium' })));
+    showDropdown(ddEl, valid.map(c => ({ type: 'result', ...c, confidence: 'medium' })), selectFn);
 
   } catch(e) {
-    showSearchDropdown([{ type: 'error', message: `Search error: ${e.message}` }]);
+    showDropdown(ddEl, [{ type: 'error', message: `Search error: ${e.message}` }], selectFn);
   }
 }
 
-// ── Render search dropdown ──
-function showSearchDropdown(items) {
-  const dd = document.getElementById('searchDropdown');
-  dd.style.display = 'block';
-
+// ── Generic dropdown renderer (shared by main search and Competitor Bench) ──
+function showDropdown(ddEl, items, selectFn) {
+  ddEl.style.display = 'block';
   const hasResults = items.some(i => i.type === 'result');
   const header = `<div class="search-dropdown-header">
     <span>${hasResults ? 'Select a company to load' : 'Search'}</span>
-    <button class="search-dropdown-close" onclick="closeSearchDropdown()">✕</button>
+    <button class="search-dropdown-close" data-action="close">✕</button>
   </div>`;
-
   const rows = items.map(item => {
     if (item.type === 'loading') {
       return `<div class="search-result-item" style="cursor:default;">
@@ -3729,13 +3745,13 @@ function showSearchDropdown(items) {
         <span style="font-size:11px;color:${color};">${item.message}</span>
       </div>`;
     }
-    // result
+    // result row — uses data attributes + event delegation (no inline onclick)
     const confidence = item.confidence === 'high' ? '✓' : item.confidence === 'medium' ? '~' : '?';
     const confColor  = item.confidence === 'high' ? 'var(--green)' : item.confidence === 'medium' ? 'var(--amber)' : 'var(--text3)';
     const orgDisplay = item.orgNr || 'Org. nr. unknown';
     const canLoad    = !!item.orgNr;
-
-    return `<div class="search-result-item" ${canLoad ? `onclick="selectSearchResult('${item.orgNr}','${item.name.replace(/'/g,"\\'")}',this)"` : 'style="cursor:default;"'}>
+    return `<div class="search-result-item${canLoad ? ' dd-result' : ''}"
+        ${canLoad ? `data-orgnr="${item.orgNr}" data-name="${item.name.replace(/"/g,'&quot;')}"` : 'style="cursor:default;"'}>
       <div>
         <div class="sri-name">${item.name}</div>
         <div class="sri-meta">${item.legalForm || 'AB'} · ${item.industry || '—'}</div>
@@ -3747,26 +3763,37 @@ function showSearchDropdown(items) {
       </div>
     </div>`;
   }).join('');
-
-  dd.innerHTML = header + rows;
-
-  // Close on outside click
-  setTimeout(() => {
-    document.addEventListener('click', closeDropdownOnOutside, { once: true });
-  }, 100);
+  ddEl.innerHTML = header + rows;
+  // Event delegation: close button and result rows
+  ddEl.onclick = (e) => {
+    if (e.target.closest('[data-action="close"]')) { closeDropdown(ddEl); return; }
+    const row = e.target.closest('.dd-result');
+    if (row) selectFn(row.dataset.orgnr, row.dataset.name);
+  };
 }
 
-function closeDropdownOnOutside(e) {
-  const dd = document.getElementById('searchDropdown');
-  if (dd && !dd.contains(e.target) && e.target.id !== 'orgInput') {
-    closeSearchDropdown();
-  }
+function closeDropdown(ddEl) {
+  if (ddEl) ddEl.style.display = 'none';
 }
 
+// ── Backwards-compat wrappers used by legacy call-sites ──
+function showSearchDropdown(items) {
+  showDropdown(document.getElementById('searchDropdown'), items,
+    (o, n) => selectSearchResult(o, n, null));
+}
 function closeSearchDropdown() {
-  const dd = document.getElementById('searchDropdown');
-  if (dd) dd.style.display = 'none';
+  closeDropdown(document.getElementById('searchDropdown'));
 }
+
+// Single permanent listener — closes any open dropdown on outside click
+document.addEventListener('click', (e) => {
+  [['searchDropdown', 'orgInput'], ['cbSearchDropdown', 'cbCompSearchInput']].forEach(([ddId, inputId]) => {
+    const dd = document.getElementById(ddId);
+    if (dd && dd.style.display !== 'none' && !dd.contains(e.target) && e.target.id !== inputId) {
+      dd.style.display = 'none';
+    }
+  });
+});
 
 function selectSearchResult(orgNr, name, el) {
   closeSearchDropdown();
@@ -8603,19 +8630,39 @@ function cbFilterPresets(btn, sni) {
 async function cbAddCompetitorBySearch() {
   const val = document.getElementById('cbCompSearchInput').value.trim();
   if (!val) return;
+  closeDropdown(document.getElementById('cbSearchDropdown'));
   document.getElementById('cbCompSearchInput').value = '';
 
   const isOrgNr = /^\d[\d\-]{7,}/.test(val);
   if (isOrgNr) {
     await cbAddByOrg(val, null);
   } else {
-    // Try AI-assisted name lookup
-    if (anthropicKey) {
+    // Try server search first, then AI-assisted name lookup as fallback
+    const serverResults = await searchByNameServer(val);
+    if (serverResults && serverResults.length > 0) {
+      await cbAddByOrg(serverResults[0].orgNr, serverResults[0].name);
+    } else if (anthropicKey) {
       await cbAddByName(val);
     } else {
       showToast('⚠ Set your Anthropic key to search by name, or enter org. number directly');
     }
   }
+}
+
+// Live-search handlers for the Competitor Bench add field
+function cbHandleSearchInput(val) {
+  const dd = document.getElementById('cbSearchDropdown');
+  if (/^[\d]/.test(val) || !val) { closeDropdown(dd); return; }
+  debounceSearch(val, dd, (orgNr, name) => {
+    closeDropdown(dd);
+    document.getElementById('cbCompSearchInput').value = '';
+    cbAddByOrg(orgNr, name);
+  });
+}
+
+function cbHandleSearchKey(e) {
+  if (e.key === 'Escape') closeDropdown(document.getElementById('cbSearchDropdown'));
+  if (e.key === 'Enter')  cbAddCompetitorBySearch();
 }
 
 async function cbAddByName(name) {
