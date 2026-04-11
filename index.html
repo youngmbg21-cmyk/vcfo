@@ -2087,6 +2087,45 @@ body.light-mode {
 
       <!-- Right main panel -->
       <div>
+        <div class="card">
+          <!-- Header row: title + buttons -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+            <div>
+              <div style="font-size:16px;font-weight:800;color:var(--text);">Competitive Ranking</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px;" id="cbRankSubtitle">
+                Add your company and competitors to generate the ranking
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn-secondary" style="font-size:10px;" id="cbBtnExport">⬇ Export CSV</button>
+              <button class="btn-secondary" style="font-size:10px;" id="cbBtnClear">✕ Clear</button>
+            </div>
+          </div>
+
+          <!-- Summary chips (hidden until benchmark runs) -->
+          <div id="cbSummaryChips" style="display:none;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>
+
+          <!-- Sort pills -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+            <span style="font-size:10px;color:var(--text3);">Sort by:</span>
+            <div id="cbSortBtns" style="display:flex;gap:4px;flex-wrap:wrap;">
+              <button class="cb-sort-pill active" style="background:var(--green-dim);border:1px solid rgba(16,185,129,0.4);color:var(--green);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;font-weight:600;">EBITDA %</button>
+              <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">EBIT %</button>
+              <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Revenue</button>
+              <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">ROE %</button>
+              <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Google ★</button>
+            </div>
+          </div>
+
+          <!-- Ranking table / empty state -->
+          <div id="cbRankTableWrap">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;color:var(--text3);font-size:12px;gap:10px;">
+              <div style="font-size:40px;opacity:0.3;">⚔</div>
+              <div style="font-size:14px;font-weight:600;color:var(--text2);">No benchmark data yet</div>
+              <div>Load your company and add competitors on the left, then click Run Benchmark</div>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>
