@@ -3534,6 +3534,7 @@ function buildGenericDemo(orgNr) {
     prevOpProfit: 0,
     prevNetProfit: 0,
     prevROS: null,
+    employees: null,
     periodiseringsfonder: 0,
     taxRateDeferred: 0.206,
     subsidiaries: [],
@@ -4332,6 +4333,7 @@ function mapAPIResponse(api, clean) {
     receivables: api.receivables || 0,
     depreciation: api.depreciation || 0,
     personnel: api.personnel || 0,
+    employees: api.employees || null,
     rawMaterials: api.costOfGoods || 0,
     periodiseringsfonder: api.periodiseringsfonder || 0,
     andelarKoncern: api.andelarKoncern || 0,
@@ -4516,19 +4518,36 @@ function buildRatioRows(d) {
   const cr  = d.currentLiabilities ? d.totalCurrentAssets/d.currentLiabilities : null;
   const payout = d.netProfit ? d.dividendsPaid/d.netProfit*100 : null;
 
+  const bench = SNI_BENCHMARKS[activeSNI] || SNI_BENCHMARKS.all;
+  const hasEmp = d.employees && d.employees > 0;
+  const revPerEmp  = hasEmp ? d.netSales / d.employees : null;
+  const persPerEmp = hasEmp && d.personnel > 0 ? d.personnel / d.employees : null;
+
   const rows = [
     { name:'Return on Sales (ROS)', val:fmtPct(ros), ok: ros>8, bench:'> 8%' },
     { name:'Return on Equity (ROE)', val:fmtPct(roe), ok: roe>12, bench:'> 12%' },
     { name:'Debt/Equity Ratio', val:fmtRatio(de), ok: de<2, bench:'< 2.0x' },
     { name:'Current Ratio', val:fmtRatio(cr), ok: cr>1.5, bench:'> 1.5x' },
     { name:'Payout Ratio', val:fmtPct(payout), ok: payout<80, bench:'< 80%' },
+    { name:'Revenue / Employee', val: hasEmp ? fmtSEK(revPerEmp) : '—', ok: hasEmp ? revPerEmp >= bench.revPerEmp : null, bench: `≥ ${fmtSEK(bench.revPerEmp)}`, na: !hasEmp },
+    { name:'Personnel Cost / Employee', val: hasEmp && persPerEmp ? fmtSEK(persPerEmp) : '—', ok: hasEmp && persPerEmp ? persPerEmp <= bench.persPerEmp * 1.2 : null, bench: `≤ ${fmtSEK(Math.round(bench.persPerEmp * 1.2))}`, na: !hasEmp || !persPerEmp },
   ];
-  return rows.map(r => `<tr>
-    <td>${r.name}</td>
-    <td style="text-align:right;font-weight:600;" class="${r.ok?'pos':'neg'}">${r.val}</td>
-    <td class="muted">${r.bench}</td>
-    <td style="text-align:center"><span style="font-size:9px;padding:2px 8px;border-radius:3px;background:${r.ok?'rgba(0,255,136,0.1)':'rgba(255,69,96,0.1)'};color:${r.ok?'var(--green)':'var(--red)'};">${r.ok?'✓ OK':'⚠ FLAG'}</span></td>
-  </tr>`).join('');
+  return rows.map(r => {
+    if (r.na) {
+      return `<tr>
+        <td>${r.name}</td>
+        <td style="text-align:right;font-weight:600;color:var(--text3);">${r.val}</td>
+        <td class="muted">${r.bench}</td>
+        <td style="text-align:center"><span style="font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(100,116,139,0.1);color:var(--text3);">N/A</span></td>
+      </tr>`;
+    }
+    return `<tr>
+      <td>${r.name}</td>
+      <td style="text-align:right;font-weight:600;" class="${r.ok?'pos':'neg'}">${r.val}</td>
+      <td class="muted">${r.bench}</td>
+      <td style="text-align:center"><span style="font-size:9px;padding:2px 8px;border-radius:3px;background:${r.ok?'rgba(0,255,136,0.1)':'rgba(255,69,96,0.1)'};color:${r.ok?'var(--green)':'var(--red)'};">${r.ok?'✓ OK':'⚠ FLAG'}</span></td>
+    </tr>`;
+  }).join('');
 }
 
 // ============================================================
@@ -5467,6 +5486,8 @@ const SNI_BENCHMARKS = {
     assetDeprec: 58,// Asset Depreciation %
     maScore: 48,    // Avg M&A score
     revGrowth: 4.2,
+    revPerEmp: 2_800_000,    // Revenue per employee (SEK) — sector median
+    persPerEmp: 580_000,     // Personnel cost per employee (SEK)
   },
   construction: {
     label: 'Construction (SNI 41–43)',
@@ -5479,6 +5500,8 @@ const SNI_BENCHMARKS = {
     assetDeprec: 72,
     maScore: 44,
     revGrowth: 6.8,
+    revPerEmp: 2_400_000,
+    persPerEmp: 520_000,
   },
   manufacturing: {
     label: 'Manufacturing (SNI 10–33)',
@@ -5491,6 +5514,8 @@ const SNI_BENCHMARKS = {
     assetDeprec: 61,
     maScore: 52,
     revGrowth: 3.9,
+    revPerEmp: 3_200_000,
+    persPerEmp: 560_000,
   },
   wholesale: {
     label: 'Wholesale Trade (SNI 46)',
@@ -5503,6 +5528,8 @@ const SNI_BENCHMARKS = {
     assetDeprec: 44,
     maScore: 46,
     revGrowth: 5.1,
+    revPerEmp: 6_500_000,
+    persPerEmp: 620_000,
   },
   retail: {
     label: 'Retail (SNI 47)',
@@ -5515,6 +5542,8 @@ const SNI_BENCHMARKS = {
     assetDeprec: 68,
     maScore: 42,
     revGrowth: 4.4,
+    revPerEmp: 2_600_000,
+    persPerEmp: 420_000,
   },
   professional: {
     label: 'Professional Services (SNI 69–74)',
@@ -5527,6 +5556,8 @@ const SNI_BENCHMARKS = {
     assetDeprec: 38,
     maScore: 57,
     revGrowth: 7.2,
+    revPerEmp: 1_800_000,
+    persPerEmp: 680_000,
   },
   transport: {
     label: 'Transport & Logistics (SNI 49–53)',
@@ -5539,6 +5570,8 @@ const SNI_BENCHMARKS = {
     assetDeprec: 79,
     maScore: 41,
     revGrowth: 3.1,
+    revPerEmp: 2_200_000,
+    persPerEmp: 480_000,
   },
   realestate: {
     label: 'Real Estate (SNI 68)',
@@ -5551,6 +5584,8 @@ const SNI_BENCHMARKS = {
     assetDeprec: 22,
     maScore: 51,
     revGrowth: 5.6,
+    revPerEmp: 8_200_000,
+    persPerEmp: 540_000,
   },
   ict: {
     label: 'ICT & Software (SNI 58–63)',
@@ -5563,6 +5598,8 @@ const SNI_BENCHMARKS = {
     assetDeprec: 48,
     maScore: 61,
     revGrowth: 9.8,
+    revPerEmp: 2_400_000,
+    persPerEmp: 720_000,
   },
   hospitality: {
     label: 'Hotels & Restaurants (SNI 55–56)',
@@ -5575,6 +5612,8 @@ const SNI_BENCHMARKS = {
     assetDeprec: 65,
     maScore: 38,
     revGrowth: 5.2,
+    revPerEmp: 1_200_000,
+    persPerEmp: 380_000,
   },
   healthcare: {
     label: 'Healthcare (SNI 86–88)',
@@ -5587,6 +5626,8 @@ const SNI_BENCHMARKS = {
     assetDeprec: 55,
     maScore: 49,
     revGrowth: 4.6,
+    revPerEmp: 1_600_000,
+    persPerEmp: 500_000,
   },
 };
 
@@ -8816,11 +8857,13 @@ let cbSortKey   = 'ebitdaPct';
 let cbSortDir   = 'desc';
 
 const CB_SORT_OPTIONS = [
-  { key:'ebitdaPct', label:'EBITDA %' },
-  { key:'ebitPct',   label:'EBIT %' },
-  { key:'netSales',  label:'Revenue' },
-  { key:'roePct',    label:'ROE %' },
-  { key:'rating',    label:'Google ★' },
+  { key:'ebitdaPct',  label:'EBITDA %' },
+  { key:'ebitPct',    label:'EBIT %' },
+  { key:'netSales',   label:'Revenue' },
+  { key:'roePct',     label:'ROE %' },
+  { key:'revPerEmp',  label:'Rev/Emp' },
+  { key:'persPerEmp', label:'Pers/Emp' },
+  { key:'rating',     label:'Google ★' },
 ];
 
 function cbComputeMetrics(d) {
@@ -8831,7 +8874,10 @@ function cbComputeMetrics(d) {
   const ebitPct   = d.netSales > 0 ? ebit   / d.netSales * 100 : null;
   const opCostPct = d.netSales > 0 ? opCosts / d.netSales * 100 : null;
   const roePct    = d.equity   > 0 ? d.netProfit / d.equity * 100 : null;
-  return { ebitda, ebit, opCosts, ebitdaPct, ebitPct, opCostPct, roePct };
+  const hasEmp    = d.employees && d.employees > 0;
+  const revPerEmp  = hasEmp ? d.netSales / d.employees : null;
+  const persPerEmp = hasEmp && d.personnel > 0 ? d.personnel / d.employees : null;
+  return { ebitda, ebit, opCosts, ebitdaPct, ebitPct, opCostPct, roePct, revPerEmp, persPerEmp };
 }
 
 function cbRunBenchmark() {
@@ -8863,6 +8909,9 @@ function cbRunBenchmark() {
       netProfit:   d.netProfit,
       roePct:      m.roePct,
       opCostPct:   m.opCostPct,
+      revPerEmp:   m.revPerEmp,
+      persPerEmp:  m.persPerEmp,
+      employees:   d.employees,
       rating:      d.rating,
       reviewCount: d.reviewCount,
       reviewLoading: d.reviewLoading,
@@ -8926,6 +8975,8 @@ function cbRenderRankTable() {
       ${thSort('ebitdaPct','EBITDA %')}
       ${thSort('ebit','EBIT')}
       ${thSort('ebitPct','EBIT %')}
+      ${thSort('revPerEmp','Rev/Emp')}
+      ${thSort('persPerEmp','Pers/Emp')}
       ${thSort('rating','Google ★')}
       <th style="text-align:center;">Action</th>
     </tr></thead>
@@ -9003,6 +9054,13 @@ function cbRenderRankTable() {
       </td>
       <td>
         <div class="cb-metric-val" style="color:${ebitColor};font-weight:600;">${fmtPct(row.ebitPct)}</div>
+      </td>
+      <td>
+        <div class="cb-metric-val">${row.revPerEmp !== null ? fmtSEK(Math.round(row.revPerEmp)) : '<span style="color:var(--text3);">—</span>'}</div>
+        ${row.employees ? '<div style="font-size:8px;color:var(--text3);">' + row.employees + ' emp.</div>' : ''}
+      </td>
+      <td>
+        <div class="cb-metric-val">${row.persPerEmp !== null ? fmtSEK(Math.round(row.persPerEmp)) : '<span style="color:var(--text3);">—</span>'}</div>
       </td>
       <td>${starsHtml}</td>
       <td style="text-align:center;">${actionBtn}</td>
