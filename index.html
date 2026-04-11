@@ -601,8 +601,8 @@ body::after {
 .score-breakdown { display:flex; flex-direction:column; gap:8px; }
 .score-item {
   display:grid;
-  grid-template-columns: 160px 1fr 50px;
-  align-items:center; gap:10px;
+  grid-template-columns: 140px 1fr 50px;
+  align-items:center; gap:8px;
 }
 .score-item-label { font-size:10px; color:var(--text2); }
 .score-item-val {
@@ -1710,81 +1710,80 @@ body::after {
         <button class="btn-secondary" onclick="runMAScreen()" data-i18n="btn_refresh_screen">↺ Refresh Screen</button>
       </div>
 
-      <div style="display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start;">
-        <!-- Score card -->
-        <div class="card" style="text-align:center;padding:24px 16px;">
-          <div class="card-title" style="justify-content:center;" data-i18n="card_ma_score">ACQUISITION FIT SCORE</div>
-          <div class="ma-score-ring">
-            <div class="score-circle" id="scoreCircle" style="border-color:var(--amber);color:var(--amber);">
-              <div class="score-num" id="maScoreNum">—</div>
-              <div class="score-label">/ 100</div>
+      <!-- Score header — full width -->
+      <div class="card" style="padding:20px;">
+        <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+          <!-- Score circle -->
+          <div style="text-align:center;flex-shrink:0;">
+            <div class="score-circle" id="scoreCircle" style="border-color:var(--amber);color:var(--amber);width:100px;height:100px;">
+              <div class="score-num" id="maScoreNum" style="font-size:32px;">—</div>
+              <div class="score-label" style="font-size:10px;">/ 100</div>
             </div>
-            <div class="verdict-badge hold" id="maVerdictBadge">COMPUTING</div>
+            <div class="verdict-badge hold" id="maVerdictBadge" style="margin-top:8px;">COMPUTING</div>
           </div>
-          <div style="margin-top:16px;text-align:left;">
-            <div class="card-title" data-i18n="card_score_break">Score Breakdown</div>
+          <!-- Score breakdown — flexible width -->
+          <div style="flex:1;min-width:280px;">
+            <div style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Score Breakdown</div>
             <div class="score-breakdown" id="scoreBreakdown">
               <div style="color:var(--text3);font-size:10px;">—</div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Due diligence checks -->
-        <div style="display:flex;flex-direction:column;gap:14px;">
-          <div class="card">
-            <div class="card-title" data-i18n="card_dd">Compliance Due Diligence <span>ABL / ÅRSRL</span></div>
-            <div class="flag-list" id="maDDFlags">
-              <div style="color:var(--text3);font-size:11px;">Awaiting data...</div>
-            </div>
-          </div>
+      <!-- Due diligence + asset/debt grid -->
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title" data-i18n="card_dd">Compliance Due Diligence <span>ABL / ÅRSRL</span></div>
+        <div class="flag-list" id="maDDFlags">
+          <div style="color:var(--text3);font-size:11px;">Awaiting data...</div>
+        </div>
+      </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-            <div class="card">
-              <div class="card-title" data-i18n="card_assets">Asset Lifecycle <span>CAPEX RISK</span></div>
-              <div id="maAssetData" style="font-size:11px;color:var(--text2);">—</div>
-            </div>
-            <div class="card">
-              <div class="card-title" data-i18n="card_debt">Debt Maturity Profile <span>CASH FLOW</span></div>
-              <div id="maDebtData" style="font-size:11px;color:var(--text2);">—</div>
-            </div>
-          </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;">
+        <div class="card">
+          <div class="card-title" data-i18n="card_assets">Asset Lifecycle <span>CAPEX RISK</span></div>
+          <div id="maAssetData" style="font-size:11px;color:var(--text2);">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title" data-i18n="card_debt">Debt Maturity Profile <span>CASH FLOW</span></div>
+          <div id="maDebtData" style="font-size:11px;color:var(--text2);">—</div>
+        </div>
+      </div>
 
-          <!-- ── Business Valuation Estimate ── -->
-          <div class="card" id="maValuationCard">
-            <div class="card-title">
-              Business Valuation Estimate
-              <span style="color:var(--green);">EBITDA MULTIPLE</span>
-            </div>
-            <div id="maValuationContent" style="font-size:11px;color:var(--text2);">—</div>
-          </div>
+      <!-- Business Valuation -->
+      <div class="card" id="maValuationCard" style="margin-top:14px;">
+        <div class="card-title">
+          Business Valuation Estimate
+          <span style="color:var(--green);">EBITDA MULTIPLE</span>
+        </div>
+        <div id="maValuationContent" style="font-size:11px;color:var(--text2);">—</div>
+      </div>
 
-          <!-- ── NEW: Hidden Debt (Periodiseringsfonder) in M&A context ── -->
-          <div class="card" id="maHiddenDebtCard">
-            <div class="card-title">
-              Hidden Tax Liability
-              <span style="color:var(--purple);">ACQUIRER RISK</span>
-            </div>
-            <div id="maHiddenDebtContent" style="font-size:11px;color:var(--text2);">—</div>
-          </div>
+      <!-- Hidden Debt -->
+      <div class="card" id="maHiddenDebtCard" style="margin-top:14px;">
+        <div class="card-title">
+          Hidden Tax Liability
+          <span style="color:var(--purple);">ACQUIRER RISK</span>
+        </div>
+        <div id="maHiddenDebtContent" style="font-size:11px;color:var(--text2);">—</div>
+      </div>
 
-          <!-- AI M&A Analysis -->
-          <div class="ai-output-wrap">
-            <div class="ai-output-header">
-              <div class="ai-output-title" data-i18n="card_ma_ai">🤖 AI M&A Recommendation — Buy / Pass</div>
-              <div style="display:flex;gap:6px;">
-                <button class="btn-copy" onclick="copyAIOutput('maAIOutput', this)" title="Copy to clipboard">📋 Copy</button>
-                <button class="btn-secondary" onclick="askAboutAnalysis('ma')" style="font-size:10px;" data-i18n="btn_ask_ai">💬 Ask AI</button>
-                <button class="btn-analyze" onclick="runMAScreen()" id="btnMAAI" data-i18n="btn_run_ma_ai">
-                  Run AI Screen
-                </button>
-              </div>
-            </div>
-            <div class="ai-output-body" id="maAIOutput">
-              <div style="color:var(--text3);">Click "Run AI Screen" to generate an AI-powered M&A recommendation with detailed due diligence findings, scored across compliance, financials, assets, and strategic fit.</div>
-            </div>
-            <div class="progress-bar" style="margin:0 16px 12px;"><div class="progress-fill" id="maProgress" style="width:0%"></div></div>
+      <!-- AI M&A Analysis -->
+      <div class="ai-output-wrap" style="margin-top:14px;">
+        <div class="ai-output-header">
+          <div class="ai-output-title" data-i18n="card_ma_ai">🤖 AI M&A Recommendation — Buy / Pass</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-copy" onclick="copyAIOutput('maAIOutput', this)" title="Copy to clipboard">📋 Copy</button>
+            <button class="btn-secondary" onclick="askAboutAnalysis('ma')" style="font-size:10px;" data-i18n="btn_ask_ai">💬 Ask AI</button>
+            <button class="btn-analyze" onclick="runMAScreen()" id="btnMAAI" data-i18n="btn_run_ma_ai">
+              Run AI Screen
+            </button>
           </div>
         </div>
+        <div class="ai-output-body" id="maAIOutput">
+          <div style="color:var(--text3);">Click "Run AI Screen" to generate an AI-powered M&A recommendation with detailed due diligence findings, scored across compliance, financials, assets, and strategic fit.</div>
+        </div>
+        <div class="progress-bar" style="margin:0 16px 12px;"><div class="progress-fill" id="maProgress" style="width:0%"></div></div>
       </div>
     </div>
   </div>
@@ -4504,29 +4503,49 @@ function computeAndRenderDeterministicMA(d) {
   // ── Render hidden debt card (Module B in M&A context) ──
   renderMAHiddenDebt(d);
 
-  // Compliance due diligence flags
+  // ── Multi-year context for narrative ──
+  const sortedYrs = Object.keys(historyData).sort();
+  const multiYr = sortedYrs.length >= 2;
+  const oldestData = multiYr ? historyData[sortedYrs[0]] : null;
+  const newestData = multiYr ? historyData[sortedYrs[sortedYrs.length - 1]] : d;
+
+  // Compliance due diligence flags — with multi-year history
   const ddFlags = [];
-  if (d.auditorRemark) {
-    ddFlags.push({ sev:'critical', title:'Anmärkning — Late Filing Remark', detail: d.auditorRemarkDetail || 'Auditor noted a late submission under ABL 7 kap. 10§. This creates a compliance finding that must be disclosed in acquisition due diligence. Repeat offences can result in statutory dissolution.', reg:'ABL 7 kap. 10§' });
+  // Check auditor remarks across ALL years
+  const remarkYears = sortedYrs.filter(y => historyData[y]?.auditorRemark);
+  const cleanYears  = sortedYrs.filter(y => !historyData[y]?.auditorRemark);
+  if (remarkYears.length > 0) {
+    const isRecurring = remarkYears.length >= 2;
+    ddFlags.push({
+      sev: isRecurring ? 'critical' : 'warning',
+      title: isRecurring ? `Recurring Anmärkning — ${remarkYears.length} of ${sortedYrs.length} years` : `Anmärkning in FY${remarkYears[0]}`,
+      detail: isRecurring
+        ? `Auditor remarks found in FY${remarkYears.join(', FY')}. Recurring late filing across ${remarkYears.length} of ${sortedYrs.length} years signals persistent governance failure. High-risk compliance finding for acquisition due diligence.`
+        : `Auditor remark in FY${remarkYears[0]} only. ${cleanYears.length} clean years suggest an isolated incident. Monitor but lower risk for an acquirer.`,
+      reg: 'ABL 7 kap. 10§'
+    });
   } else {
-    ddFlags.push({ sev:'ok', title:'No Auditor Remarks — Clean Opinion', detail:'Annual reports filed on time. Unqualified auditor opinion. No compliance findings affecting acquisition readiness.', reg:'ABL 7 kap.' });
+    ddFlags.push({ sev:'ok', title:`Clean Auditor Record — ${sortedYrs.length} year${sortedYrs.length>1?'s':''} reviewed`, detail:`No auditor remarks found across ${sortedYrs.length > 1 ? sortedYrs.length + ' years (FY' + sortedYrs[0] + '–' + sortedYrs[sortedYrs.length-1] + ')' : 'the available filing'}. Consistent on-time filing and unqualified opinions.`, reg:'ABL 7 kap.' });
   }
-  if (d.dividendsPaid > d.netProfit) {
-    ddFlags.push({ sev:'warning', title:'Unlawful Distribution Risk — Dividends Exceed Profit', detail:`Dividends paid (${fmtSEK(d.dividendsPaid)}) exceed net profit (${fmtSEK(d.netProfit)}). Under ABL 17 kap., distributions must not impair reserved equity. An acquirer may face liability for returning excess amounts.`, reg:'ABL 17 kap. 3§' });
+
+  // Dividend distribution — multi-year pattern
+  const overPayYears = sortedYrs.filter(y => { const h = historyData[y]; return h && h.dividendsPaid > h.netProfit && h.netProfit > 0; });
+  if (overPayYears.length > 0) {
+    ddFlags.push({
+      sev: overPayYears.length >= 2 ? 'critical' : 'warning',
+      title: overPayYears.length >= 2 ? `Recurring Over-Distribution — ${overPayYears.length} years` : `Over-Distribution in FY${overPayYears[0]}`,
+      detail: overPayYears.length >= 2
+        ? `Dividends exceeded net profit in FY${overPayYears.join(', FY')}. Systematic equity extraction over ${overPayYears.length} years. Acquirer faces materially depleted reserves.`
+        : `Dividends paid (${fmtSEK(d.dividendsPaid)}) exceed net profit (${fmtSEK(d.netProfit)}) in FY${d.fiscalYear}. Single occurrence — assess if repeated pattern.`,
+      reg: 'ABL 17 kap. 3§'
+    });
   }
 
   // Hidden debt flag
   if (d.periodiseringsfonder) {
     const tax = calculateAdjustedEquity(d);
     const hiddenSev = tax.critFlag ? 'critical' : tax.warnFlag ? 'warning' : 'info';
-    ddFlags.push({
-      sev: hiddenSev,
-      title: `Periodiseringsfonder — Deferred Tax: ${fmtSEK(tax.hiddenTaxDebt)}`,
-      detail: isSv
-        ? `Bolaget har ${fmtSEK(tax.periodiseringsfonder)} i periodiseringsfonder. Uppskjuten skatteskuld: ${fmtSEK(tax.hiddenTaxDebt)} (${(tax.taxRate*100).toFixed(1)}%). Justerat eget kapital: ${fmtSEK(tax.adjustedEquity)}.`
-        : `Company holds ${fmtSEK(tax.periodiseringsfonder)} in tax-allocation reserves. Deferred tax liability: ${fmtSEK(tax.hiddenTaxDebt)} (${(tax.taxRate*100).toFixed(1)}%). Adjusted equity: ${fmtSEK(tax.adjustedEquity)}.`,
-      reg: 'IL 30 kap.'
-    });
+    ddFlags.push({ sev: hiddenSev, title: `Periodiseringsfonder — Deferred Tax: ${fmtSEK(tax.hiddenTaxDebt)}`, detail: `Company holds ${fmtSEK(tax.periodiseringsfonder)} in tax-allocation reserves. Deferred tax liability: ${fmtSEK(tax.hiddenTaxDebt)} (${(tax.taxRate*100).toFixed(1)}%). Adjusted equity: ${fmtSEK(tax.adjustedEquity)}.`, reg: 'IL 30 kap.' });
   }
 
   document.getElementById('maDDFlags').innerHTML = ddFlags.map(f => `
@@ -4539,18 +4558,26 @@ function computeAndRenderDeterministicMA(d) {
       </div>
     </div>`).join('');
 
-  // Asset lifecycle
+  // Asset lifecycle — with multi-year depreciation trend
   const assetPctText = d.inventarierAcqCost > 0 ? fmtPct(assetDeprecPct) : 'N/A';
   const assetRisk = assetDeprecPct >= 95 ? 'critical' : assetDeprecPct >= 75 ? 'warning' : 'ok';
+  let assetTrendNote = '';
+  if (multiYr && oldestData?.totalFixedAssets > 0) {
+    const oldFixed = oldestData.totalFixedAssets;
+    const newFixed = d.totalFixedAssets || 0;
+    const fixedDelta = oldFixed > 0 ? ((newFixed - oldFixed) / oldFixed * 100).toFixed(0) : 0;
+    assetTrendNote = `<div class="field-row"><span class="field-key">Fixed Assets ${sortedYrs[0]}→${sortedYrs[sortedYrs.length-1]}</span><span class="field-val ${fixedDelta>0?'pos':fixedDelta<0?'neg':''}">${fixedDelta>0?'+':''}${fixedDelta}%</span></div>`;
+  }
   document.getElementById('maAssetData').innerHTML = `
     <div class="field-row"><span class="field-key">Inventarier — Acquisition Cost</span><span class="field-val">${fmtSEK(d.inventarierAcqCost)}</span></div>
     <div class="field-row"><span class="field-key">Book Value (Net)</span><span class="field-val ${d.inventarierBV<=0?'neg':''}">${fmtSEK(d.inventarierBV)}</span></div>
     <div class="field-row"><span class="field-key">Depreciation Level</span><span class="field-val ${assetRisk==='critical'?'neg':assetRisk==='warning'?'amb':'pos'}">${assetPctText} depreciated</span></div>
+    ${assetTrendNote}
     <div style="margin-top:10px;" class="flag-item ${assetRisk}">
       <div class="flag-body">
         <div class="flag-detail">
           ${assetDeprecPct >= 95
-            ? `⚠ Assets are fully/near-fully depreciated (${assetPctText}). A new owner faces immediate CapEx requirements to replace asset base. Factor replacement cost (${fmtSEK(d.inventarierAcqCost)}) into acquisition valuation.`
+            ? `⚠ Assets are fully/near-fully depreciated (${assetPctText}). A new owner faces immediate CapEx requirements to replace the asset base.`
             : assetDeprecPct >= 75
             ? `Assets are ${assetPctText} depreciated — moderate CapEx requirements expected within 2–3 years.`
             : `Assets have remaining useful life. Estimated CapEx runway: adequate.`}
@@ -4558,18 +4585,27 @@ function computeAndRenderDeterministicMA(d) {
       </div>
     </div>`;
 
-  // Debt maturity
+  // Debt maturity — with multi-year debt trajectory
   const ltdPctEquity = d.equity > 0 ? d.longTermDebtOver5y/d.equity*100 : 0;
   const debtRisk = ltdOver5Pct > 60 ? 'critical' : ltdOver5Pct > 30 ? 'warning' : 'ok';
+  let debtTrendNote = '';
+  if (multiYr && oldestData) {
+    const oldDebt = (oldestData.longTermDebt || 0) + (oldestData.currentLiabilities || 0);
+    const newDebt = (d.longTermDebt || 0) + (d.currentLiabilities || 0);
+    const debtDelta = oldDebt > 0 ? ((newDebt - oldDebt) / oldDebt * 100).toFixed(0) : 0;
+    const debtDirection = debtDelta > 5 ? 'Increasing leverage' : debtDelta < -5 ? 'Deleveraging' : 'Stable debt';
+    debtTrendNote = `<div class="field-row"><span class="field-key">Total Debt ${sortedYrs[0]}→${sortedYrs[sortedYrs.length-1]}</span><span class="field-val ${debtDelta<-5?'pos':debtDelta>5?'neg':''}">${debtDirection} (${debtDelta>0?'+':''}${debtDelta}%)</span></div>`;
+  }
   document.getElementById('maDebtData').innerHTML = `
     <div class="field-row"><span class="field-key">Total Long-term Debt</span><span class="field-val">${fmtSEK(d.longTermDebt)}</span></div>
     <div class="field-row"><span class="field-key">Due in >5 years</span><span class="field-val ${debtRisk==='critical'?'neg':debtRisk==='warning'?'amb':'pos'}">${fmtSEK(d.longTermDebtOver5y)}</span></div>
     <div class="field-row"><span class="field-key">% of Equity</span><span class="field-val ${ltdPctEquity>60?'neg':ltdPctEquity>30?'amb':'pos'}">${fmtPct(ltdPctEquity)}</span></div>
+    ${debtTrendNote}
     <div style="margin-top:10px;" class="flag-item ${debtRisk}">
       <div class="flag-body">
         <div class="flag-detail">
           ${ltdOver5Pct > 60
-            ? `Long-term debt obligations extending beyond 5 years (${fmtSEK(d.longTermDebtOver5y)}) represent ${fmtPct(ltdPctEquity)} of equity. Post-acquisition FCF will be materially constrained.`
+            ? `Long-term debt obligations (${fmtSEK(d.longTermDebtOver5y)}) represent ${fmtPct(ltdPctEquity)} of equity. Post-acquisition FCF will be materially constrained.`
             : ltdOver5Pct > 30
             ? `Moderate long-duration debt. Post-acquisition FCF management required but manageable.`
             : `Debt maturity profile is favourable. Limited long-term cash flow constraints.`}
