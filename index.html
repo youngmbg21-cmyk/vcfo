@@ -76,7 +76,7 @@ body {
   gap: 8px;
   transition: border-color 0.2s;
 }
-.search-bar:focus-within { border-color: var(--amber); box-shadow: 0 0 20px rgba(255,184,0,0.15); }
+.search-bar:focus-within { border-color: var(--border2); }
 .search-bar input {
   background:none; border:none; outline:none;
   color: var(--text);
@@ -86,13 +86,13 @@ body {
 }
 .search-bar input::placeholder { color: var(--text3); text-transform: none; }
 .btn-load {
-  background: var(--amber);
-  color: var(--bg);
-  border:none; border-radius:3px;
-  padding: 5px 16px;
-  font-family:'JetBrains Mono',monospace;
-  font-size:11px; font-weight:700;
-  cursor:pointer; letter-spacing:0.05em;
+  background: var(--green);
+  color: #000;
+  border:none; border-radius:8px;
+  padding: 6px 18px;
+  font-family:'DM Sans',sans-serif;
+  font-size:12px; font-weight:600;
+  cursor:pointer; letter-spacing:0.02em;
   transition: opacity 0.2s;
 }
 .btn-load:hover { opacity:0.85; }
@@ -102,21 +102,20 @@ body {
 }
 .live-dot {
   width:6px; height:6px; border-radius:50%;
-  background: var(--amber);
-  box-shadow: 0 0 8px var(--amber);
+  background: var(--green);
   animation: blink 1.5s infinite;
 }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 .settings-btn {
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius:3px; padding: 4px 10px;
-  color: var(--amber); font-size:11px;
+  border-radius:8px; padding: 5px 12px;
+  color: var(--text2); font-size:11px;
   cursor:pointer;
-  font-family:'JetBrains Mono',monospace;
+  font-family:'DM Sans',sans-serif;
   transition:all 0.2s;
 }
-.settings-btn:hover { border-color: var(--amber); }
+.settings-btn:hover { border-color: var(--border2); color: var(--text); }
 
 /* ===== TABS ===== */
 .tabs {
@@ -127,14 +126,14 @@ body {
 }
 .tab {
   padding: 12px 20px;
-  font-size:11px; letter-spacing:0.08em;
-  text-transform:uppercase;
+  font-size:12px; letter-spacing:0.02em;
+  font-weight:500;
   color: var(--text3); cursor:pointer;
   border-bottom: 2px solid transparent;
   transition: all 0.2s; user-select:none;
 }
-.tab:hover { color: var(--text2); }
-.tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--green); border-bottom-color: var(--green); }
 
 /* ===== CONTENT ===== */
 .content { padding: 20px; max-width: 1320px; margin: 0 auto; }
