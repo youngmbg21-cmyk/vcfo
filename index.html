@@ -342,15 +342,16 @@ body::after {
   font-size:11px;
 }
 .data-table th {
-  padding:8px 12px;
+  padding:6px 8px;
   font-family:'JetBrains Mono',monospace;
   font-size:9px; letter-spacing:0.1em;
   text-transform:uppercase; color:var(--text3);
   border-bottom:1px solid var(--border);
   text-align:left; background:var(--bg3);
+  white-space:nowrap;
 }
 .data-table td {
-  padding:9px 12px;
+  padding:6px 8px;
   border-bottom:1px solid rgba(26,45,66,0.4);
   color:var(--text);
 }
@@ -1812,11 +1813,11 @@ body::after {
     </div>
     <div id="finContent" style="display:none;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="card">
+        <div class="card" style="overflow-x:auto;">
           <div class="card-title">Income Statement (Resultaträkning)</div>
           <div id="finIncome">—</div>
         </div>
-        <div class="card">
+        <div class="card" style="overflow-x:auto;">
           <div class="card-title">Balance Sheet (Balansräkning)</div>
           <div id="finBalance">—</div>
         </div>
@@ -3865,7 +3866,8 @@ function renderTrendPanel() {
   // Render trend table FIRST (synchronous, no Chart.js dependency)
   try { renderTrendTable(years, revenues, profits, rosArr, roeArr); } catch(e) { console.warn('Trend table error:', e); }
 
-  loadChartJS(() => {
+  // Use requestAnimationFrame to ensure canvas has layout dimensions after display:block
+  loadChartJS(() => { requestAnimationFrame(() => { try {
     // Revenue & profit chart
     if (trendChartRev) trendChartRev.destroy();
     trendChartRev = new Chart(document.getElementById('trendRevenueChart'), {
@@ -3873,8 +3875,8 @@ function renderTrendPanel() {
       data: {
         labels,
         datasets: [
-          { label:'Net Sales (Mkr)', data: revenues, backgroundColor:'rgba(255,184,0,0.5)', borderColor:'var(--amber)', borderWidth:1, borderRadius:2 },
-          { label:'Net Profit (Mkr)',data: profits,  backgroundColor:'rgba(0,255,136,0.4)', borderColor:'var(--green)', borderWidth:1, borderRadius:2, type:'bar' },
+          { label:'Net Sales (tkr)', data: revenues, backgroundColor:'rgba(255,184,0,0.5)', borderColor:'var(--amber)', borderWidth:1, borderRadius:2 },
+          { label:'Net Profit (tkr)',data: profits,  backgroundColor:'rgba(0,255,136,0.4)', borderColor:'var(--green)', borderWidth:1, borderRadius:2, type:'bar' },
         ]
       },
       options: {
@@ -3907,7 +3909,7 @@ function renderTrendPanel() {
         plugins:{ legend:{ labels:{ color:'#FFFFFF', font:{size:9,family:'JetBrains Mono'}, boxWidth:10 } } }
       }
     });
-  });
+  } catch(e) { console.warn('Trend chart render error:', e); } }); });
 }
 
 function renderTrendTable(years, revenues, profits, rosArr, roeArr) {
