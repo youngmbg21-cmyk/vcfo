@@ -3645,7 +3645,7 @@ async function runLiveSearch(query, ddEl, selectFn) {
   }
   showDropdown(ddEl, [{
     type: 'info',
-    message: `No registry results for "${query}". Set your Anthropic API key in ⚙ Settings for AI-assisted search, or enter the org. number directly.`,
+    message: `No companies found for "${query}". Try searching by org. number instead (format: 556000-1234).`,
   }], selectFn);
 }
 
@@ -3734,7 +3734,7 @@ If you cannot confidently provide any org numbers for "${query}", return an empt
     if (!valid.length) {
       showDropdown(ddEl, [{
         type: 'info',
-        message: `Could not find a verified org. number for "${query}". Try entering the 10-digit org. number directly (format: 556000-1234).`,
+        message: `No companies found for "${query}". Try searching by org. number instead (format: 556000-1234).`,
       }], selectFn);
       return;
     }
