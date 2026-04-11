@@ -1991,7 +1991,40 @@ body.light-mode {
     <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;">
 
       <!-- Left sidebar (sticky) -->
-      <div style="position:sticky;top:60px;display:flex;flex-direction:column;gap:12px;">
+      <div style="position:sticky;top:60px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;">
+
+        <!-- Your Company card -->
+        <div class="card">
+          <div class="card-title">Your Company <span>BENCHMARK BASE</span></div>
+          <div style="margin-bottom:12px;">
+            <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;">Org. Number</div>
+            <input type="text" id="cbOrgInput" placeholder="556000-1234" maxlength="14"
+              oninput="this.value=this.value.replace(/[^0-9\-]/g,'')"
+              onkeydown="if(event.key==='Enter') cbLoadMyCompany()"
+              style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;">
+          </div>
+          <button class="btn-load" id="cbBtnLoadMine" onclick="cbLoadMyCompany()" style="width:100%;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;">
+            Load My Company
+          </button>
+
+          <!-- Company hero (hidden until loaded) -->
+          <div id="cbMyCompanyHero" style="display:none;background:linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.02));border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:14px;margin-top:12px;">
+          </div>
+
+          <!-- Status dots -->
+          <div style="height:1px;background:var(--border);margin:12px 0;"></div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:10px;">
+              <div style="width:5px;height:5px;border-radius:50%;background:var(--text3);" id="cbDotBV"></div>
+              <span id="cbTxtBV" style="color:var(--text3);">Bolagsverket: not connected</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:10px;">
+              <div style="width:5px;height:5px;border-radius:50%;background:var(--red);" id="cbDotSerp"></div>
+              <span id="cbTxtSerp" style="color:var(--red);">SerpApi: no key — Google ratings unavailable</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- Right main panel -->
@@ -8126,6 +8159,89 @@ function exportWatchlistCSV() {
   a.href = url; a.download = 'vcfo_watchlist.csv'; a.click();
   URL.revokeObjectURL(url);
   showToast(t('toast_csv_exported'));
+}
+
+// ============================================================
+// COMPETITOR BENCH — Your Company loader
+// ============================================================
+let cbMyCompany = null;
+
+async function cbLoadMyCompany() {
+  const raw   = document.getElementById('cbOrgInput').value.trim();
+  const clean = raw.replace(/[^0-9]/g, '');
+  if (clean.length < 10) { showToast('⚠ Enter a valid org. number (10 digits)'); return; }
+
+  const btn = document.getElementById('cbBtnLoadMine');
+  btn.disabled  = true;
+  btn.textContent = 'Loading…';
+
+  const dotBV = document.getElementById('cbDotBV');
+  const txtBV = document.getElementById('cbTxtBV');
+  dotBV.style.background = 'var(--amber)';
+  txtBV.textContent = 'Bolagsverket: fetching…';
+  txtBV.style.color = 'var(--text3)';
+
+  const apiData = await fetchBolagsverket(raw);
+  let d;
+  const isLive = apiData && (
+    apiData.name || apiData.companyName || apiData.registrationNumber ||
+    apiData.netSales || apiData.revenues || apiData.totalAssets ||
+    apiData.equity || apiData.operatingProfit || apiData.reports
+  );
+  if (isLive) {
+    d = mapAPIResponse(apiData, clean);
+    d._isLive = true;
+  } else {
+    d = DEMO_COMPANIES[clean] || buildGenericDemo(raw);
+    d._isLive = false;
+  }
+
+  cbMyCompany = d;
+
+  btn.disabled    = false;
+  btn.textContent = '✓ Loaded — Click to Reload';
+
+  // Update BV status dot
+  if (d._isLive) {
+    dotBV.style.background = 'var(--green)';
+    txtBV.textContent = 'Bolagsverket: connected';
+    txtBV.style.color = 'var(--text3)';
+  } else {
+    dotBV.style.background = 'var(--text3)';
+    txtBV.textContent = 'Bolagsverket: not connected';
+    txtBV.style.color = 'var(--text3)';
+  }
+
+  cbRenderMyCompanyHero(d);
+}
+
+function cbRenderMyCompanyHero(d) {
+  const ebitda    = (d.opProfit || 0) + (d.depreciation || 0);
+  const ebit      = d.opProfit || 0;
+  const ebitdaPct = d.netSales > 0 ? ebitda / d.netSales * 100 : null;
+  const ebitPct   = d.netSales > 0 ? ebit   / d.netSales * 100 : null;
+
+  const hero = document.getElementById('cbMyCompanyHero');
+  hero.style.display = 'block';
+  hero.innerHTML = `
+    <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px;">${d.name}</div>
+    <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">${d.orgNr} · FY${d.fiscalYear}${d._isLive ? ' · <span style="color:var(--green);">LIVE</span>' : ' · <span style="color:var(--amber);">ESTIMATED</span>'}</div>
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(245,158,11,0.1);font-size:11px;">
+      <span style="color:var(--text3);">Revenue</span><span style="font-weight:600;color:var(--amber);font-family:'JetBrains Mono',monospace;">${fmtSEK(d.netSales)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(245,158,11,0.1);font-size:11px;">
+      <span style="color:var(--text3);">EBITDA</span><span style="font-weight:600;color:var(--amber);font-family:'JetBrains Mono',monospace;">${fmtSEK(ebitda)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(245,158,11,0.1);font-size:11px;">
+      <span style="color:var(--text3);">EBITDA %</span><span style="font-weight:600;color:var(--amber);font-family:'JetBrains Mono',monospace;">${fmtPct(ebitdaPct)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(245,158,11,0.1);font-size:11px;">
+      <span style="color:var(--text3);">EBIT</span><span style="font-weight:600;color:var(--amber);font-family:'JetBrains Mono',monospace;">${fmtSEK(ebit)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;">
+      <span style="color:var(--text3);">EBIT %</span><span style="font-weight:600;color:var(--amber);font-family:'JetBrains Mono',monospace;">${fmtPct(ebitPct)}</span>
+    </div>
+  `;
 }
 
 </script>
