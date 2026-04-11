@@ -4564,71 +4564,139 @@ function renderFinWaterfall(d) {
   const tickColor  = isLight ? '#334155' : '#FFFFFF';
   const gridColor  = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
 
-  // ── Build bars from the actual filing rows ──
-  // Each bar: { label, value (signed), anchor (starts from 0), subtotal }
+  // ── Swedish → English label translation + classification ──
+  // category: 'revenue' | 'cost' | 'subtotal' | 'financial' | 'tax' | 'netprofit' | 'skip'
+  const CLASSIFY = [
+    // ── Skip: non-financial metadata, dates, section headers ──
+    { kw: 'startdatum',                cat: 'skip' },
+    { kw: 'slutdatum',                 cat: 'skip' },
+    { kw: 'belopp i',                  cat: 'skip' },
+    { kw: 'rörelsens intäkter',        cat: 'skip' },
+    { kw: 'rörelsens kostnader',       cat: 'skip' },
+    { kw: 'finansiella poster',        cat: 'skip' },
+    { kw: 'bokslutsdispositioner',     cat: 'skip' },
+    { kw: 'resultaträkning',           cat: 'skip' },
+    // ── Revenue ──
+    { kw: 'nettoomsättning',           cat: 'revenue',   en: 'Net Sales' },
+    { kw: 'nettoomstning',             cat: 'revenue',   en: 'Net Sales' },
+    // ── Revenue subtotal (some filings show "Summa intäkter" or "Omsättning") ──
+    { kw: 'summa rörelseintäkter',     cat: 'skip' },  // redundant if Net Sales already shown
+    { kw: 'summa intäkter',            cat: 'skip' },
+    { kw: 'omsättning',               cat: 'skip' },  // total turnover — redundant with Net Sales
+    // ── Operating costs ──
+    { kw: 'råvaror och förnödenheter', cat: 'cost',      en: 'Raw Materials' },
+    { kw: 'handelsvaror',              cat: 'cost',      en: 'COGS' },
+    { kw: 'kostnad sålda varor',       cat: 'cost',      en: 'COGS' },
+    { kw: 'kostnad för sålda',         cat: 'cost',      en: 'COGS' },
+    { kw: 'varukostnad',               cat: 'cost',      en: 'COGS' },
+    { kw: 'övriga rörelseintäkter',    cat: 'cost',      en: 'Other Op. Income' },  // positive but still operating
+    { kw: 'övrig omsättning',          cat: 'cost',      en: 'Other Revenue' },
+    { kw: 'förändring av lager',       cat: 'cost',      en: 'Inventory Change' },
+    { kw: 'personalkostnader',         cat: 'cost',      en: 'Personnel Costs' },
+    { kw: 'löner och andra',           cat: 'cost',      en: 'Personnel Costs' },
+    { kw: 'avskrivningar',             cat: 'cost',      en: 'Depreciation' },
+    { kw: 'av- och nedskrivningar',    cat: 'cost',      en: 'Depreciation' },
+    { kw: 'nedskrivningar',            cat: 'cost',      en: 'Write-downs' },
+    { kw: 'övriga externa kostnader',  cat: 'cost',      en: 'Other External Costs' },
+    { kw: 'övriga rörelsekostnader',   cat: 'cost',      en: 'Other Op. Costs' },
+    { kw: 'rörelsekostnader',          cat: 'cost',      en: 'Operating Costs' },  // aggregated single line
+    { kw: 'övriga kostnader',          cat: 'cost',      en: 'Other Costs' },
+    { kw: 'lokalkostnader',            cat: 'cost',      en: 'Premises Costs' },
+    // ── Subtotals (EBIT and intermediate profit lines) ──
+    { kw: 'rörelseresultat',           cat: 'subtotal',  en: 'EBIT' },
+    { kw: 'bruttoresultat',            cat: 'subtotal',  en: 'Gross Profit' },
+    // ── Financial items (below EBIT) ──
+    { kw: 'ränteintäkter',             cat: 'financial', en: 'Interest Income' },
+    { kw: 'finansiella intäkter',      cat: 'financial', en: 'Financial Income' },
+    { kw: 'räntekostnader',            cat: 'financial', en: 'Interest Expense' },
+    { kw: 'finansiella kostnader',     cat: 'financial', en: 'Financial Costs' },
+    { kw: 'resultat från andelar',     cat: 'financial', en: 'Income from Participations' },
+    { kw: 'resultat från finansiella', cat: 'subtotal',  en: 'Profit after Financials' },
+    { kw: 'resultat efter finans',     cat: 'subtotal',  en: 'Profit after Financials' },
+    // ── Tax ──
+    { kw: 'skatt på årets resultat',   cat: 'tax',       en: 'Income Tax' },
+    { kw: 'inkomstskatt',              cat: 'tax',       en: 'Income Tax' },
+    { kw: 'skatt',                     cat: 'tax',       en: 'Tax' },
+    // ── Net profit (closing bar) ──
+    { kw: 'årets resultat',            cat: 'netprofit', en: 'Net Profit' },
+    // ── Catch-all subtotals ──
+    { kw: 'resultat före skatt',       cat: 'subtotal',  en: 'Profit before Tax' },
+    { kw: 'resultat före bokslut',     cat: 'subtotal',  en: 'Profit before Appropriations' },
+  ];
+
+  function classify(label) {
+    const low = label.toLowerCase();
+    for (const rule of CLASSIFY) {
+      if (low.includes(rule.kw)) return { cat: rule.cat, en: rule.en || label };
+    }
+    // Unknown line — treat as a cost/income step if it has a value
+    return { cat: 'cost', en: label };
+  }
+
+  // ── Build bars ──
+  // Each: { en, sv, value, role: 'revenue'|'cost'|'subtotal'|'financial'|'tax'|'netprofit' }
   const bars = [];
-  const rows = d._incomeRows;  // array of { label, value } from the proxy, in filing order
+  const rows = d._incomeRows;
 
   if (rows && rows.length >= 2) {
-    // ── Dynamic path: build from whatever the company actually reported ──
-    // Classify each row as revenue, subtotal, or cost/income
-    const SUBTOTAL_KW = ['rörelseresultat', 'resultat efter finans', 'resultat före skatt',
-      'årets resultat', 'resultat före bokslut', 'summa rörelsekostnader'];
-    const REVENUE_KW  = ['nettoomsättning', 'nettoomstning'];
-
-    rows.forEach((r, idx) => {
-      const lbl = r.label;
-      const low = lbl.toLowerCase();
-      const v   = r.value;
-
-      // First row (revenue) or last row (net profit) are anchors
-      const isRevenue  = REVENUE_KW.some(kw => low.includes(kw));
-      const isSubtotal = SUBTOTAL_KW.some(kw => low.includes(kw));
-      const isFirst    = idx === 0;
-      const isLast     = idx === rows.length - 1;
-
-      if (isFirst || isRevenue) {
-        bars.push({ label: lbl, value: v, anchor: true });
-      } else if (isLast || isSubtotal) {
-        bars.push({ label: lbl, value: v, anchor: true, subtotal: true });
-      } else {
-        // Regular cost or income line — only include if non-zero
-        if (v !== 0) bars.push({ label: lbl, value: v });
+    // ── Dynamic path: classify each filing row ──
+    let hasRevenue = false;
+    for (const r of rows) {
+      const { cat, en } = classify(r.label);
+      if (cat === 'skip') continue;
+      const v = r.value;
+      if (cat === 'revenue') {
+        bars.push({ en, sv: r.label, value: v, role: 'revenue' });
+        hasRevenue = true;
+      } else if (cat === 'subtotal') {
+        bars.push({ en, sv: r.label, value: v, role: 'subtotal' });
+      } else if (cat === 'financial') {
+        if (v !== 0) bars.push({ en, sv: r.label, value: v, role: 'financial' });
+      } else if (cat === 'tax') {
+        if (v !== 0) bars.push({ en, sv: r.label, value: v < 0 ? v : -v, role: 'tax' });
+      } else if (cat === 'netprofit') {
+        bars.push({ en, sv: r.label, value: v, role: 'netprofit' });
+      } else { // cost
+        if (v !== 0) bars.push({ en, sv: r.label, value: v < 0 ? v : -Math.abs(v), role: 'cost' });
       }
-    });
+    }
+    // If revenue wasn't detected (unusual), insert Net Sales from named field
+    if (!hasRevenue && d.netSales) {
+      bars.unshift({ en: 'Net Sales', sv: 'Nettoomsättning', value: d.netSales, role: 'revenue' });
+    }
   } else {
-    // ── Fallback: build from named fields when no incomeRows available ──
+    // ── Fallback: named fields ──
     const netSales = d.netSales || 0;
     const ebit     = d.opProfit || 0;
     const netP     = d.netProfit || 0;
-    bars.push({ label: 'Nettoomsättning', value: netSales, anchor: true });
-    // Add any available cost components
-    if (d.rawMaterials)  bars.push({ label: 'Råvaror / COGS',      value: -Math.abs(d.rawMaterials) });
-    if (d.personnel)     bars.push({ label: 'Personalkostnader',    value: -Math.abs(d.personnel) });
-    if (d.depreciation)  bars.push({ label: 'Avskrivningar',        value: -Math.abs(d.depreciation) });
-    if (d.otherOpCosts)  bars.push({ label: 'Övriga kostnader',     value: -Math.abs(d.otherOpCosts) });
-    // If none of the individual lines had data, show a single combined bar
+    bars.push({ en: 'Net Sales', sv: 'Nettoomsättning', value: netSales, role: 'revenue' });
+    if (d.rawMaterials)  bars.push({ en: 'COGS',             sv: 'Råvaror', value: -Math.abs(d.rawMaterials), role: 'cost' });
+    if (d.personnel)     bars.push({ en: 'Personnel Costs',  sv: 'Personalkostnader', value: -Math.abs(d.personnel), role: 'cost' });
+    if (d.depreciation)  bars.push({ en: 'Depreciation',     sv: 'Avskrivningar', value: -Math.abs(d.depreciation), role: 'cost' });
+    if (d.otherOpCosts)  bars.push({ en: 'Other Op. Costs',  sv: 'Övriga kostnader', value: -Math.abs(d.otherOpCosts), role: 'cost' });
     if (bars.length === 1 && netSales > 0 && ebit !== netSales) {
-      bars.push({ label: 'Rörelsekostnader', value: -(netSales - ebit) });
+      bars.push({ en: 'Operating Costs', sv: 'Rörelsekostnader', value: -(netSales - ebit), role: 'cost' });
     }
-    bars.push({ label: 'Rörelseresultat',    value: ebit, anchor: true, subtotal: true });
-    if (d.financialIncome && d.financialIncome > 0)   bars.push({ label: 'Finansiella intäkter',  value: d.financialIncome });
-    if (d.financialExpenses && d.financialExpenses > 0) bars.push({ label: 'Finansiella kostnader', value: -d.financialExpenses });
-    if (d.tax && d.tax > 0) bars.push({ label: 'Skatt', value: -d.tax });
-    bars.push({ label: 'Årets resultat', value: netP, anchor: true, subtotal: true });
+    bars.push({ en: 'EBIT', sv: 'Rörelseresultat', value: ebit, role: 'subtotal' });
+    if (d.financialIncome && d.financialIncome > 0)   bars.push({ en: 'Financial Income', sv: 'Finansiella intäkter', value: d.financialIncome, role: 'financial' });
+    if (d.financialExpenses && d.financialExpenses > 0) bars.push({ en: 'Financial Costs', sv: 'Finansiella kostnader', value: -d.financialExpenses, role: 'financial' });
+    if (d.tax && d.tax > 0)  bars.push({ en: 'Tax', sv: 'Skatt', value: -d.tax, role: 'tax' });
+    bars.push({ en: 'Net Profit', sv: 'Årets resultat', value: netP, role: 'netprofit' });
   }
 
-  if (bars.length < 2) return; // nothing to draw
+  if (bars.length < 2) return;
 
-  // ── Build chart arrays ──
-  const labels  = bars.map(b => b.label);
-  const values  = bars.map(b => b.value);
+  // ── Chart arrays ──
+  const labels   = bars.map(b => b.en);
+  const svLabels = bars.map(b => b.sv || b.en);
+  const values   = bars.map(b => b.value);
+  const isAnchor = bars.map(b => b.role === 'revenue' || b.role === 'subtotal' || b.role === 'netprofit');
 
   // Waterfall base computation
   const base = [];
   let running = 0;
   for (let i = 0; i < bars.length; i++) {
-    if (bars[i].anchor) { base.push(0); running = values[i]; }
+    if (isAnchor[i]) { base.push(0); running = values[i]; }
     else {
       const v = values[i];
       if (v < 0) { base.push(running + v); running += v; }
@@ -4637,14 +4705,16 @@ function renderFinWaterfall(d) {
   }
   const segment = values.map(v => Math.abs(v));
 
-  // Colours: blue for anchors/subtotals, green for positive, red for negative
+  // Colours
   const colors = bars.map((b, i) => {
-    if (b.anchor && !b.subtotal) return 'rgba(0,200,255,0.7)';          // revenue
-    if (b.subtotal) return values[i] >= 0 ? 'rgba(0,200,255,0.55)' : 'rgba(255,69,96,0.55)'; // subtotal
+    if (b.role === 'revenue')   return 'rgba(0,200,255,0.7)';
+    if (b.role === 'subtotal')  return values[i] >= 0 ? 'rgba(0,200,255,0.55)' : 'rgba(255,69,96,0.55)';
+    if (b.role === 'netprofit') return values[i] >= 0 ? 'rgba(0,255,136,0.7)'  : 'rgba(255,69,96,0.7)';
     return values[i] >= 0 ? 'rgba(0,255,136,0.5)' : 'rgba(255,69,96,0.5)';
   });
   const borders = bars.map((b, i) => {
-    if (b.anchor || b.subtotal) return values[i] >= 0 ? '#3b82f6' : '#ef4444';
+    if (b.role === 'revenue' || b.role === 'subtotal') return values[i] >= 0 ? '#3b82f6' : '#ef4444';
+    if (b.role === 'netprofit') return values[i] >= 0 ? '#10b981' : '#ef4444';
     return values[i] >= 0 ? '#10b981' : '#ef4444';
   });
 
@@ -4668,10 +4738,14 @@ function renderFinWaterfall(d) {
         plugins: {
           legend: { display: false },
           tooltip: { ...chartTooltipStyle(isLight), callbacks: {
-            title: ctx => ctx[0]?.label ?? '',
+            title: ctx => {
+              const idx = ctx[0]?.dataIndex;
+              if (idx == null) return '';
+              return `${labels[idx]}  (${svLabels[idx]})`;
+            },
             label: ctx => {
               if (ctx.datasetIndex === 0) return '';
-              return `${labels[ctx.dataIndex]}: ${fmtSEK(values[ctx.dataIndex])}`;
+              return fmtSEK(values[ctx.dataIndex]);
             }
           }}
         }

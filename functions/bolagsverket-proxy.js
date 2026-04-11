@@ -354,16 +354,23 @@ function parseAllabolagMultiYear(html, orgNr, companyName) {
   // Walk from header+1 until we hit a balance sheet section header.
   // Each row with at least one numeric value becomes an income statement line.
   const IS_STOP_KEYWORDS = ['balansräkning', 'tillgångar', 'eget kapital', 'skulder och eget'];
-  const IS_SECTION_HEADERS = ['rörelsens intäkter', 'rörelsens kostnader', 'resultaträkning',
-    'finansiella poster', 'bokslutsdispositioner', 'belopp i'];
+  const IS_SKIP_LABELS = [
+    // Section headers (no financial data)
+    'rörelsens intäkter', 'rörelsens kostnader', 'resultaträkning',
+    'finansiella poster', 'bokslutsdispositioner', 'belopp i',
+    // Non-financial metadata that some filings include in the table
+    'startdatum', 'slutdatum', 'organisationsnummer', 'org.nr',
+    'revisionsberättelse', 'verksamhetsår', 'räkenskapsår',
+    'antal anställda', 'medelantal anst',  // employee count — parsed separately
+  ];
   const incomeRows = [];
   for (let i = headerIdx + 1; i < allRows.length; i++) {
     const label = allRows[i][0].toLowerCase().trim();
     if (!label) continue;
     // Stop at balance sheet section
     if (IS_STOP_KEYWORDS.some(kw => label.includes(kw))) break;
-    // Skip section headers (no numeric data)
-    if (IS_SECTION_HEADERS.some(kw => label.includes(kw))) continue;
+    // Skip non-financial metadata and section headers
+    if (IS_SKIP_LABELS.some(kw => label.includes(kw))) continue;
     // Parse values for each year
     const rowValues = {};
     let hasAny = false;
