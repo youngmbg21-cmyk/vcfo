@@ -3573,9 +3573,11 @@ async function loadCompanyByOrg(raw, knownName) {
   // Auto-render trend panel if multi-year data is available
   if (Object.keys(historyData).length >= 2) {
     renderTrendPanel();
-    // Hide the manual "Load All Years" button since data is already loaded
     const btn = document.getElementById('btnLoadAllYears');
     if (btn) btn.style.display = 'none';
+  } else if (availableYears.length >= 2) {
+    // historyData wasn't pre-populated — load all years explicitly
+    loadAllYears();
   }
 }
 
@@ -3817,18 +3819,15 @@ async function loadAllYears() {
 
   const btn = document.getElementById('btnLoadAllYears');
   const msg = document.getElementById('yearLoadingMsg');
-  btn.style.display = 'none';
-  msg.style.display = 'inline-flex';
+  if (btn) btn.style.display = 'none';
+  if (msg) msg.style.display = 'inline-flex';
 
   // Load each year sequentially
   for (const yrObj of availableYears) {
     if (!historyData[yrObj.year]) {
-      if (yrObj.docId) {
-        const d = await fetchYearByDocId(yrObj.docId, companyData.orgNr, yrObj.year);
-        historyData[yrObj.year] = d || buildYearVariant(companyData, yrObj.year);
-      } else {
-        historyData[yrObj.year] = buildYearVariant(companyData, yrObj.year);
-      }
+      // Try fetching the specific year from the proxy (works with or without docId)
+      const d = await fetchYearByDocId(yrObj.docId, companyData.orgNr, yrObj.year);
+      historyData[yrObj.year] = d || buildYearVariant(companyData, yrObj.year);
       await sleep(200);
     }
   }
@@ -3836,8 +3835,8 @@ async function loadAllYears() {
   // Also store current year
   if (companyData.fiscalYear) historyData[companyData.fiscalYear] = companyData;
 
-  msg.style.display = 'none';
-  btn.style.display = 'none';
+  if (msg) msg.style.display = 'none';
+  if (btn) btn.style.display = 'none';
 
   renderTrendPanel();
 }
