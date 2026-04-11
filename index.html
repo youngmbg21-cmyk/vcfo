@@ -4686,6 +4686,42 @@ function renderFinWaterfall(d) {
 
   if (bars.length < 2) return;
 
+  // ── Mathematical validation — insert residual bars to close gaps ──
+  // Walk between each pair of anchor/subtotal bars. If the steps between
+  // them don't sum to the difference, insert a residual bar.
+  for (let pass = 0; pass < 2; pass++) {
+    let changed = false;
+    let i = 0;
+    while (i < bars.length) {
+      if (bars[i].role !== 'revenue' && bars[i].role !== 'subtotal' && bars[i].role !== 'netprofit') { i++; continue; }
+      const startValue = bars[i].value;
+      // Find next anchor
+      let anchorEnd = -1;
+      for (let j = i + 1; j < bars.length; j++) {
+        if (bars[j].role === 'subtotal' || bars[j].role === 'netprofit') { anchorEnd = j; break; }
+      }
+      if (anchorEnd === -1) { i++; continue; }
+      const endValue = bars[anchorEnd].value;
+      // Sum all step bars between them
+      let stepSum = 0;
+      for (let j = i + 1; j < anchorEnd; j++) stepSum += bars[j].value;
+      // Expected: startValue + stepSum ≈ endValue
+      const residual = endValue - startValue - stepSum;
+      if (Math.abs(residual) > Math.max(Math.abs(startValue) * 0.005, 1000)) {
+        const isAboveLine = bars[anchorEnd].en === 'EBIT' || bars[anchorEnd].en === 'Gross Profit';
+        bars.splice(anchorEnd, 0, {
+          en: isAboveLine ? 'Other Costs' : 'Other Items',
+          sv: 'Övriga poster (beräknat)',
+          value: residual,
+          role: isAboveLine ? 'cost' : 'financial',
+        });
+        changed = true;
+      }
+      i = anchorEnd + 1;
+    }
+    if (!changed) break;
+  }
+
   // ── Chart arrays ──
   const labels   = bars.map(b => b.en);
   const svLabels = bars.map(b => b.sv || b.en);
