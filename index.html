@@ -3862,6 +3862,9 @@ function renderTrendPanel() {
     return d?.equity > 0 ? parseFloat((d.netProfit / d.equity * 100).toFixed(1)) : 0;
   });
 
+  // Render trend table FIRST (synchronous, no Chart.js dependency)
+  try { renderTrendTable(years, revenues, profits, rosArr, roeArr); } catch(e) { console.warn('Trend table error:', e); }
+
   loadChartJS(() => {
     // Revenue & profit chart
     if (trendChartRev) trendChartRev.destroy();
@@ -3905,10 +3908,12 @@ function renderTrendPanel() {
       }
     });
   });
+}
 
-  // Trend table
-  const maScores = years.map(y => computeMAScore(historyData[y]));
+function renderTrendTable(years, revenues, profits, rosArr, roeArr) {
+  const maScores = years.map(y => { try { return computeMAScore(historyData[y]); } catch(e) { return null; } });
   const tbl = document.getElementById('trendTable');
+  if (!tbl) return;
   tbl.querySelector('thead').innerHTML = `<tr><th>Metric</th>${years.map(y=>`<th style="text-align:right">${y}${historyData[y]?._isEstimated?'*':''}</th>`).join('')}<th style="text-align:right">Trend</th></tr>`;
 
   const fmtM = v => v !== null && v !== undefined ? fmtSEK(v) : '—';
@@ -3924,7 +3929,7 @@ function renderTrendPanel() {
     { label:'Equity',       vals: years.map(y => fmtM(historyData[y]?.equity)),      raw: years.map(y => Math.round((historyData[y]?.equity || 0) / 1000)) },
     { label:'ROS %',        vals: years.map(y => fmtP(rosArr[years.indexOf(y)])),    raw: rosArr   },
     { label:'ROE %',        vals: years.map(y => fmtP(roeArr[years.indexOf(y)])),    raw: roeArr   },
-    { label:'M&A Score',    vals: maScores.map(s => `${s}/100`),                      raw: maScores },
+    { label:'M&A Score',    vals: maScores.map(s => s !== null ? `${s}/100` : '—'),   raw: maScores },
   ];
 
   tbl.querySelector('tbody').innerHTML = metricRows.map(row => {
@@ -3938,10 +3943,17 @@ function renderTrendPanel() {
     return `<tr><td>${row.label}</td>${row.vals.map(v=>`<td style="text-align:right">${v}</td>`).join('')}<td style="text-align:right">${trendHtml}</td></tr>`;
   }).join('');
 
-  const note = years.some(y => historyData[y]?._isEstimated)
-    ? `<div style="font-size:9px;color:var(--text3);margin-top:8px;">* Estimated data — Bolagsverket live data unavailable for this year. Actual filings available 2020–present via iXBRL.</div>`
-    : '';
-  tbl.insertAdjacentHTML('afterend', note);
+  // Remove any previous note
+  const prevNote = tbl.parentElement.querySelector('.trend-note');
+  if (prevNote) prevNote.remove();
+
+  if (years.some(y => historyData[y]?._isEstimated)) {
+    const note = document.createElement('div');
+    note.className = 'trend-note';
+    note.style.cssText = 'font-size:9px;color:var(--text3);margin-top:8px;';
+    note.textContent = '* Estimated data — Bolagsverket live data unavailable for this year.';
+    tbl.parentElement.appendChild(note);
+  }
 }
 
 // Map live API response (if available) to internal schema
@@ -5687,6 +5699,7 @@ function loadChartJS(cb) {
   const s = document.createElement('script');
   s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js';
   s.onload = cb;
+  s.onerror = () => console.warn('Chart.js CDN failed to load — charts will not render');
   document.head.appendChild(s);
 }
 
