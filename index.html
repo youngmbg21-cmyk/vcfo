@@ -542,7 +542,7 @@ body::after {
 }
 .field-row {
   display:flex; justify-content:space-between;
-  padding:6px 0;
+  padding:4px 0;
   border-bottom:1px solid rgba(26,45,66,0.4);
   font-size:11px;
 }
@@ -1565,18 +1565,19 @@ body::after {
             </div>
           </div>
 
-          <!-- Raw financial data -->
-          <div class="card">
-            <div class="card-title" data-i18n="card_income">Income Statement <span id="bvYear">—</span></div>
-            <div id="incomeData">
-              <div style="color:var(--text3);font-size:11px;">Load a company to view financial data</div>
+          <!-- Raw financial data — side by side -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="card">
+              <div class="card-title" data-i18n="card_income">Income Statement <span id="bvYear">—</span></div>
+              <div id="incomeData">
+                <div style="color:var(--text3);font-size:11px;">Load a company to view financial data</div>
+              </div>
             </div>
-          </div>
-
-          <div class="card">
-            <div class="card-title" data-i18n="card_balance">Balance Sheet Summary</div>
-            <div id="balanceData">
-              <div style="color:var(--text3);font-size:11px;">—</div>
+            <div class="card">
+              <div class="card-title" data-i18n="card_balance">Balance Sheet Summary</div>
+              <div id="balanceData">
+                <div style="color:var(--text3);font-size:11px;">—</div>
+              </div>
             </div>
           </div>
 
