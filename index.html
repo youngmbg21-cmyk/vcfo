@@ -1580,16 +1580,8 @@ body::after {
             </div>
           </div>
 
-          <!-- Multi-year trend panel — shown after loadAllYears() -->
-          <div class="card" id="trendPanel" style="display:none;">
-            <div class="card-title" data-i18n="card_trend">Multi-Year Trend Analysis <span id="trendYearRange">—</span></div>
-            <div id="trendCharts" style="margin-bottom:14px;"></div>
-            <div style="overflow-x:auto;">
-              <table class="data-table" id="trendTable">
-                <thead></thead><tbody></tbody>
-              </table>
-            </div>
-          </div>
+          <!-- Multi-year trend panel — rendered entirely by JS -->
+          <div id="trendPanel" style="display:none;"></div>
         </div>
       </div>
     </div>
@@ -3834,121 +3826,112 @@ async function loadAllYears() {
 }
 
 function renderTrendPanel() {
-  const years = Object.keys(historyData).sort();
-  if (years.length < 2) return;
+  var panel = document.getElementById('trendPanel');
+  if (!panel) return;
 
-  const panel = document.getElementById('trendPanel');
-  panel.style.display = 'block';
-  document.getElementById('trendYearRange').textContent = `${years[0]}–${years[years.length-1]}`;
+  var years = Object.keys(historyData).sort();
+  if (years.length < 2) { panel.style.display = 'none'; return; }
 
-  // Build data arrays
-  const labels   = years;
-  const revenues = years.map(y => Math.round((historyData[y]?.netSales || 0) / 1000));
-  const profits  = years.map(y => Math.round((historyData[y]?.netProfit || 0) / 1000));
-  const rosArr   = years.map(y => {
-    const d = historyData[y];
-    return d?.netSales > 0 ? parseFloat((d.opProfit / d.netSales * 100).toFixed(1)) : 0;
-  });
-  const roeArr = years.map(y => {
-    const d = historyData[y];
-    return d?.equity > 0 ? parseFloat((d.netProfit / d.equity * 100).toFixed(1)) : 0;
-  });
+  // Compute all data inline
+  var fmtM = function(v) { return v != null ? fmtSEK(v) : '—'; };
+  var rows = [];
+  var maxSales = 1;
+  for (var i = 0; i < years.length; i++) {
+    var h = historyData[years[i]] || {};
+    var sales = h.netSales || 0;
+    var profit = h.netProfit || 0;
+    var ebit = h.opProfit || 0;
+    var ebitda = ebit + (h.depreciation || 0);
+    var assets = h.totalAssets || 0;
+    var equity = h.equity || 0;
+    var ros = sales > 0 ? Math.round(ebit / sales * 1000) / 10 : 0;
+    var roe = equity > 0 ? Math.round(profit / equity * 1000) / 10 : 0;
+    if (sales > maxSales) maxSales = sales;
+    rows.push({ y: years[i], sales: sales, profit: profit, ebit: ebit, ebitda: ebitda, assets: assets, equity: equity, ros: ros, roe: roe, est: h._isEstimated });
+  }
 
-  // Render trend table FIRST (synchronous, no external dependency)
-  try { renderTrendTable(years, revenues, profits, rosArr, roeArr); } catch(e) { console.warn('Trend table error:', e); }
+  // Build bars HTML
+  var barsHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;">';
 
-  // Render pure CSS bar charts (no Chart.js dependency)
-  try { renderTrendBars(years, revenues, profits, rosArr, roeArr); } catch(e) { console.warn('Trend bars error:', e); }
-}
+  // Left: Revenue bars
+  barsHtml += '<div><div style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Revenue & Profit</div>';
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    var salePct = Math.max(r.sales / maxSales * 100, 2);
+    var profPct = Math.max(Math.abs(r.profit) / maxSales * 100, 2);
+    var profColor = r.profit >= 0 ? 'rgba(0,255,136,0.5)' : 'rgba(255,69,96,0.5)';
+    barsHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'
+      + '<span style="font-size:9px;color:var(--text3);width:30px;text-align:right;">' + r.y + '</span>'
+      + '<div style="flex:1;display:flex;flex-direction:column;gap:1px;">'
+      + '<div style="height:7px;border-radius:2px;background:rgba(255,184,0,0.5);width:' + salePct + '%;"></div>'
+      + '<div style="height:7px;border-radius:2px;background:' + profColor + ';width:' + profPct + '%;"></div>'
+      + '</div>'
+      + '<span style="font-size:8px;color:var(--text3);width:60px;text-align:right;">' + fmtM(r.sales) + '</span>'
+      + '</div>';
+  }
+  barsHtml += '<div style="display:flex;gap:10px;margin-top:4px;font-size:8px;color:var(--text3);">'
+    + '<span style="color:var(--amber);">■</span> Net Sales '
+    + '<span style="color:var(--green);">■</span> Net Profit</div></div>';
 
-function renderTrendBars(years, revenues, profits, rosArr, roeArr) {
-  const el = document.getElementById('trendCharts');
-  if (!el) return;
-  const maxRev = Math.max(...revenues, 1);
-  const maxProf = Math.max(...profits.map(Math.abs), 1);
-  const maxRos = Math.max(...rosArr.map(Math.abs), 1);
+  // Right: Ratios bars
+  var maxRatio = 1;
+  for (var i = 0; i < rows.length; i++) { if (Math.abs(rows[i].ros) > maxRatio) maxRatio = Math.abs(rows[i].ros); if (Math.abs(rows[i].roe) > maxRatio) maxRatio = Math.abs(rows[i].roe); }
+  if (maxRatio < 5) maxRatio = 5;
 
-  el.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      <div>
-        <div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Revenue & Profit (tkr)</div>
-        ${years.map((y, i) => `
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-            <span style="font-size:9px;color:var(--text3);width:32px;text-align:right;">${y}</span>
-            <div style="flex:1;display:flex;flex-direction:column;gap:2px;">
-              <div style="height:8px;border-radius:2px;background:rgba(255,184,0,0.5);width:${Math.max(revenues[i]/maxRev*100,2)}%;"></div>
-              <div style="height:8px;border-radius:2px;background:${profits[i]>=0?'rgba(0,255,136,0.5)':'rgba(255,69,96,0.5)'};width:${Math.max(Math.abs(profits[i])/maxRev*100,2)}%;"></div>
-            </div>
-            <span style="font-size:9px;color:var(--amber);width:55px;text-align:right;">${revenues[i]}k</span>
-          </div>`).join('')}
-        <div style="display:flex;gap:12px;margin-top:6px;font-size:9px;">
-          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(255,184,0,0.5);margin-right:3px;"></span>Net Sales</span>
-          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(0,255,136,0.5);margin-right:3px;"></span>Net Profit</span>
-        </div>
-      </div>
-      <div>
-        <div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Key Ratios (%)</div>
-        ${years.map((y, i) => `
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-            <span style="font-size:9px;color:var(--text3);width:32px;text-align:right;">${y}</span>
-            <div style="flex:1;display:flex;flex-direction:column;gap:2px;">
-              <div style="height:8px;border-radius:2px;background:rgba(255,184,0,0.6);width:${Math.max(Math.abs(rosArr[i])/Math.max(maxRos,30)*100,2)}%;"></div>
-              <div style="height:8px;border-radius:2px;background:rgba(0,200,255,0.5);width:${Math.max(Math.abs(roeArr[i])/Math.max(maxRos,30)*100,2)}%;"></div>
-            </div>
-            <span style="font-size:9px;color:var(--amber);width:55px;text-align:right;">${rosArr[i]}%</span>
-          </div>`).join('')}
-        <div style="display:flex;gap:12px;margin-top:6px;font-size:9px;">
-          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(255,184,0,0.6);margin-right:3px;"></span>ROS %</span>
-          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(0,200,255,0.5);margin-right:3px;"></span>ROE %</span>
-        </div>
-      </div>
-    </div>`;
-}
+  barsHtml += '<div><div style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Key Ratios (%)</div>';
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    barsHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'
+      + '<span style="font-size:9px;color:var(--text3);width:30px;text-align:right;">' + r.y + '</span>'
+      + '<div style="flex:1;display:flex;flex-direction:column;gap:1px;">'
+      + '<div style="height:7px;border-radius:2px;background:rgba(255,184,0,0.6);width:' + Math.max(Math.abs(r.ros) / maxRatio * 100, 2) + '%;"></div>'
+      + '<div style="height:7px;border-radius:2px;background:rgba(0,200,255,0.5);width:' + Math.max(Math.abs(r.roe) / maxRatio * 100, 2) + '%;"></div>'
+      + '</div>'
+      + '<span style="font-size:8px;color:var(--text3);width:60px;text-align:right;">' + r.ros + '% / ' + r.roe + '%</span>'
+      + '</div>';
+  }
+  barsHtml += '<div style="display:flex;gap:10px;margin-top:4px;font-size:8px;color:var(--text3);">'
+    + '<span style="color:var(--amber);">■</span> ROS '
+    + '<span style="color:var(--blue);">■</span> ROE</div></div>';
+  barsHtml += '</div>';
 
-function renderTrendTable(years, revenues, profits, rosArr, roeArr) {
-  const maScores = years.map(y => { try { return computeMAScore(historyData[y]); } catch(e) { return null; } });
-  const tbl = document.getElementById('trendTable');
-  if (!tbl) return;
-  tbl.querySelector('thead').innerHTML = `<tr><th>Metric</th>${years.map(y=>`<th style="text-align:right">${y}${historyData[y]?._isEstimated?'*':''}</th>`).join('')}<th style="text-align:right">Trend</th></tr>`;
+  // Build table HTML
+  var thead = '<tr><th>Metric</th>';
+  for (var i = 0; i < rows.length; i++) thead += '<th style="text-align:right">' + rows[i].y + (rows[i].est ? '*' : '') + '</th>';
+  thead += '<th style="text-align:right">Trend</th></tr>';
 
-  const fmtM = v => v !== null && v !== undefined ? fmtSEK(v) : '—';
-  const fmtP = v => v !== null && v !== undefined ? v.toFixed(1)+'%' : '—';
-
-  const metricRows = [
-    { label:'Net Sales',    vals: years.map(y => fmtM(historyData[y]?.netSales)),    raw: revenues },
-    { label:'EBIT',         vals: years.map(y => fmtM(historyData[y]?.opProfit)),    raw: years.map(y => Math.round((historyData[y]?.opProfit || 0) / 1000)) },
-    { label:'EBITDA',       vals: years.map(y => { const h = historyData[y]; return fmtM((h?.opProfit||0)+(h?.depreciation||0)); }),
-                            raw: years.map(y => { const h = historyData[y]; return Math.round(((h?.opProfit||0)+(h?.depreciation||0)) / 1000); }) },
-    { label:'Net Profit',   vals: years.map(y => fmtM(historyData[y]?.netProfit)),   raw: profits  },
-    { label:'Total Assets', vals: years.map(y => fmtM(historyData[y]?.totalAssets)), raw: years.map(y => Math.round((historyData[y]?.totalAssets || 0) / 1000)) },
-    { label:'Equity',       vals: years.map(y => fmtM(historyData[y]?.equity)),      raw: years.map(y => Math.round((historyData[y]?.equity || 0) / 1000)) },
-    { label:'ROS %',        vals: years.map(y => fmtP(rosArr[years.indexOf(y)])),    raw: rosArr   },
-    { label:'ROE %',        vals: years.map(y => fmtP(roeArr[years.indexOf(y)])),    raw: roeArr   },
-    { label:'M&A Score',    vals: maScores.map(s => s !== null ? `${s}/100` : '—'),   raw: maScores },
+  var metrics = [
+    { label: 'Net Sales', vals: rows.map(function(r) { return fmtM(r.sales); }), first: rows[0].sales, last: rows[rows.length-1].sales },
+    { label: 'EBIT', vals: rows.map(function(r) { return fmtM(r.ebit); }), first: rows[0].ebit, last: rows[rows.length-1].ebit },
+    { label: 'EBITDA', vals: rows.map(function(r) { return fmtM(r.ebitda); }), first: rows[0].ebitda, last: rows[rows.length-1].ebitda },
+    { label: 'Net Profit', vals: rows.map(function(r) { return fmtM(r.profit); }), first: rows[0].profit, last: rows[rows.length-1].profit },
+    { label: 'Total Assets', vals: rows.map(function(r) { return fmtM(r.assets); }), first: rows[0].assets, last: rows[rows.length-1].assets },
+    { label: 'Equity', vals: rows.map(function(r) { return fmtM(r.equity); }), first: rows[0].equity, last: rows[rows.length-1].equity },
+    { label: 'ROS %', vals: rows.map(function(r) { return r.ros + '%'; }), first: rows[0].ros, last: rows[rows.length-1].ros },
+    { label: 'ROE %', vals: rows.map(function(r) { return r.roe + '%'; }), first: rows[0].roe, last: rows[rows.length-1].roe },
   ];
 
-  tbl.querySelector('tbody').innerHTML = metricRows.map(row => {
-    const rawVals   = row.raw.filter(v => v !== null && !isNaN(v));
-    const first     = rawVals[0];
-    const last      = rawVals[rawVals.length - 1];
-    const delta     = first && last && first !== 0 ? ((last - first) / Math.abs(first) * 100).toFixed(0) : null;
-    const trendHtml = delta !== null
-      ? `<span class="trend-delta ${parseFloat(delta) > 0 ? 'up' : parseFloat(delta) < 0 ? 'dn' : 'flat'}">${parseFloat(delta) > 0 ? '+' : ''}${delta}%</span>`
+  var tbody = '';
+  for (var m = 0; m < metrics.length; m++) {
+    var met = metrics[m];
+    var delta = met.first && met.first !== 0 ? Math.round((met.last - met.first) / Math.abs(met.first) * 100) : null;
+    var trendHtml = delta !== null
+      ? '<span style="color:' + (delta > 0 ? 'var(--green)' : delta < 0 ? 'var(--red)' : 'var(--text3)') + ';">' + (delta > 0 ? '+' : '') + delta + '%</span>'
       : '—';
-    return `<tr><td>${row.label}</td>${row.vals.map(v=>`<td style="text-align:right">${v}</td>`).join('')}<td style="text-align:right">${trendHtml}</td></tr>`;
-  }).join('');
-
-  // Remove any previous note
-  const prevNote = tbl.parentElement.querySelector('.trend-note');
-  if (prevNote) prevNote.remove();
-
-  if (years.some(y => historyData[y]?._isEstimated)) {
-    const note = document.createElement('div');
-    note.className = 'trend-note';
-    note.style.cssText = 'font-size:9px;color:var(--text3);margin-top:8px;';
-    note.textContent = '* Estimated data — Bolagsverket live data unavailable for this year.';
-    tbl.parentElement.appendChild(note);
+    tbody += '<tr><td>' + met.label + '</td>';
+    for (var v = 0; v < met.vals.length; v++) tbody += '<td style="text-align:right">' + met.vals[v] + '</td>';
+    tbody += '<td style="text-align:right">' + trendHtml + '</td></tr>';
   }
+
+  var hasEstimated = rows.some(function(r) { return r.est; });
+
+  // Write everything at once
+  panel.className = 'card';
+  panel.style.display = 'block';
+  panel.innerHTML = '<div class="card-title">Multi-Year Trend Analysis <span>' + years[0] + '–' + years[years.length-1] + '</span></div>'
+    + barsHtml
+    + '<div style="overflow-x:auto;"><table class="data-table"><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table></div>'
+    + (hasEstimated ? '<div style="font-size:9px;color:var(--text3);margin-top:8px;">* Estimated data</div>' : '');
 }
 
 // Map live API response (if available) to internal schema
