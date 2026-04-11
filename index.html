@@ -5963,6 +5963,21 @@ function renderRadarChart() {
   }
 }
 
+function chartTooltipStyle(isLight) {
+  return {
+    backgroundColor: isLight ? 'rgba(250,247,242,0.97)' : 'rgba(10,17,40,0.95)',
+    titleColor:      isLight ? '#0f172a'                : '#e2e8f0',
+    bodyColor:       isLight ? '#334155'                : '#94a3b8',
+    borderColor:     isLight ? '#D6CFBF'                : '#334155',
+    borderWidth:     1,
+    padding:         10,
+    cornerRadius:    6,
+    titleFont: { family: 'DM Sans',         size: 11, weight: '600' },
+    bodyFont:  { family: 'JetBrains Mono',  size: 10 },
+    displayColors: false,
+  };
+}
+
 function drawRadar(canvas, labels, datasets) {
   const isLight  = document.body.classList.contains('light-mode');
   const tickColor = isLight ? '#334155' : '#FFFFFF';
@@ -5984,6 +5999,13 @@ function drawRadar(canvas, labels, datasets) {
       },
       plugins: {
         legend: { labels: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 12 } },
+        tooltip: {
+          ...chartTooltipStyle(isLight),
+          callbacks: {
+            title: ctx => ctx[0]?.dataset?.label ?? '',
+            label: ctx => `${ctx.label}: ${ctx.raw}/100`,
+          }
+        }
       }
     }
   });
@@ -6038,7 +6060,9 @@ function renderBarChart() {
         plugins: {
           legend: { display: false },
           tooltip: {
+            ...chartTooltipStyle(isLight),
             callbacks: {
+              title: ctx => ctx[0]?.label ?? '',
               label: ctx => {
                 const v = ctx.raw;
                 return `Score: ${v}/100 — ${v>=65?'BUY':v>=40?'HOLD':'PASS'}`;
@@ -7912,8 +7936,9 @@ function renderWaterfallChart(cf) {
   const canvas = document.getElementById('cfWaterfallChart');
   if (!canvas) return;
 
-  const tickColor = document.body.classList.contains('light-mode') ? '#334155' : '#FFFFFF';
-  const gridColor = document.body.classList.contains('light-mode') ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
+  const isLight   = document.body.classList.contains('light-mode');
+  const tickColor = isLight ? '#334155' : '#FFFFFF';
+  const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
 
   const labels = ['Net Profit', '+ Deprec.', '- Δ Work. Cap.', '- CapEx', 'Free Cash Flow'];
   const values  = [cf.netProfit, cf.depreciation, -cf.deltaWC, -cf.capex, cf.fcf];
@@ -7993,7 +8018,9 @@ function renderWaterfallChart(cf) {
         plugins: {
           legend: { display: false },
           tooltip: {
+            ...chartTooltipStyle(isLight),
             callbacks: {
+              title: ctx => ctx[0]?.label ?? '',
               label: ctx => {
                 if (ctx.datasetIndex === 0) return ''; // hide base
                 const idx = ctx.dataIndex;
@@ -8015,8 +8042,9 @@ function renderCfCompareChart() {
   const canvas = document.getElementById('cfWaterfallChart');
   if (!canvas) return;
 
-  const tickColor = document.body.classList.contains('light-mode') ? '#334155' : '#FFFFFF';
-  const gridColor = document.body.classList.contains('light-mode') ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
+  const isLight   = document.body.classList.contains('light-mode');
+  const tickColor = isLight ? '#334155' : '#FFFFFF';
+  const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
 
   const components = ['Net Profit', 'Depreciation', 'Δ Work. Cap.', 'CapEx', 'Free Cash Flow'];
   const sortedYears = [...cfCompareYears].sort();
@@ -8083,7 +8111,9 @@ function renderCfCompareChart() {
         plugins: {
           legend: { display: false },
           tooltip: {
+            ...chartTooltipStyle(isLight),
             callbacks: {
+              title: ctx => ctx[0]?.label ?? '',
               label: ctx => `${ctx.dataset.label}: ${fmtSEK(ctx.parsed.y)}`
             }
           }
