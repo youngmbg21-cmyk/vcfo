@@ -6649,7 +6649,9 @@ function initBenchmarksTab() {
   buildBchSizeRow();
   buildBchSectorList();
   renderBchSourceBadge();
+
   // Restore cached fetch from localStorage
+  let hasCached = false;
   try {
     const cached = localStorage.getItem('vcfo_bch_cache');
     if (cached) {
@@ -6657,10 +6659,41 @@ function initBenchmarksTab() {
       applyBenchmarkData(bchLastFetch.data, 'cached');
       renderBchTable(bchLastFetch.data);
       bchLog(`Restored cached data: ${Object.keys(bchLastFetch.data).length} sectors · FY${bchLastFetch.year}`, 'ok');
+      hasCached = true;
     }
   } catch(e) {}
+
+  // If no cache, show built-in table immediately so it's not empty
+  if (!hasCached) {
+    renderBchBuiltInTable();
+  }
+
   // Probe SCB for available years (non-blocking)
   fetchSCBAvailableYears();
+
+  // Auto-fetch if no cached data — runs after year probe has had time to respond
+  if (!hasCached) {
+    setTimeout(() => {
+      bchLog('Auto-fetching live sector medians from SCB…', 'info');
+      fetchBenchmarks();
+    }, 1200);
+  }
+}
+
+// Render the built-in estimates as a table so the Benchmarks tab isn't empty before a fetch
+function renderBchBuiltInTable() {
+  const results = {};
+  BCH_SECTORS.forEach(s => {
+    const b = SNI_BENCHMARKS[s.key];
+    if (b) {
+      results[s.key] = {
+        label: b.label, sni: b.sni || s.sniRange, key: s.key,
+        ros: b.ros, roe: b.roe, de: b.de, cr: b.cr,
+        revGrowth: b.revGrowth, source: 'built-in',
+      };
+    }
+  });
+  renderBchTable(results);
 }
 
 async function fetchSCBAvailableYears() {
@@ -7027,10 +7060,14 @@ function renderBchTable(results) {
   }
 
   const rows = entries.map(d => {
-    const isLive = d.source === 'SCB live' && hasAnyMetric(d);
+    const isLive    = d.source === 'SCB live' && hasAnyMetric(d);
+    const isBuiltIn = d.source === 'built-in';
     const maScore = estimateBchMAScore(d);
     const maColor = maScore === null ? 'var(--text3)' : maScore >= 65 ? 'var(--green)' : maScore >= 40 ? 'var(--amber)' : 'var(--red)';
     const maText  = maScore !== null ? `${maScore}/100` : '—';
+    const srcLabel = isLive ? '● LIVE' : isBuiltIn ? '● BUILT-IN' : '● CACHED';
+    const srcBg    = isLive ? 'var(--green-dim)' : isBuiltIn ? 'var(--bg3)' : 'var(--amber-dim)';
+    const srcClr   = isLive ? 'var(--green)' : isBuiltIn ? 'var(--text3)' : 'var(--amber)';
     return `
     <tr>
       <td style="text-align:left;">
@@ -7046,8 +7083,8 @@ function renderBchTable(results) {
         ${maText}
       </td>
       <td style="text-align:center;">
-        <span style="font-size:9px;padding:2px 6px;border-radius:2px;background:${isLive?'var(--green-dim)':'var(--amber-dim)'};color:${isLive?'var(--green)':'var(--amber)'};">
-          ${isLive?'● LIVE':'● EST.'}
+        <span style="font-size:9px;padding:2px 6px;border-radius:2px;background:${srcBg};color:${srcClr};">
+          ${srcLabel}
         </span>
       </td>
     </tr>`;
