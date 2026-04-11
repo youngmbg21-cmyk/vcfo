@@ -3560,6 +3560,14 @@ async function loadCompanyByOrg(raw, knownName) {
 
   showToast(`${isLive ? '✓ LIVE' : '⚠ ESTIMATED'} ${d.name} · FY${d.fiscalYear}`);
   updateChatPills();
+
+  // Auto-render trend panel if multi-year data is available
+  if (Object.keys(historyData).length >= 2) {
+    renderTrendPanel();
+    // Hide the manual "Load All Years" button since data is already loaded
+    const btn = document.getElementById('btnLoadAllYears');
+    if (btn) btn.style.display = 'none';
+  }
 }
 
 // Keep old loadCompany for backward compat
@@ -3817,7 +3825,7 @@ async function loadAllYears() {
 
 function renderTrendPanel() {
   const years = Object.keys(historyData).sort();
-  if (years.length < 2) { showToast(t('toast_trend_need_more')); return; }
+  if (years.length < 2) return;
 
   const panel = document.getElementById('trendPanel');
   panel.style.display = 'block';
@@ -3890,7 +3898,12 @@ function renderTrendPanel() {
 
   const metricRows = [
     { label:'Net Sales',    vals: years.map(y => fmtM(historyData[y]?.netSales)),    raw: revenues },
+    { label:'EBIT',         vals: years.map(y => fmtM(historyData[y]?.opProfit)),    raw: years.map(y => Math.round((historyData[y]?.opProfit || 0) / 1000)) },
+    { label:'EBITDA',       vals: years.map(y => { const h = historyData[y]; return fmtM((h?.opProfit||0)+(h?.depreciation||0)); }),
+                            raw: years.map(y => { const h = historyData[y]; return Math.round(((h?.opProfit||0)+(h?.depreciation||0)) / 1000); }) },
     { label:'Net Profit',   vals: years.map(y => fmtM(historyData[y]?.netProfit)),   raw: profits  },
+    { label:'Total Assets', vals: years.map(y => fmtM(historyData[y]?.totalAssets)), raw: years.map(y => Math.round((historyData[y]?.totalAssets || 0) / 1000)) },
+    { label:'Equity',       vals: years.map(y => fmtM(historyData[y]?.equity)),      raw: years.map(y => Math.round((historyData[y]?.equity || 0) / 1000)) },
     { label:'ROS %',        vals: years.map(y => fmtP(rosArr[years.indexOf(y)])),    raw: rosArr   },
     { label:'ROE %',        vals: years.map(y => fmtP(roeArr[years.indexOf(y)])),    raw: roeArr   },
     { label:'M&A Score',    vals: maScores.map(s => `${s}/100`),                      raw: maScores },
@@ -4395,7 +4408,10 @@ function computeAndRenderDeterministicMA(d) {
   // Efficiency / Asset Quality (25 pts)
   const assetDeprecPct = d.inventarierAcqCost > 0 ? (1 - d.inventarierBV/d.inventarierAcqCost)*100 : 0;
   if (assetDeprecPct < 70) effScore += 15; else if (assetDeprecPct < 90) effScore += 8; else effScore += 2;
-  const revenueGrowth = d.prevNetSales > 0 ? (d.netSales - d.prevNetSales)/d.prevNetSales*100 : 0;
+  // Use historyData for prior-year revenue, fallback to d.prevNetSales
+  const priorYrKey = String(parseInt(d.fiscalYear) - 1);
+  const prevSales = historyData[priorYrKey]?.netSales || d.prevNetSales || 0;
+  const revenueGrowth = prevSales > 0 ? (d.netSales - prevSales)/prevSales*100 : 0;
   if (revenueGrowth > 10) effScore += 10; else if (revenueGrowth > 3) effScore += 7; else if (revenueGrowth > 0) effScore += 4;
 
   // ── Hidden debt penalty (Periodiseringsfonder) ──
@@ -4407,7 +4423,29 @@ function computeAndRenderDeterministicMA(d) {
     else if (tax.pctOfEquity > 15) hiddenDebtPenalty = 2; // elevated but manageable
   }
 
-  const total = Math.max(0, profScore + compScore + bsScore + effScore - hiddenDebtPenalty);
+  // ── Multi-year trend bonus/penalty (up to ±10 pts) ──
+  let trendBonus = 0;
+  let trendLabel = '';
+  const trendYears = Object.keys(historyData).sort();
+  if (trendYears.length >= 3) {
+    const firstYr = historyData[trendYears[0]];
+    const lastYr  = historyData[trendYears[trendYears.length - 1]];
+    const firstSales = firstYr?.netSales || 0;
+    const lastSales  = lastYr?.netSales || 0;
+    const firstProfit = firstYr?.netProfit || 0;
+    const lastProfit  = lastYr?.netProfit || 0;
+    const salesCAGR = firstSales > 0 ? (Math.pow(lastSales / firstSales, 1 / (trendYears.length - 1)) - 1) * 100 : 0;
+    const profitTrend = firstProfit > 0 ? ((lastProfit - firstProfit) / Math.abs(firstProfit) * 100) : 0;
+
+    // Consistent multi-year growth = bonus; multi-year decline = penalty
+    if (salesCAGR > 5 && profitTrend > 10) { trendBonus = 10; trendLabel = isSv ? 'Stark tillväxttrend' : 'Strong growth trend'; }
+    else if (salesCAGR > 2 && profitTrend > 0) { trendBonus = 5; trendLabel = isSv ? 'Stabil trend' : 'Stable trend'; }
+    else if (salesCAGR < -3 && profitTrend < -15) { trendBonus = -8; trendLabel = isSv ? 'Nedåtgående trend' : 'Declining trend'; }
+    else if (salesCAGR < 0 || profitTrend < -10) { trendBonus = -4; trendLabel = isSv ? 'Svag trend' : 'Weakening trend'; }
+    else { trendBonus = 0; trendLabel = isSv ? 'Neutral trend' : 'Neutral trend'; }
+  }
+
+  const total = Math.max(0, Math.min(100, profScore + compScore + bsScore + effScore - hiddenDebtPenalty + trendBonus));
   maScore = total;
 
   // Update M&A score in company KPI
@@ -4434,16 +4472,21 @@ function computeAndRenderDeterministicMA(d) {
     { label: isSv ? 'Balansräkning'   : 'Balance Sheet', score: bsScore,            max:25 },
     { label: isSv ? 'Tillgångskvalitet': 'Asset Quality',score: effScore,           max:25 },
     ...(hiddenDebtPenalty > 0 ? [{ label: isSv ? 'Dold skuld (avdrag)' : 'Hidden Debt (penalty)', score: -hiddenDebtPenalty, max:0, isPenalty:true }] : []),
-  ].map(s => `
+    ...(trendBonus !== 0 ? [{ label: trendLabel, score: trendBonus, max:0, isPenalty: trendBonus < 0, isBonus: trendBonus > 0 }] : []),
+  ].map(s => {
+    const isExtra = s.isPenalty || s.isBonus;
+    const extraColor = s.isBonus ? 'var(--green)' : 'var(--purple)';
+    return `
     <div class="score-item">
-      <span class="score-item-label" style="${s.isPenalty ? 'color:var(--purple)' : ''}">${s.label}</span>
+      <span class="score-item-label" style="${isExtra ? 'color:'+extraColor : ''}">${s.label}</span>
       <div class="gauge-bar" style="flex:1;margin-top:0;">
-        <div class="gauge-fill" style="width:${s.isPenalty ? 100 : s.score/s.max*100}%;background:${s.isPenalty ? 'var(--purple)' : colorFn(s.score/s.max*100)};"></div>
+        <div class="gauge-fill" style="width:${isExtra ? 100 : s.score/s.max*100}%;background:${isExtra ? extraColor : colorFn(s.score/s.max*100)};"></div>
       </div>
-      <span class="score-item-val ${s.isPenalty ? '' : s.score/s.max>=0.65?'pos':s.score/s.max>=0.4?'amb':'neg'}" style="${s.isPenalty ? 'color:var(--purple)' : ''}">
-        ${s.isPenalty ? '−'+Math.abs(s.score) : s.score+'/'+s.max}
+      <span class="score-item-val ${isExtra ? '' : s.score/s.max>=0.65?'pos':s.score/s.max>=0.4?'amb':'neg'}" style="${isExtra ? 'color:'+extraColor : ''}">
+        ${isExtra ? (s.score > 0 ? '+' : '−') + Math.abs(s.score) : s.score+'/'+s.max}
       </span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   // ── Render hidden debt card (Module B in M&A context) ──
   renderMAHiddenDebt(d);
@@ -4686,6 +4729,18 @@ DUE DILIGENCE FINDINGS:
 - Asset Depreciation Level: ${assetDeprec}% of acquisition cost (Book Value: ${fmtSEK(d.inventarierBV)})
 - Long-term Debt >5yr as % of Equity: ${d.equity > 0 ? (d.longTermDebtOver5y/d.equity*100).toFixed(1) : 'N/A'}%
 
+MULTI-YEAR PERFORMANCE (${(() => { const yrs = Object.keys(historyData).sort(); return yrs.length >= 2 ? yrs[0]+'-'+yrs[yrs.length-1] : 'single year only'; })()}):
+${(() => {
+  const yrs = Object.keys(historyData).sort();
+  if (yrs.length < 2) return '- Insufficient multi-year data for trend analysis';
+  return yrs.map(y => {
+    const h = historyData[y];
+    if (!h) return '';
+    const r = h.netSales ? (h.opProfit / h.netSales * 100).toFixed(1) : '0.0';
+    return `- FY${y}: Sales ${fmtSEK(h.netSales)}, EBIT ${fmtSEK(h.opProfit)}, Net Profit ${fmtSEK(h.netProfit)}, ROS ${r}%, Equity ${fmtSEK(h.equity)}`;
+  }).filter(Boolean).join('\n');
+})()}
+
 ALGORITHMIC ACQUISITION FIT SCORE: ${score}/100 → ${verdict}
 Score Breakdown:
   - Profitability:  ${_profScore}/25 (ROS ${ros}%, ROE ${roe.toFixed(1)}%)
@@ -4693,7 +4748,7 @@ Score Breakdown:
   - Balance Sheet:  ${_bsScore}/25 (CR: ${_cr.toFixed(2)}x, D/E: ${_de.toFixed(2)}x)
   - Asset Quality:  ${_effScore}/25 (Depreciation: ${assetDeprec}%, Rev. Growth: ${_rg.toFixed(1)}%)
 
-IMPORTANT: The algorithmic verdict is ${verdict}. Your verdict MUST be "${verdict}" to stay consistent with the score-based recommendation shown to the user. Your role is to EXPLAIN and JUSTIFY this verdict with qualitative due diligence analysis, not to override it. Focus your analysis on the reasoning behind each score component.
+IMPORTANT: The algorithmic verdict is ${verdict}. Your verdict MUST be "${verdict}" to stay consistent with the score-based recommendation shown to the user. Your role is to EXPLAIN and JUSTIFY this verdict with qualitative due diligence analysis, not to override it. Reference multi-year performance trends in your reasoning — a single strong year does not make a BUY, and a single weak year does not make a PASS.
 
 Return ONLY a JSON object:
 {
