@@ -350,6 +350,35 @@ function parseAllabolagMultiYear(html, orgNr, companyName) {
     }
   }
 
+  // Step 4b: Extract full income statement rows in filing order
+  // Walk from header+1 until we hit a balance sheet section header.
+  // Each row with at least one numeric value becomes an income statement line.
+  const IS_STOP_KEYWORDS = ['balansräkning', 'tillgångar', 'eget kapital', 'skulder och eget'];
+  const IS_SECTION_HEADERS = ['rörelsens intäkter', 'rörelsens kostnader', 'resultaträkning',
+    'finansiella poster', 'bokslutsdispositioner', 'belopp i'];
+  const incomeRows = [];
+  for (let i = headerIdx + 1; i < allRows.length; i++) {
+    const label = allRows[i][0].toLowerCase().trim();
+    if (!label) continue;
+    // Stop at balance sheet section
+    if (IS_STOP_KEYWORDS.some(kw => label.includes(kw))) break;
+    // Skip section headers (no numeric data)
+    if (IS_SECTION_HEADERS.some(kw => label.includes(kw))) continue;
+    // Parse values for each year
+    const rowValues = {};
+    let hasAny = false;
+    for (let j = 0; j < years.length; j++) {
+      const cellIdx = j + 1;
+      if (cellIdx < allRows[i].length) {
+        const val = parseNum(allRows[i][cellIdx]);
+        if (val !== null) { rowValues[years[j]] = val; hasAny = true; }
+      }
+    }
+    if (hasAny) {
+      incomeRows.push({ label: allRows[i][0].trim(), values: rowValues });
+    }
+  }
+
   // Step 5: Metadata
   const sniMatch = html.match(/SNI[:\s-]*(\d{2,5})/i);
   const sni = sniMatch ? sniMatch[1].trim() : '';
@@ -402,6 +431,10 @@ function parseAllabolagMultiYear(html, orgNr, companyName) {
     auditorRemark,
     auditorRemarkText,
     employees:             fieldData.employees?.[yr] ?? null,
+    // Full income statement rows in filing order (for dynamic waterfall chart)
+    incomeStatement:       incomeRows
+      .filter(r => r.values[yr] != null)
+      .map(r => ({ label: r.label, value: r.values[yr] * scale })),
   }));
 
   return { years: yearObjects };

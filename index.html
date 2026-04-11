@@ -4354,6 +4354,7 @@ function mapAPIResponse(api, clean) {
     periodiseringsfonder: api.periodiseringsfonder || 0,
     andelarKoncern: api.andelarKoncern || 0,
     subsidiaries: api.subsidiaries || [],
+    _incomeRows: api.incomeStatement || null,
   };
 }
 
@@ -4559,81 +4560,69 @@ function renderFinWaterfall(d) {
   const canvas = document.getElementById('finWaterfallChart');
   if (!canvas || !d) return;
 
-  const isLight   = document.body.classList.contains('light-mode');
-  const tickColor = isLight ? '#334155' : '#FFFFFF';
-  const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
-  const mutedColor = isLight ? '#94a3b8' : '#475569';
+  const isLight    = document.body.classList.contains('light-mode');
+  const tickColor  = isLight ? '#334155' : '#FFFFFF';
+  const gridColor  = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
 
-  const netSales = d.netSales || 0;
-  const ebit     = d.opProfit || 0;
-  const netP     = d.netProfit || 0;
-
-  // Read cost components — null means "not reported", 0 means genuinely zero
-  const cogs   = d.rawMaterials;
-  const pers   = d.personnel || 0;
-  const depr   = d.depreciation || 0;
-  const other  = d.otherOpCosts;
-  const finInc = d.financialIncome;
-  const finExp = d.financialExpenses;
-  const tax    = d.tax;
-
-  // Determine if individual cost breakdown is available
-  const hasCostBreakdown = (cogs != null && cogs > 0) || pers > 0 || depr > 0 || (other != null && other > 0);
-
-  // Build bars dynamically — only include reported components
-  // Each entry: { label, value (signed), anchor (boolean — starts from 0), nr (not reported) }
+  // ── Build bars from the actual filing rows ──
+  // Each bar: { label, value (signed), anchor (starts from 0), subtotal }
   const bars = [];
-  bars.push({ label: 'Net Sales', value: netSales, anchor: true });
+  const rows = d._incomeRows;  // array of { label, value } from the proxy, in filing order
 
-  if (hasCostBreakdown) {
-    // Individual cost lines
-    if (cogs != null && cogs > 0)  bars.push({ label: '− COGS',       value: -cogs });
-    else if (cogs == null)         bars.push({ label: '− COGS',       value: 0, nr: true });
-    if (pers > 0)                  bars.push({ label: '− Personnel',  value: -pers });
-    if (depr > 0)                  bars.push({ label: '− Deprec.',    value: -depr });
-    if (other != null && other > 0) bars.push({ label: '− Other Op.', value: -other });
-    else if (other == null) {
-      // Derive other op costs: netSales - (known costs) - EBIT
-      const known = (cogs || 0) + pers + depr;
-      const derived = netSales - known - ebit;
-      if (derived > 0) bars.push({ label: '− Other Op.', value: -derived });
+  if (rows && rows.length >= 2) {
+    // ── Dynamic path: build from whatever the company actually reported ──
+    // Classify each row as revenue, subtotal, or cost/income
+    const SUBTOTAL_KW = ['rörelseresultat', 'resultat efter finans', 'resultat före skatt',
+      'årets resultat', 'resultat före bokslut', 'summa rörelsekostnader'];
+    const REVENUE_KW  = ['nettoomsättning', 'nettoomstning'];
+
+    rows.forEach((r, idx) => {
+      const lbl = r.label;
+      const low = lbl.toLowerCase();
+      const v   = r.value;
+
+      // First row (revenue) or last row (net profit) are anchors
+      const isRevenue  = REVENUE_KW.some(kw => low.includes(kw));
+      const isSubtotal = SUBTOTAL_KW.some(kw => low.includes(kw));
+      const isFirst    = idx === 0;
+      const isLast     = idx === rows.length - 1;
+
+      if (isFirst || isRevenue) {
+        bars.push({ label: lbl, value: v, anchor: true });
+      } else if (isLast || isSubtotal) {
+        bars.push({ label: lbl, value: v, anchor: true, subtotal: true });
+      } else {
+        // Regular cost or income line — only include if non-zero
+        if (v !== 0) bars.push({ label: lbl, value: v });
+      }
+    });
+  } else {
+    // ── Fallback: build from named fields when no incomeRows available ──
+    const netSales = d.netSales || 0;
+    const ebit     = d.opProfit || 0;
+    const netP     = d.netProfit || 0;
+    bars.push({ label: 'Nettoomsättning', value: netSales, anchor: true });
+    // Add any available cost components
+    if (d.rawMaterials)  bars.push({ label: 'Råvaror / COGS',      value: -Math.abs(d.rawMaterials) });
+    if (d.personnel)     bars.push({ label: 'Personalkostnader',    value: -Math.abs(d.personnel) });
+    if (d.depreciation)  bars.push({ label: 'Avskrivningar',        value: -Math.abs(d.depreciation) });
+    if (d.otherOpCosts)  bars.push({ label: 'Övriga kostnader',     value: -Math.abs(d.otherOpCosts) });
+    // If none of the individual lines had data, show a single combined bar
+    if (bars.length === 1 && netSales > 0 && ebit !== netSales) {
+      bars.push({ label: 'Rörelsekostnader', value: -(netSales - ebit) });
     }
-  } else {
-    // No individual breakdown — show a single combined operating costs bar
-    const totalOpCosts = netSales - ebit;
-    if (totalOpCosts > 0) bars.push({ label: '− Op. Costs', value: -totalOpCosts });
+    bars.push({ label: 'Rörelseresultat',    value: ebit, anchor: true, subtotal: true });
+    if (d.financialIncome && d.financialIncome > 0)   bars.push({ label: 'Finansiella intäkter',  value: d.financialIncome });
+    if (d.financialExpenses && d.financialExpenses > 0) bars.push({ label: 'Finansiella kostnader', value: -d.financialExpenses });
+    if (d.tax && d.tax > 0) bars.push({ label: 'Skatt', value: -d.tax });
+    bars.push({ label: 'Årets resultat', value: netP, anchor: true, subtotal: true });
   }
 
-  bars.push({ label: 'EBIT', value: ebit, anchor: true });
+  if (bars.length < 2) return; // nothing to draw
 
-  // Financial costs
-  const finNet = (finExp != null ? finExp : 0) - (finInc != null ? finInc : 0);
-  if (finExp != null || finInc != null) {
-    if (finNet !== 0) bars.push({ label: finNet > 0 ? '− Fin. Costs' : '+ Fin. Income', value: -finNet });
-  } else {
-    // Derive from EBIT vs pre-tax: if we have profitBeforeTax we can compute
-    const derived = ebit - (d.profitBeforeTax || ebit);
-    if (derived !== 0) bars.push({ label: '− Fin. Costs', value: -derived });
-    else bars.push({ label: '− Fin. Costs', value: 0, nr: true });
-  }
-
-  // Tax
-  if (tax != null && tax > 0) {
-    bars.push({ label: '− Tax', value: -tax });
-  } else if (tax == null) {
-    // Derive: profitBeforeTax - netProfit
-    const pbt = d.profitBeforeTax || (ebit - (finNet || 0));
-    const derivedTax = pbt - netP;
-    if (derivedTax > 0) bars.push({ label: '− Tax', value: -derivedTax });
-    else bars.push({ label: '− Tax', value: 0, nr: true });
-  }
-
-  bars.push({ label: 'Net Profit', value: netP, anchor: true });
-
-  // Build chart arrays
+  // ── Build chart arrays ──
   const labels  = bars.map(b => b.label);
   const values  = bars.map(b => b.value);
-  const notReported = bars.map(b => !!b.nr);
 
   // Waterfall base computation
   const base = [];
@@ -4648,23 +4637,16 @@ function renderFinWaterfall(d) {
   }
   const segment = values.map(v => Math.abs(v));
 
+  // Colours: blue for anchors/subtotals, green for positive, red for negative
   const colors = bars.map((b, i) => {
-    if (b.nr) return isLight ? 'rgba(148,163,184,0.15)' : 'rgba(71,85,105,0.2)';
-    if (b.anchor && i === 0) return 'rgba(0,200,255,0.7)';
-    if (b.anchor && b.label === 'EBIT') return 'rgba(0,200,255,0.55)';
-    if (b.anchor) return values[i] >= 0 ? 'rgba(0,255,136,0.7)' : 'rgba(255,69,96,0.7)';
+    if (b.anchor && !b.subtotal) return 'rgba(0,200,255,0.7)';          // revenue
+    if (b.subtotal) return values[i] >= 0 ? 'rgba(0,200,255,0.55)' : 'rgba(255,69,96,0.55)'; // subtotal
     return values[i] >= 0 ? 'rgba(0,255,136,0.5)' : 'rgba(255,69,96,0.5)';
   });
   const borders = bars.map((b, i) => {
-    if (b.nr) return isLight ? '#cbd5e1' : '#334155';
-    if (b.anchor && (i === 0 || b.label === 'EBIT')) return '#3b82f6';
-    if (b.anchor) return values[i] >= 0 ? '#10b981' : '#ef4444';
+    if (b.anchor || b.subtotal) return values[i] >= 0 ? '#3b82f6' : '#ef4444';
     return values[i] >= 0 ? '#10b981' : '#ef4444';
   });
-
-  // Filing year notice
-  const fyInt = parseInt(d.fiscalYear);
-  const oldFiling = fyInt && fyInt < 2022;
 
   const draw = () => {
     if (finWaterfallInst) finWaterfallInst.destroy();
@@ -4673,14 +4655,14 @@ function renderFinWaterfall(d) {
       data: {
         labels,
         datasets: [
-          { label: 'Base', data: base, backgroundColor: 'transparent', borderWidth: 0, barPercentage: 0.6 },
-          { label: 'Amount', data: segment, backgroundColor: colors, borderColor: borders, borderWidth: 1, borderRadius: 3, barPercentage: 0.6 }
+          { label: 'Base', data: base, backgroundColor: 'transparent', borderWidth: 0, barPercentage: 0.55 },
+          { label: 'Amount', data: segment, backgroundColor: colors, borderColor: borders, borderWidth: 1, borderRadius: 3, barPercentage: 0.55 }
         ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         scales: {
-          x: { stacked: true, ticks: { color: (ctx) => notReported[ctx.index] ? mutedColor : tickColor, font: { size: 10, family: 'JetBrains Mono' } }, grid: { display: false } },
+          x: { stacked: true, ticks: { color: tickColor, font: { size: bars.length > 10 ? 8 : 10, family: 'JetBrains Mono' }, maxRotation: 45, minRotation: 0 }, grid: { display: false } },
           y: { stacked: true, ticks: { color: tickColor, font: { size: 9, family: 'JetBrains Mono' }, callback: v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(0)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'k'; return v; } }, grid: { color: gridColor } }
         },
         plugins: {
@@ -4689,9 +4671,7 @@ function renderFinWaterfall(d) {
             title: ctx => ctx[0]?.label ?? '',
             label: ctx => {
               if (ctx.datasetIndex === 0) return '';
-              const idx = ctx.dataIndex;
-              if (notReported[idx]) return 'Not reported in filing';
-              return `${labels[idx]}: ${fmtSEK(values[idx])}`;
+              return `${labels[ctx.dataIndex]}: ${fmtSEK(values[ctx.dataIndex])}`;
             }
           }}
         }
@@ -4702,29 +4682,16 @@ function renderFinWaterfall(d) {
           const { ctx: c, scales: { y } } = chart;
           const meta = chart.getDatasetMeta(1);
           c.save();
+          c.font = bars.length > 10 ? '8px JetBrains Mono' : '9px JetBrains Mono';
           c.textAlign = 'center';
           c.textBaseline = 'bottom';
-          bars.forEach((b, i) => {
+          c.fillStyle = tickColor;
+          base.forEach((b, i) => {
             const el = meta.data[i];
             if (!el) return;
-            if (b.nr) {
-              c.font = 'italic 8px JetBrains Mono';
-              c.fillStyle = mutedColor;
-              c.fillText('Not reported', el.x, el.y - 4);
-            } else {
-              c.font = '9px JetBrains Mono';
-              c.fillStyle = tickColor;
-              const top = base[i] + segment[i];
-              c.fillText(fmtSEK(values[i]), el.x, y.getPixelForValue(top) - 4);
-            }
+            const top = b + segment[i];
+            c.fillText(fmtSEK(values[i]), el.x, y.getPixelForValue(top) - 4);
           });
-          // Old filing notice
-          if (oldFiling) {
-            c.font = 'italic 9px DM Sans';
-            c.fillStyle = mutedColor;
-            c.textAlign = 'right';
-            c.fillText(`FY${d.fiscalYear} — cost breakdown may be limited in older filings`, chart.chartArea.right, chart.chartArea.bottom + 14);
-          }
           c.restore();
         }
       }]
