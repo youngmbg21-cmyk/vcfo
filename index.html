@@ -8341,6 +8341,27 @@ function exportWatchlistCSV() {
 // ============================================================
 let cbMyCompany = null;
 
+// Wrapper: calls fetchBolagsverket but saves/restores the main app's
+// status bar and global state so competitor fetches don't clobber them.
+async function cbFetchBV(orgNum) {
+  const bvDot  = document.getElementById('bvDot');
+  const bvText = document.getElementById('bvText');
+  const savedDotCls   = bvDot.className;
+  const savedBvText   = bvText.textContent;
+  const savedYears    = window._bvAvailableYears;
+  const savedReports  = window._bvReports;
+
+  const result = await fetchBolagsverket(orgNum);
+
+  // Restore main app state
+  bvDot.className    = savedDotCls;
+  bvText.textContent = savedBvText;
+  window._bvAvailableYears = savedYears;
+  window._bvReports        = savedReports;
+
+  return result;
+}
+
 async function cbLoadMyCompany() {
   const raw   = document.getElementById('cbOrgInput').value.trim();
   const clean = raw.replace(/[^0-9]/g, '');
@@ -8356,7 +8377,7 @@ async function cbLoadMyCompany() {
   txtBV.textContent = 'Bolagsverket: fetching…';
   txtBV.style.color = 'var(--text3)';
 
-  const apiData = await fetchBolagsverket(raw);
+  const apiData = await cbFetchBV(raw);
   let d;
   const isLive = apiData && (
     apiData.name || apiData.companyName || apiData.registrationNumber ||
@@ -8597,7 +8618,7 @@ async function cbAddFromPreset(orgNr, name) {
 async function cbFetchCompetitorData(entry) {
   const clean = entry.orgNr.replace(/[^0-9]/g, '');
   try {
-    const apiData = await fetchBolagsverket(clean);
+    const apiData = await cbFetchBV(clean);
     const isLive = apiData && (
       apiData.name || apiData.companyName || apiData.registrationNumber ||
       apiData.netSales || apiData.revenues || apiData.totalAssets ||
