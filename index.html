@@ -4274,29 +4274,50 @@ function renderTrendPanel() {
     + '<span style="color:var(--blue);">■</span> ROE</div></div>';
   barsHtml += '</div>';
 
-  // Build table HTML
+  // Build table HTML — trend is YoY between the two most recent years
+  var priorIdx = rows.length >= 2 ? rows.length - 2 : -1;
+  var latestIdx = rows.length - 1;
+  var trendLabel = priorIdx >= 0 ? rows[priorIdx].y + ' → ' + rows[latestIdx].y : '';
+
   var thead = '<tr><th>Metric</th>';
   for (var i = 0; i < rows.length; i++) thead += '<th style="text-align:right">' + rows[i].y + (rows[i].est ? '*' : '') + '</th>';
-  thead += '<th style="text-align:right">Trend</th></tr>';
+  thead += '<th style="text-align:right"><span title="Year-on-year: ' + trendLabel + '">Trend' + (trendLabel ? '<br><span style=&quot;font-size:8px;font-weight:400;color:var(--text3);&quot;>' + trendLabel + '</span>' : '') + '</span></th></tr>';
 
   var metrics = [
-    { label: 'Net Sales', vals: rows.map(function(r) { return fmtM(r.sales); }), first: rows[0].sales, last: rows[rows.length-1].sales },
-    { label: 'EBIT', vals: rows.map(function(r) { return fmtM(r.ebit); }), first: rows[0].ebit, last: rows[rows.length-1].ebit },
-    { label: 'EBITDA', vals: rows.map(function(r) { return fmtM(r.ebitda); }), first: rows[0].ebitda, last: rows[rows.length-1].ebitda },
-    { label: 'Net Profit', vals: rows.map(function(r) { return fmtM(r.profit); }), first: rows[0].profit, last: rows[rows.length-1].profit },
-    { label: 'Total Assets', vals: rows.map(function(r) { return fmtM(r.assets); }), first: rows[0].assets, last: rows[rows.length-1].assets },
-    { label: 'Equity', vals: rows.map(function(r) { return fmtM(r.equity); }), first: rows[0].equity, last: rows[rows.length-1].equity },
-    { label: 'ROS %', vals: rows.map(function(r) { return r.ros + '%'; }), first: rows[0].ros, last: rows[rows.length-1].ros },
-    { label: 'ROE %', vals: rows.map(function(r) { return r.roe + '%'; }), first: rows[0].roe, last: rows[rows.length-1].roe },
+    { label: 'Net Sales', vals: rows.map(function(r) { return fmtM(r.sales); }), prev: priorIdx >= 0 ? rows[priorIdx].sales : null, curr: rows[latestIdx].sales },
+    { label: 'EBIT', vals: rows.map(function(r) { return fmtM(r.ebit); }), prev: priorIdx >= 0 ? rows[priorIdx].ebit : null, curr: rows[latestIdx].ebit },
+    { label: 'EBITDA', vals: rows.map(function(r) { return fmtM(r.ebitda); }), prev: priorIdx >= 0 ? rows[priorIdx].ebitda : null, curr: rows[latestIdx].ebitda },
+    { label: 'Net Profit', vals: rows.map(function(r) { return fmtM(r.profit); }), prev: priorIdx >= 0 ? rows[priorIdx].profit : null, curr: rows[latestIdx].profit },
+    { label: 'Total Assets', vals: rows.map(function(r) { return fmtM(r.assets); }), prev: priorIdx >= 0 ? rows[priorIdx].assets : null, curr: rows[latestIdx].assets },
+    { label: 'Equity', vals: rows.map(function(r) { return fmtM(r.equity); }), prev: priorIdx >= 0 ? rows[priorIdx].equity : null, curr: rows[latestIdx].equity },
+    { label: 'ROS %', vals: rows.map(function(r) { return r.ros + '%'; }), prev: priorIdx >= 0 ? rows[priorIdx].ros : null, curr: rows[latestIdx].ros },
+    { label: 'ROE %', vals: rows.map(function(r) { return r.roe + '%'; }), prev: priorIdx >= 0 ? rows[priorIdx].roe : null, curr: rows[latestIdx].roe },
   ];
+
+  function buildTrendCell(prev, curr) {
+    // Edge case: only one year of data
+    if (prev == null) return '<span style="color:var(--text3);">N/A</span>';
+    // Edge case: prior year is zero — can't divide
+    if (prev === 0) {
+      if (curr > 0) return '<span style="color:var(--green);">▲ New</span>';
+      if (curr < 0) return '<span style="color:var(--red);">▼ New</span>';
+      return '<span style="color:var(--text3);">— 0%</span>';
+    }
+    var delta = Math.round((curr - prev) / Math.abs(prev) * 100);
+    // Edge case: sign flip (loss → profit or profit → loss)
+    var flipNote = '';
+    if (prev < 0 && curr > 0) flipNote = ' ↻';  // turnaround
+    if (prev > 0 && curr < 0) flipNote = ' ↻';  // reversal
+    // Direction arrow + colour
+    if (Math.abs(delta) <= 1) return '<span style="color:var(--text3);">— 0%</span>';
+    if (delta > 0) return '<span style="color:var(--green);">▲ +' + delta + '%' + flipNote + '</span>';
+    return '<span style="color:var(--red);">▼ ' + delta + '%' + flipNote + '</span>';
+  }
 
   var tbody = '';
   for (var m = 0; m < metrics.length; m++) {
     var met = metrics[m];
-    var delta = met.first && met.first !== 0 ? Math.round((met.last - met.first) / Math.abs(met.first) * 100) : null;
-    var trendHtml = delta !== null
-      ? '<span style="color:' + (delta > 0 ? 'var(--green)' : delta < 0 ? 'var(--red)' : 'var(--text3)') + ';">' + (delta > 0 ? '+' : '') + delta + '%</span>'
-      : '—';
+    var trendHtml = buildTrendCell(met.prev, met.curr);
     tbody += '<tr><td>' + met.label + '</td>';
     for (var v = 0; v < met.vals.length; v++) tbody += '<td style="text-align:right">' + met.vals[v] + '</td>';
     tbody += '<td style="text-align:right">' + trendHtml + '</td></tr>';
