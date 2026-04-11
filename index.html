@@ -3623,6 +3623,13 @@ async function fetchDocumentList(cleanOrgNr) {
       if (res.ok) {
         const wrapper = await res.json();
         const docs = wrapper.reports || [];
+        // Store full reports for historyData pre-population
+        if (docs.length > 0 && !window._bvReports) {
+          window._bvReports = docs;
+        }
+        if (wrapper.availableYears && wrapper.availableYears.length && !window._bvAvailableYears) {
+          window._bvAvailableYears = wrapper.availableYears;
+        }
         if (docs.length > 0) {
           const mapped = docs
             .map(d => ({
@@ -3791,6 +3798,9 @@ function renderYearView(d, year) {
   computeAndRenderDeterministicMA(d);
   renderCashFlow();
   renderYearSelector(year);
+
+  // Update trend panel if multi-year data exists
+  if (Object.keys(historyData).length >= 2) renderTrendPanel();
 
   // Show estimated badge if needed
   const meta = document.getElementById('heroMeta');
