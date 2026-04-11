@@ -1330,6 +1330,36 @@ body {
   border-color: rgba(0,255,136,0.4);
   color: var(--green);
 }
+
+/* ===== THEME TOGGLE ===== */
+.theme-toggle {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  color: var(--text2);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.theme-toggle:hover { border-color: var(--border2); color: var(--text); }
+
+/* ===== LIGHT MODE ===== */
+body.light-mode {
+  --bg:      #f1f5f9;
+  --bg2:     #f8fafc;
+  --bg3:     #ffffff;
+  --bg4:     #e2e8f0;
+  --border:  #cbd5e1;
+  --border2: #94a3b8;
+  --text:    #0f172a;
+  --text2:   #334155;
+  --text3:   #64748b;
+}
 </style>
 </head>
 <body>
@@ -1399,6 +1429,7 @@ body {
   <div class="topbar-right">
     <div class="live-dot"></div>
     <span id="clockDisplay">--:--:-- CET</span>
+    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle light/dark mode">☀</button>
     <button class="settings-btn" id="langToggleBtn" onclick="toggleLanguage()" title="Switch language / Byt språk" style="letter-spacing:0.05em;">🇸🇪 Svenska</button>
     <button class="settings-btn" onclick="openSettings()">⚙ API Keys</button>
   </div>
@@ -2592,6 +2623,25 @@ function toggleLanguage() {
   appLang = appLang === 'en' ? 'sv' : 'en';
   try { localStorage.setItem('vcfo_lang', appLang); } catch(e) {}
   applyLanguage();
+}
+
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light-mode');
+  try { localStorage.setItem('vcfo_theme', isLight ? 'light' : 'dark'); } catch(e) {}
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = isLight ? '☽' : '☀';
+}
+
+function applyTheme() {
+  let theme = 'dark';
+  try { theme = localStorage.getItem('vcfo_theme') || 'dark'; } catch(e) {}
+  if (theme === 'light') {
+    document.body.classList.add('light-mode');
+  } else {
+    document.body.classList.remove('light-mode');
+  }
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = theme === 'light' ? '☽' : '☀';
 }
 
 // Apply all translations to the DOM
@@ -5018,6 +5068,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateClock();
     setInterval(updateClock, 1000);
     updateAIStatus();
+    applyTheme();
     applyLanguage();
     setStatusBar(t('status_ready'), 'na');
     initChatMode();
