@@ -1583,17 +1583,8 @@ body::after {
           <!-- Multi-year trend panel — shown after loadAllYears() -->
           <div class="card" id="trendPanel" style="display:none;">
             <div class="card-title" data-i18n="card_trend">Multi-Year Trend Analysis <span id="trendYearRange">—</span></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-              <div>
-                <div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Revenue & Profit (tkr)</div>
-                <canvas id="trendRevenueChart" style="max-height:140px;"></canvas>
-              </div>
-              <div>
-                <div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Key Ratios (%)</div>
-                <canvas id="trendRatioChart" style="max-height:140px;"></canvas>
-              </div>
-            </div>
-            <div style="margin-top:14px;overflow-x:auto;">
+            <div id="trendCharts" style="margin-bottom:14px;"></div>
+            <div style="overflow-x:auto;">
               <table class="data-table" id="trendTable">
                 <thead></thead><tbody></tbody>
               </table>
@@ -3863,53 +3854,55 @@ function renderTrendPanel() {
     return d?.equity > 0 ? parseFloat((d.netProfit / d.equity * 100).toFixed(1)) : 0;
   });
 
-  // Render trend table FIRST (synchronous, no Chart.js dependency)
+  // Render trend table FIRST (synchronous, no external dependency)
   try { renderTrendTable(years, revenues, profits, rosArr, roeArr); } catch(e) { console.warn('Trend table error:', e); }
 
-  // Use requestAnimationFrame to ensure canvas has layout dimensions after display:block
-  loadChartJS(() => { requestAnimationFrame(() => { try {
-    // Revenue & profit chart
-    if (trendChartRev) trendChartRev.destroy();
-    trendChartRev = new Chart(document.getElementById('trendRevenueChart'), {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          { label:'Net Sales (tkr)', data: revenues, backgroundColor:'rgba(255,184,0,0.5)', borderColor:'var(--amber)', borderWidth:1, borderRadius:2 },
-          { label:'Net Profit (tkr)',data: profits,  backgroundColor:'rgba(0,255,136,0.4)', borderColor:'var(--green)', borderWidth:1, borderRadius:2, type:'bar' },
-        ]
-      },
-      options: {
-        responsive:true, maintainAspectRatio:true,
-        scales: {
-          x: { ticks:{ color:'#FFFFFF', font:{size:9,family:'JetBrains Mono'} }, grid:{display:false} },
-          y: { ticks:{ color:'#FFFFFF', font:{size:9,family:'JetBrains Mono'} }, grid:{color:'rgba(255,255,255,0.04)'} }
-        },
-        plugins:{ legend:{ labels:{ color:'#FFFFFF', font:{size:9,family:'JetBrains Mono'}, boxWidth:10 } } }
-      }
-    });
+  // Render pure CSS bar charts (no Chart.js dependency)
+  try { renderTrendBars(years, revenues, profits, rosArr, roeArr); } catch(e) { console.warn('Trend bars error:', e); }
+}
 
-    // Ratio chart
-    if (trendChartRatio) trendChartRatio.destroy();
-    trendChartRatio = new Chart(document.getElementById('trendRatioChart'), {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          { label:'ROS %', data:rosArr, borderColor:'var(--amber)', backgroundColor:'rgba(255,184,0,0.08)', tension:0.3, pointRadius:3, pointBackgroundColor:'var(--amber)' },
-          { label:'ROE %', data:roeArr, borderColor:'var(--blue)',  backgroundColor:'rgba(0,200,255,0.08)', tension:0.3, pointRadius:3, pointBackgroundColor:'var(--blue)' },
-        ]
-      },
-      options: {
-        responsive:true, maintainAspectRatio:true,
-        scales: {
-          x: { ticks:{ color:'#FFFFFF', font:{size:9,family:'JetBrains Mono'} }, grid:{display:false} },
-          y: { ticks:{ color:'#FFFFFF', font:{size:9,family:'JetBrains Mono'}, callback: v => v+'%' }, grid:{color:'rgba(255,255,255,0.04)'} }
-        },
-        plugins:{ legend:{ labels:{ color:'#FFFFFF', font:{size:9,family:'JetBrains Mono'}, boxWidth:10 } } }
-      }
-    });
-  } catch(e) { console.warn('Trend chart render error:', e); } }); });
+function renderTrendBars(years, revenues, profits, rosArr, roeArr) {
+  const el = document.getElementById('trendCharts');
+  if (!el) return;
+  const maxRev = Math.max(...revenues, 1);
+  const maxProf = Math.max(...profits.map(Math.abs), 1);
+  const maxRos = Math.max(...rosArr.map(Math.abs), 1);
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div>
+        <div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Revenue & Profit (tkr)</div>
+        ${years.map((y, i) => `
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="font-size:9px;color:var(--text3);width:32px;text-align:right;">${y}</span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px;">
+              <div style="height:8px;border-radius:2px;background:rgba(255,184,0,0.5);width:${Math.max(revenues[i]/maxRev*100,2)}%;"></div>
+              <div style="height:8px;border-radius:2px;background:${profits[i]>=0?'rgba(0,255,136,0.5)':'rgba(255,69,96,0.5)'};width:${Math.max(Math.abs(profits[i])/maxRev*100,2)}%;"></div>
+            </div>
+            <span style="font-size:9px;color:var(--amber);width:55px;text-align:right;">${revenues[i]}k</span>
+          </div>`).join('')}
+        <div style="display:flex;gap:12px;margin-top:6px;font-size:9px;">
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(255,184,0,0.5);margin-right:3px;"></span>Net Sales</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(0,255,136,0.5);margin-right:3px;"></span>Net Profit</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Key Ratios (%)</div>
+        ${years.map((y, i) => `
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="font-size:9px;color:var(--text3);width:32px;text-align:right;">${y}</span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px;">
+              <div style="height:8px;border-radius:2px;background:rgba(255,184,0,0.6);width:${Math.max(Math.abs(rosArr[i])/Math.max(maxRos,30)*100,2)}%;"></div>
+              <div style="height:8px;border-radius:2px;background:rgba(0,200,255,0.5);width:${Math.max(Math.abs(roeArr[i])/Math.max(maxRos,30)*100,2)}%;"></div>
+            </div>
+            <span style="font-size:9px;color:var(--amber);width:55px;text-align:right;">${rosArr[i]}%</span>
+          </div>`).join('')}
+        <div style="display:flex;gap:12px;margin-top:6px;font-size:9px;">
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(255,184,0,0.6);margin-right:3px;"></span>ROS %</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(0,200,255,0.5);margin-right:3px;"></span>ROE %</span>
+        </div>
+      </div>
+    </div>`;
 }
 
 function renderTrendTable(years, revenues, profits, rosArr, roeArr) {
