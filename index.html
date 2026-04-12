@@ -1645,9 +1645,9 @@ body.light-mode {
       <div style="margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:8px;">
         <div style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text3);" data-i18n="demo_or">Or load a demo</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
-          <button class="btn-secondary" onclick="loadDemo('556012-5790')" data-i18n="demo_volvo">Demo: Volvo AB</button>
-          <button class="btn-secondary" onclick="loadDemo('556042-7220')" data-i18n="demo_hm">Demo: H&amp;M</button>
-          <button class="btn-secondary" onclick="loadDemo('556000-3468')" data-i18n="demo_sandvik">Demo: Sandvik AB</button>
+          <button class="btn-secondary" onclick="loadDemo('559001-6076')" data-i18n="demo_stadstak">Demo: Stadstak Sthlm AB</button>
+          <button class="btn-secondary" onclick="loadDemo('556076-6724')" data-i18n="demo_sturehof">Demo: Sturehof AB</button>
+          <button class="btn-secondary" onclick="loadDemo('556700-5685')" data-i18n="demo_acne">Demo: Acne Studios AB</button>
         </div>
       </div>
     </div>
@@ -2587,9 +2587,9 @@ const STRINGS = {
     search_sub:         'Type a company name or org. number in the search bar above',
     search_hint:        'e.g. "Sandvik" · "NCC" · "556000-1234" · Data: allabolag.se 2020–present',
     demo_or:            'Or load a demo',
-    demo_volvo:         'Demo: Volvo AB',
-    demo_hm:            'Demo: H&M',
-    demo_sandvik:       'Demo: Sandvik AB',
+    demo_stadstak:      'Demo: Stadstak Sthlm AB',
+    demo_sturehof:      'Demo: Sturehof AB',
+    demo_acne:          'Demo: Acne Studios AB',
 
     // Company hero stat labels
     stat_net_sales:     'Net Sales',
@@ -2768,9 +2768,9 @@ const STRINGS = {
     search_sub:         'Skriv ett företagsnamn eller organisationsnummer i sökfältet ovan',
     search_hint:        't.ex. "Sandvik" · "NCC" · "556000-1234" · Data: allabolag.se 2020–nu',
     demo_or:            'Eller ladda en demo',
-    demo_volvo:         'Demo: Volvo AB',
-    demo_hm:            'Demo: H&M',
-    demo_sandvik:       'Demo: Sandvik AB',
+    demo_stadstak:      'Demo: Stadstak Sthlm AB',
+    demo_sturehof:      'Demo: Sturehof AB',
+    demo_acne:          'Demo: Acne Studios AB',
 
     // Company hero stat labels
     stat_net_sales:     'Nettoomsättning',
@@ -4232,8 +4232,9 @@ function renderTrendPanel() {
     var ebitda = ebit + (h.depreciation || 0);
     var assets = h.totalAssets || 0;
     var equity = h.equity || 0;
-    var ros = sales > 0 ? Math.round(ebit / sales * 1000) / 10 : 0;
-    var roe = equity > 0 ? Math.round(profit / equity * 1000) / 10 : 0;
+    // Keep 2 decimal places so small ratios don't round to 0%
+    var ros = sales > 0 ? Math.round(ebit / sales * 10000) / 100 : null;
+    var roe = equity > 0 ? Math.round(profit / equity * 10000) / 100 : null;
     if (sales > maxSales) maxSales = sales;
     rows.push({ y: years[i], sales: sales, profit: profit, ebit: ebit, ebitda: ebitda, assets: assets, equity: equity, ros: ros, roe: roe, est: h._isEstimated });
   }
@@ -4263,19 +4264,23 @@ function renderTrendPanel() {
 
   // Right: Ratios bars
   var maxRatio = 1;
-  for (var i = 0; i < rows.length; i++) { if (Math.abs(rows[i].ros) > maxRatio) maxRatio = Math.abs(rows[i].ros); if (Math.abs(rows[i].roe) > maxRatio) maxRatio = Math.abs(rows[i].roe); }
+  for (var i = 0; i < rows.length; i++) { if (rows[i].ros != null && Math.abs(rows[i].ros) > maxRatio) maxRatio = Math.abs(rows[i].ros); if (rows[i].roe != null && Math.abs(rows[i].roe) > maxRatio) maxRatio = Math.abs(rows[i].roe); }
   if (maxRatio < 5) maxRatio = 5;
 
   barsHtml += '<div><div style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Key Ratios (%)</div>';
   for (var i = 0; i < rows.length; i++) {
     var r = rows[i];
+    var rosAbs = r.ros != null ? Math.abs(r.ros) : 0;
+    var roeAbs = r.roe != null ? Math.abs(r.roe) : 0;
+    var rosDisp = r.ros != null ? r.ros.toFixed(1) + '%' : '—';
+    var roeDisp = r.roe != null ? r.roe.toFixed(1) + '%' : '—';
     barsHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'
       + '<span style="font-size:9px;color:var(--text3);width:30px;text-align:right;">' + r.y + '</span>'
       + '<div style="flex:1;display:flex;flex-direction:column;gap:1px;">'
-      + '<div style="height:7px;border-radius:2px;background:rgba(255,184,0,0.6);width:' + Math.max(Math.abs(r.ros) / maxRatio * 100, 2) + '%;"></div>'
-      + '<div style="height:7px;border-radius:2px;background:rgba(0,200,255,0.5);width:' + Math.max(Math.abs(r.roe) / maxRatio * 100, 2) + '%;"></div>'
+      + '<div style="height:7px;border-radius:2px;background:rgba(255,184,0,0.6);width:' + Math.max(rosAbs / maxRatio * 100, 2) + '%;"></div>'
+      + '<div style="height:7px;border-radius:2px;background:rgba(0,200,255,0.5);width:' + Math.max(roeAbs / maxRatio * 100, 2) + '%;"></div>'
       + '</div>'
-      + '<span style="font-size:8px;color:var(--text3);width:60px;text-align:right;">' + r.ros + '% / ' + r.roe + '%</span>'
+      + '<span style="font-size:8px;color:var(--text3);width:60px;text-align:right;">' + rosDisp + ' / ' + roeDisp + '</span>'
       + '</div>';
   }
   barsHtml += '<div style="display:flex;gap:10px;margin-top:4px;font-size:8px;color:var(--text3);">'
@@ -4309,8 +4314,8 @@ function renderTrendPanel() {
     { label: 'Net Profit', vals: rows.map(function(r) { return fmtM(r.profit); }), prev: priorIdx >= 0 ? rows[priorIdx].profit : null, curr: rows[latestIdx].profit },
     { label: 'Total Assets', vals: rows.map(function(r) { return fmtM(r.assets); }), prev: priorIdx >= 0 ? rows[priorIdx].assets : null, curr: rows[latestIdx].assets },
     { label: 'Equity', vals: rows.map(function(r) { return fmtM(r.equity); }), prev: priorIdx >= 0 ? rows[priorIdx].equity : null, curr: rows[latestIdx].equity },
-    { label: 'ROS %', vals: rows.map(function(r) { return r.ros + '%'; }), prev: priorIdx >= 0 ? rows[priorIdx].ros : null, curr: rows[latestIdx].ros },
-    { label: 'ROE %', vals: rows.map(function(r) { return r.roe + '%'; }), prev: priorIdx >= 0 ? rows[priorIdx].roe : null, curr: rows[latestIdx].roe },
+    { label: 'ROS %', vals: rows.map(function(r) { return r.ros != null ? r.ros.toFixed(1) + '%' : '—'; }), prev: priorIdx >= 0 ? rows[priorIdx].ros : null, curr: rows[latestIdx].ros },
+    { label: 'ROE %', vals: rows.map(function(r) { return r.roe != null ? r.roe.toFixed(1) + '%' : '—'; }), prev: priorIdx >= 0 ? rows[priorIdx].roe : null, curr: rows[latestIdx].roe },
   ];
 
   function buildTrendCell(prev, curr) {
@@ -4798,6 +4803,10 @@ function renderFinWaterfall(d) {
   const ebit     = d.opProfit || 0;
   const netP     = d.netProfit || 0;
 
+  // Detect holding/group company: net profit implausibly large vs revenue
+  // (e.g. massive intercompany dividends, investment returns)
+  const isHolding = netSales > 0 && Math.abs(netP) > netSales * 1.5;
+
   // Helper: find a value from incomeRows by keyword
   function findRow(kws) {
     if (!rows || !rows.length) return null;
@@ -4896,6 +4905,11 @@ function renderFinWaterfall(d) {
           base.forEach((b, i) => { const el = meta.data[i]; if (!el) return; c.fillText(fmtSEK(values[i]), el.x, y.getPixelForValue(b + segment[i]) - 4); });
           c.font = 'italic 9px DM Sans'; c.fillStyle = mutedColor; c.textAlign = 'right';
           c.fillText('Source: allabolag.se \u2014 operating cost breakdown not available at line item level', chart.chartArea.right, chart.chartArea.bottom + 14);
+          // Warning banner for holding/group companies
+          if (isHolding) {
+            c.font = 'italic 10px DM Sans'; c.fillStyle = '#f59e0b'; c.textAlign = 'center';
+            c.fillText('\u26A0 Holding/group entity \u2014 Net Profit exceeds revenue due to intercompany dividends or investment income', chart.width / 2, 14);
+          }
           c.restore();
         }
       }]
