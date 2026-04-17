@@ -565,6 +565,24 @@ body {
   font-family:'JetBrains Mono',monospace;
 }
 
+/* ===== LOOKUP ACTION BUTTONS (chat + elsewhere) ===== */
+.lookup-action {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 11px;
+  padding: 2px 6px;
+  margin: 0 1px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.lookup-action:hover {
+  background: var(--blue-dim);
+  color: var(--blue);
+  border-color: rgba(59,130,246,0.35);
+}
+
 /* ===== TOAST ===== */
 #toast {
   position:fixed; bottom:24px; right:24px;
@@ -1154,6 +1172,28 @@ body {
   cursor: pointer;
 }
 .cmp-slot.empty:hover { border-color: var(--blue); }
+.cmp-slot-actions {
+  display:flex; gap:4px;
+  margin-top:6px;
+  padding-top:6px;
+  border-top:1px solid var(--border);
+}
+.cmp-slot-action {
+  flex:1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 12px;
+  padding: 3px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.cmp-slot-action:hover {
+  background: var(--blue-dim);
+  color: var(--blue);
+  border-color: rgba(59,130,246,0.35);
+}
 
 .cmp-slot-num {
   font-size: 9px;
@@ -1539,6 +1579,14 @@ body.light-mode {
 }
 .cb-rank-table tr.cb-is-mine td:first-child {
   border-left:3px solid var(--amber);
+}
+.cb-rank-table tr.cb-row-selected td {
+  background: rgba(59,130,246,0.08);
+}
+.cb-rank-table input[type="checkbox"].cb-row-check,
+.cb-rank-table input[type="checkbox"]#cbSelectAll {
+  accent-color: var(--blue);
+  cursor: pointer;
 }
 .cb-rank-badge {
   display:inline-flex; align-items:center; justify-content:center;
@@ -2296,6 +2344,13 @@ body.light-mode {
               <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Net Profit</button>
               <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">ROE %</button>
             </div>
+          </div>
+
+          <!-- Selection action bar — appears only when rows are selected -->
+          <div id="cbSelectBar" style="display:none;align-items:center;gap:10px;background:var(--blue-dim);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:7px 12px;margin-bottom:10px;">
+            <span style="font-size:11px;color:var(--blue);font-weight:600;" id="cbSelectCount">0 selected</span>
+            <button class="btn-secondary" style="font-size:10px;padding:4px 10px;" onclick="cbSendSelectionToCompare()">⚖ Send to Compare</button>
+            <button style="background:none;border:none;color:var(--text3);font-size:10px;cursor:pointer;padding:0;margin-left:auto;" onclick="cbClearSelection()">Clear selection</button>
           </div>
 
           <!-- Ranking table / empty state -->
@@ -3348,10 +3403,12 @@ window.__pendingNav = null;
 function sendTo(targetTab, payload, opts) {
   window.__pendingNav = payload || {};
   switchTab(targetTab);
-  // After switchTab() renders, fire the receiver hook if defined
+  // After switchTab() renders, fire the receiver hook if defined (supports async)
   const hookName = 'onNavIntent_' + targetTab.replace(/-/g, '_');
   if (typeof window[hookName] === 'function') {
-    try { window[hookName](window.__pendingNav); } catch(e) { console.error(e); }
+    Promise.resolve()
+      .then(() => window[hookName](window.__pendingNav))
+      .catch(err => console.error('onNavIntent error:', err));
   }
   if (!(opts && opts.silent)) {
     const label = (payload && payload.toastLabel) || 'View';
@@ -3359,6 +3416,47 @@ function sendTo(targetTab, payload, opts) {
     showToast(msg, { action: { label, onClick: () => switchTab(targetTab) } });
   }
 }
+
+// ============================================================
+// NAV INTENT RECEIVERS — called by sendTo() after switchTab()
+// Payload shape: { orgs: Array<string | {orgNr, name}>, source?, ... }
+// ------------------------------------------------------------
+function _normalizeOrgList(payload) {
+  if (!payload || !payload.orgs) return [];
+  return payload.orgs.map(o => typeof o === 'string' ? { orgNr: o, name: null } : o);
+}
+
+// Compare: place up to MAX_SLOTS companies into empty slots
+window.onNavIntent_compare = async function(payload) {
+  const list = _normalizeOrgList(payload);
+  if (!list.length) return;
+  const max = (typeof MAX_SLOTS !== 'undefined') ? MAX_SLOTS : 5;
+  let placed = 0, skipped = 0;
+  for (const item of list) {
+    // Skip duplicates
+    if (compareSlots.some(s => s && s.orgNr === item.orgNr)) { skipped++; continue; }
+    const emptyIdx = compareSlots.findIndex(s => s === null);
+    if (emptyIdx === -1) break;
+    // Use the existing slot-loader so we benefit from caching + search
+    try { await loadCompareSlotByOrg(emptyIdx, item.orgNr, item.name || null); placed++; }
+    catch(e) { console.warn('Compare slot load failed:', e); }
+    if (placed + skipped >= max) break;
+  }
+  renderCompareTab();
+};
+
+// Company / Financials / Cash Flow / M&A: load the first org in the payload
+async function _loadFirstOrgFromPayload(payload) {
+  const list = _normalizeOrgList(payload);
+  if (!list.length) return;
+  const { orgNr, name } = list[0];
+  try { await loadCompanyByOrg(orgNr, name || undefined); }
+  catch(e) { console.warn('Load failed:', e); showToast('Failed to load company'); }
+}
+window.onNavIntent_company    = _loadFirstOrgFromPayload;
+window.onNavIntent_financials = _loadFirstOrgFromPayload;
+window.onNavIntent_cashflow   = _loadFirstOrgFromPayload;
+window.onNavIntent_ma         = _loadFirstOrgFromPayload;
 
 // ============================================================
 // ACTIVE-CONTEXT PILL — shows which company is loaded
@@ -6367,6 +6465,8 @@ function renderSlots() {
       const dataTag    = d._isEstimated
         ? `<span style="font-size:8px;background:rgba(255,184,0,0.15);color:var(--amber);padding:1px 5px;border-radius:2px;">ESTIMATED</span>`
         : `<span style="font-size:8px;background:rgba(0,255,136,0.1);color:var(--green);padding:1px 5px;border-radius:2px;">FY${d.fiscalYear}</span>`;
+      const orgQ = JSON.stringify(d.orgNr);
+      const nameQ = JSON.stringify(d.name);
       html += `<div class="cmp-slot filled">
           <button class="cmp-slot-close" onclick="clearCompareSlot(${i})" title="Remove">✕</button>
           <div class="cmp-slot-num">Slot ${i+1} ${dataTag}</div>
@@ -6377,6 +6477,12 @@ function renderSlots() {
             <span style="font-size:9px;font-weight:700;color:${scoreColor};letter-spacing:0.1em;">${verdict}</span>
           </div>
           <div style="font-size:9px;color:var(--text3);">ROS ${m.ros !== null ? m.ros.toFixed(1)+'%' : '—'} · D/E ${m.de !== null ? m.de.toFixed(1)+'x' : '—'}</div>
+          <div class="cmp-slot-actions" title="Open this company in another tab">
+            <button class="cmp-slot-action" onclick="cmpSlotSendTo('company',${orgQ},${nameQ})" title="Open in Company">🏢</button>
+            <button class="cmp-slot-action" onclick="cmpSlotSendTo('financials',${orgQ},${nameQ})" title="Open in Financials">📋</button>
+            <button class="cmp-slot-action" onclick="cmpSlotSendTo('cashflow',${orgQ},${nameQ})" title="Open in Cash Flow">💧</button>
+            <button class="cmp-slot-action" onclick="cmpSlotSendTo('ma',${orgQ},${nameQ})" title="Open in M&A Screener">🎯</button>
+          </div>
         </div>`;
     } else {
       html += `<div class="cmp-slot empty" onclick="focusSlotInput(${i})" id="cmp-slot-empty-${i}" style="position:relative;">
@@ -6401,6 +6507,17 @@ function renderSlots() {
 
 function focusSlotInput(i) {
   setTimeout(() => document.getElementById('cmp-input-' + i)?.focus(), 50);
+}
+
+// Slot → send to another tab (Company/Financials/Cash Flow/M&A)
+function cmpSlotSendTo(target, orgNr, name) {
+  const labels = { company:'Company', financials:'Financials', cashflow:'Cash Flow', ma:'M&A Screener' };
+  sendTo(target, {
+    orgs: [{ orgNr, name }],
+    source: 'compare-slot',
+    toastMsg: `Loading ${name || orgNr} in ${labels[target] || target}…`,
+    toastLabel: 'View'
+  });
 }
 
 // Add the currently loaded main-terminal company to a slot
@@ -8003,11 +8120,19 @@ function buildChatContext() {
   const tabName = tab.name;
   const tabDesc = tab.desc;
 
-  let ctx = `You are VCFO AI — the built-in assistant and guide for the VCFO Terminal, a Financial Health & Acquisition Screener for Swedish companies. You have two roles:
+  let ctx = `You are VCFO AI — the built-in assistant and guide for the VCFO Terminal, a Financial Health & Acquisition Screener for Swedish companies. You have three roles:
 
 ROLE 1 — APP GUIDE: You know every feature of this app in detail. When users ask how the app works, what a screen does, what a metric means, or what to do next, you explain it clearly and tell them exactly where to click.
 
 ROLE 2 — FINANCIAL ANALYST: You analyse the actual company data loaded in the terminal, referencing specific numbers, flags, and scores.
+
+ROLE 3 — BUSINESS LOOKUP: If the user is asking you to FIND, SEARCH, or LOOK UP Swedish companies (by name, industry keyword, or any filter), DO NOT answer from memory. Instead, respond with EXACTLY one line and nothing else:
+[[LOOKUP: <search query>]]
+The client will run the real search against the Swedish company registry and render a structured results table with action buttons. Only do this when the user's intent is clearly to find companies. If they are asking ABOUT a loaded company's financials, stay in Role 2 and answer normally. Examples that should trigger a lookup:
+• "find a construction company in Stockholm" → [[LOOKUP: construction company Stockholm]]
+• "search for Volvo" → [[LOOKUP: Volvo]]
+• "what companies are named Sturehof?" → [[LOOKUP: Sturehof]]
+• "look up 556000-1234" → [[LOOKUP: 556000-1234]]
 
 Today: ${today}
 Current screen: ${tabName}
@@ -8205,12 +8330,108 @@ function renderChatMessage(msg) {
 
   if (msg.typing) {
     bubble.innerHTML = `<div class="chat-typing"><span></span><span></span><span></span></div>`;
+  } else if (msg.type === 'lookup') {
+    bubble.innerHTML = renderLookupTableHTML(msg.query, msg.results);
   } else {
     bubble.innerHTML = chatRenderMarkdown(msg.content);
   }
 
   wrap.appendChild(bubble);
   return wrap;
+}
+
+// ── Lookup results: structured table with per-row action buttons ──
+function renderLookupTableHTML(query, results) {
+  if (!results || results.length === 0) {
+    return `<div style="padding:6px 0;">
+      <div style="font-size:11px;color:var(--text);margin-bottom:4px;">No matches for <strong>${escapeHtml(query)}</strong>.</div>
+      <div style="font-size:10px;color:var(--text3);">Try a different keyword, an org. number (556000-1234), or a shorter phrase.</div>
+    </div>`;
+  }
+  const rows = results.slice(0, 15).map(r => {
+    const orgQ  = JSON.stringify(r.orgNr);
+    const nameQ = JSON.stringify(r.name || '');
+    const ind = r.industry ? `<div style="font-size:8px;color:var(--text3);margin-top:1px;">${escapeHtml(r.industry)}</div>` : '';
+    return `<tr>
+      <td style="padding:5px 6px;">
+        <div style="font-size:11px;font-weight:600;color:var(--text);">${escapeHtml(r.name || '—')}</div>
+        ${ind}
+      </td>
+      <td style="padding:5px 6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);white-space:nowrap;">${escapeHtml(r.orgNr || '—')}</td>
+      <td style="padding:5px 6px;white-space:nowrap;">
+        <button class="lookup-action" onclick="lookupRowSendTo('company',${orgQ},${nameQ})" title="Open in Company">🏢</button>
+        <button class="lookup-action" onclick="lookupRowSendTo('financials',${orgQ},${nameQ})" title="Open in Financials">📋</button>
+        <button class="lookup-action" onclick="lookupRowSendTo('cashflow',${orgQ},${nameQ})" title="Open in Cash Flow">💧</button>
+        <button class="lookup-action" onclick="lookupRowSendTo('ma',${orgQ},${nameQ})" title="Open in M&A Screener">🎯</button>
+      </td>
+    </tr>`;
+  }).join('');
+  const more = results.length > 15 ? `<div style="font-size:10px;color:var(--text3);margin-top:6px;">Showing first 15 of ${results.length}. Refine your query for fewer matches.</div>` : '';
+  return `<div style="padding:2px 0;">
+    <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;">
+      🔍 Lookup: <span style="color:var(--text);">${escapeHtml(query)}</span> · ${results.length} match${results.length===1?'':'es'}
+    </div>
+    <div style="overflow-x:auto;border:1px solid var(--border);border-radius:6px;">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <thead><tr style="background:var(--bg3);color:var(--text3);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;">
+          <th style="text-align:left;padding:6px;">Name</th>
+          <th style="text-align:left;padding:6px;">Org. Nr.</th>
+          <th style="text-align:left;padding:6px;">Open in…</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    ${more}
+  </div>`;
+}
+function escapeHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Row-click handler for lookup tables (also used by the Business Lookup)
+function lookupRowSendTo(target, orgNr, name) {
+  const labels = { company:'Company', financials:'Financials', cashflow:'Cash Flow', ma:'M&A Screener' };
+  sendTo(target, {
+    orgs: [{ orgNr, name }],
+    source: 'chat-lookup',
+    toastMsg: `Loading ${name || orgNr} in ${labels[target] || target}…`,
+    toastLabel: 'View'
+  });
+}
+
+// Run a business lookup and append an assistant-style message with a structured table.
+// If the search fails, falls back to AI search prompt.
+async function chatRunLookup(query) {
+  const container = document.getElementById('chatMessages');
+  if (!container) return;
+  const typingId  = Date.now() + '-typing';
+  const typingMsg = { role: 'assistant', content: '', id: typingId, typing: true };
+  const typingEl  = renderChatMessage(typingMsg);
+  container.appendChild(typingEl);
+  chatScrollToLatest(container, true);
+
+  let results = null;
+  try {
+    results = await searchByNameServer(query);
+  } catch(e) { console.warn('lookup failed:', e); }
+
+  typingEl.remove();
+
+  const msg = {
+    role: 'assistant',
+    type: 'lookup',
+    query,
+    results: results || [],
+    id: Date.now() + '-lookup'
+  };
+  chatMessages.push(msg);
+  // History save (content-only) for session continuity
+  const contentSummary = (results && results.length)
+    ? `Lookup "${query}" — ${results.length} result${results.length===1?'':'s'}.`
+    : `Lookup "${query}" — no matches.`;
+  chatSaveHistory(chatMessages.map(m => m.type === 'lookup' ? { ...m, content: contentSummary } : m));
+  container.appendChild(renderChatMessage(msg));
+  chatScrollToLatest(container);
 }
 
 // ── Simple markdown renderer ──
@@ -8350,10 +8571,10 @@ function updateChatSuggestions() {
       suggestions = [
         `What are the biggest risks in ${companyData.name}?`,
         `Give me a quick summary of ${companyData.name}`,
-        'What should I do next?',
+        '/find construction companies in Stockholm',
       ];
     } else {
-      suggestions = ['How do I use this app?','Load me a demo company','What is an org. number?'];
+      suggestions = ['How do I use this app?','/find Sandvik','Load me a demo company'];
     }
   }
 
@@ -8370,13 +8591,29 @@ function useSuggestion(btn) {
 
 // ── Send message ──
 async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text  = input.value.trim();
+  if (!text) return;
+
+  // ── Slash command fast-path: /find, /lookup, /search don't need the LLM ──
+  const slashMatch = text.match(/^\/(?:find|lookup|search)\s+(.+)$/i);
+  if (slashMatch) {
+    input.value = '';
+    document.getElementById('chatSuggestions').style.display = 'none';
+    const userMsg = { role:'user', content:text, id: Date.now() + '-u' };
+    chatMessages.push(userMsg);
+    chatSaveHistory(chatMessages);
+    const cont = document.getElementById('chatMessages');
+    cont.appendChild(renderChatMessage(userMsg));
+    chatScrollToLatest(cont, true);
+    await chatRunLookup(slashMatch[1].trim());
+    return;
+  }
+
   if (chatLoading || !anthropicKey) {
     if (!anthropicKey) { showToast(t('toast_no_api_key')); openSettings(); }
     return;
   }
-  const input = document.getElementById('chatInput');
-  const text  = input.value.trim();
-  if (!text) return;
 
   input.value = '';
   document.getElementById('chatSuggestions').style.display = 'none';
@@ -8415,12 +8652,18 @@ async function sendChat() {
     const reply = data.content?.[0]?.text || 'Sorry, I could not generate a response.';
     typingEl.remove();
 
-    const assistantMsg = { role: 'assistant', content: reply, id: Date.now() + '-a' };
-    chatMessages.push(assistantMsg);
-    chatSaveHistory(chatMessages);
-    const assistantEl = renderChatMessage(assistantMsg);
-    container.appendChild(assistantEl);
-    chatScrollToLatest(container);
+    // LLM lookup directive: [[LOOKUP: <query>]]
+    const lookupDirective = reply.trim().match(/^\[\[LOOKUP:\s*(.+?)\]\]$/);
+    if (lookupDirective) {
+      await chatRunLookup(lookupDirective[1].trim());
+    } else {
+      const assistantMsg = { role: 'assistant', content: reply, id: Date.now() + '-a' };
+      chatMessages.push(assistantMsg);
+      chatSaveHistory(chatMessages);
+      const assistantEl = renderChatMessage(assistantMsg);
+      container.appendChild(assistantEl);
+      chatScrollToLatest(container);
+    }
 
     if (chatMinimised) {
       const msgCount = chatMessages.filter(m => m.role === 'user').length;
@@ -9585,6 +9828,7 @@ function cbCheckRunBtn() {
 let cbRankData  = [];
 let cbSortKey   = 'ebitdaPct';
 let cbSortDir   = 'desc';
+const cbSelectedOrgs = new Set();
 
 const CB_SORT_OPTIONS = [
   { key:'ebitdaPct',  label:'EBITDA %' },
@@ -9683,8 +9927,11 @@ function cbRenderRankTable() {
     return `<th onclick="cbSetSortKey('${key}')" class="${isSorted?'sorted':''}">${label}${isSorted ? ' <span class="sort-arrow">'+(cbSortDir==='desc'?'▼':'▲')+'</span>' : ''}</th>`;
   };
 
+  const allSelectable = sorted.map(r => r.orgNr);
+  const allSelected   = allSelectable.length > 0 && allSelectable.every(o => cbSelectedOrgs.has(o));
   let html = `<div class="cb-rank-table-wrap"><table class="cb-rank-table">
     <thead><tr>
+      <th style="width:30px;text-align:center;"><input type="checkbox" id="cbSelectAll" ${allSelected?'checked':''} onchange="cbToggleSelectAll(this.checked)" title="Select all"></th>
       <th style="width:44px;">Rank</th>
       <th>Company</th>
       ${thSort('netSales','Revenue')}
@@ -9722,7 +9969,9 @@ function cbRenderRankTable() {
       ? '<span class="cb-btn-ma is-mine">You</span>'
       : `<button class="cb-btn-ma" onclick="cbLoadIntoMATab('${row.orgNr}')" title="Load ${row.name} into M&A Screener">🎯 M&A Tab</button>`;
 
-    html += `<tr class="${isMe ? 'cb-is-mine' : ''}">
+    const isChecked = cbSelectedOrgs.has(row.orgNr);
+    html += `<tr class="${isMe ? 'cb-is-mine' : ''}${isChecked ? ' cb-row-selected' : ''}">
+      <td style="text-align:center;"><input type="checkbox" class="cb-row-check" data-org="${row.orgNr}" ${isChecked?'checked':''} onchange="cbToggleRow('${row.orgNr}', this.checked)"></td>
       <td><span class="cb-rank-badge ${badgeCls}">${rankNum}</span></td>
       <td>
         <div style="font-weight:600;color:var(--text);">${row.name}${!row.isLive?'<span style="font-size:8px;color:var(--amber);margin-left:4px;">EST.</span>':''}
@@ -9765,6 +10014,65 @@ function cbRenderRankTable() {
   document.getElementById('cbRankTableWrap').innerHTML = html;
   document.getElementById('cbRankSubtitle').textContent =
     `${sorted.length} companies · Sorted by ${CB_SORT_OPTIONS.find(s=>s.key===cbSortKey)?.label || cbSortKey} · ${cbSortDir === 'desc' ? 'Highest first' : 'Lowest first'}`;
+
+  cbRenderSelectBar();
+}
+
+// ── Row selection state + bulk Send-to-Compare ───────────────────
+function cbToggleRow(orgNr, checked) {
+  if (checked) cbSelectedOrgs.add(orgNr); else cbSelectedOrgs.delete(orgNr);
+  cbRenderSelectBar();
+  // Update visual row highlight without full re-render
+  const cb = document.querySelector(`.cb-row-check[data-org="${orgNr}"]`);
+  if (cb) cb.closest('tr')?.classList.toggle('cb-row-selected', checked);
+  // Sync select-all
+  const all = document.getElementById('cbSelectAll');
+  if (all) {
+    const total   = cbRankData.length;
+    const picked  = cbSelectedOrgs.size;
+    all.checked = total > 0 && picked === total;
+    all.indeterminate = picked > 0 && picked < total;
+  }
+}
+function cbToggleSelectAll(checked) {
+  cbSelectedOrgs.clear();
+  if (checked) cbRankData.forEach(r => cbSelectedOrgs.add(r.orgNr));
+  cbRenderRankTable(); // full re-render to sync checkboxes
+}
+function cbClearSelection() {
+  cbSelectedOrgs.clear();
+  cbRenderRankTable();
+}
+function cbRenderSelectBar() {
+  const bar = document.getElementById('cbSelectBar');
+  if (!bar) return;
+  const n = cbSelectedOrgs.size;
+  if (n === 0) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  const label = document.getElementById('cbSelectCount');
+  if (label) label.textContent = `${n} selected`;
+}
+function cbSendSelectionToCompare() {
+  const orgs = Array.from(cbSelectedOrgs);
+  if (orgs.length === 0) { showToast('Select at least one company'); return; }
+  // MAX_SLOTS guard — Compare supports 5
+  const max  = (typeof MAX_SLOTS !== 'undefined') ? MAX_SLOTS : 5;
+  const take = orgs.slice(0, max);
+  const clipped = orgs.length > max;
+  // Attach names from cbRankData so receiver doesn't need to re-search
+  const named = take.map(org => {
+    const r = cbRankData.find(x => x.orgNr === org);
+    return { orgNr: org, name: r?.name };
+  });
+  sendTo('compare', {
+    orgs: named,
+    source: 'competitor-ranking',
+    toastMsg: clipped
+      ? `Loaded ${take.length} into Compare (max ${max}; ${orgs.length - max} skipped)`
+      : `Loaded ${take.length} into Compare`,
+    toastLabel: 'View'
+  });
+  // Keep selection in case user navigates back
 }
 
 function cbRenderSummaryChips() {
