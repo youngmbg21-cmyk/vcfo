@@ -142,6 +142,65 @@ body {
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--green); border-bottom-color: var(--green); }
 
+/* ===== SUB-TABS (nested inside a top-level tab) ===== */
+.subtabs {
+  display:flex; align-items:center; gap:0;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 14px;
+}
+.subtab {
+  padding: 7px 16px;
+  font-size: 12px; font-weight: 600;
+  color: var(--text3); cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.18s, color 0.18s;
+  user-select: none;
+  letter-spacing: 0.01em;
+}
+.subtab:hover { color: var(--text); }
+.subtab.active {
+  background: var(--bg2);
+  color: var(--amber);
+  box-shadow: 0 0 0 1px var(--border2) inset;
+}
+.subtab-hint {
+  margin-left: auto; padding-right: 8px;
+  font-size: 10px; color: var(--text3);
+  letter-spacing: 0.01em;
+}
+
+/* ===== ACTIVE-CONTEXT PILL (visible when a company is loaded) ===== */
+.active-context {
+  display: none; align-items: center; gap: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--amber);
+  border-radius: 16px;
+  padding: 4px 6px 4px 12px;
+  margin-left: 10px;
+  max-width: 260px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.active-context.show { display: inline-flex; }
+.active-context .ac-label {
+  font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text3);
+}
+.active-context .ac-name {
+  font-size: 11px; font-weight: 600; color: var(--amber);
+  max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.active-context .ac-clear {
+  background: none; border: none; color: var(--text3);
+  width: 18px; height: 18px; border-radius: 50%;
+  cursor: pointer; font-size: 12px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.active-context .ac-clear:hover { background: var(--bg4); color: var(--text); }
+
 /* ===== CONTENT ===== */
 .content { padding: 20px; max-width: 1320px; margin: 0 auto; }
 
@@ -509,15 +568,28 @@ body {
 /* ===== TOAST ===== */
 #toast {
   position:fixed; bottom:24px; right:24px;
+  display:flex; align-items:center; gap:12px;
   background:var(--bg4);
   border:1px solid var(--border2);
   color:var(--text); font-size:11px;
-  padding:10px 18px; border-radius:10px;
+  padding:10px 14px 10px 18px; border-radius:10px;
   opacity:0; transform:translateY(8px);
   transition: opacity 0.25s, transform 0.25s;
   pointer-events:none; z-index:9998;
+  max-width: 380px;
 }
-#toast.show { opacity:1; transform:translateY(0); }
+#toast.show { opacity:1; transform:translateY(0); pointer-events:auto; }
+#toast .toast-msg { flex:1; line-height:1.45; }
+#toast .toast-action {
+  background: var(--amber-dim);
+  border: 1px solid rgba(245,158,11,0.35);
+  color: var(--amber);
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 5px;
+  cursor: pointer; white-space: nowrap;
+}
+#toast .toast-action:hover { background: var(--amber); color: var(--bg); }
 
 /* ===== RAW DATA DISPLAY ===== */
 .raw-section { margin-top: 16px; }
@@ -1573,6 +1645,14 @@ body.light-mode {
       </select>
     </div>
     <div style="font-size:10px;color:var(--text3);" id="apiHint">SE Registry · UC AB via allabolag.se</div>
+
+    <!-- Active-context pill — shows which company is loaded -->
+    <div class="active-context" id="activeContextPill" title="Click × to clear the loaded company">
+      <span class="ac-label">Active</span>
+      <span class="ac-name" id="activeContextName">—</span>
+      <button class="ac-clear" onclick="clearActiveContext()" title="Clear loaded company">×</button>
+    </div>
+
     <!-- Search results dropdown -->
     <div id="searchDropdown" style="display:none;position:fixed;top:48px;left:50%;transform:translateX(-50%);width:420px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:500;overflow:hidden;"></div>
   </div>
@@ -1625,8 +1705,7 @@ body.light-mode {
   <div class="tab" id="tab-cashflow-btn"         onclick="switchTab('cashflow')" data-i18n="tab_cashflow">💧 Cash Flow</div>
   <div class="tab" id="tab-cfo-btn"              onclick="switchTab('cfo')" data-i18n="tab_cfo">📊 CFO Audit</div>
   <div class="tab" id="tab-ma-btn"               onclick="switchTab('ma')" data-i18n="tab_ma">🎯 M&A Screener</div>
-  <div class="tab" id="tab-competitor-bench-btn" onclick="switchTab('competitor-bench')">⚔ Competitor Bench</div>
-  <div class="tab" id="tab-compare-btn"          onclick="switchTab('compare')" data-i18n="tab_compare">⚖ Compare</div>
+  <div class="tab" id="tab-competitor-bench-btn" onclick="switchTab('competitor-bench')">⚔ Competitors</div>
   <div class="tab" id="tab-watchlist-btn"        onclick="switchTab('watchlist')" data-i18n="tab_watchlist">★ Watchlist</div>
   <div class="tab" id="tab-benchmarks-btn"       onclick="switchTab('benchmarks')" data-i18n="tab_benchmarks">📡 Benchmarks</div>
   <div class="tab" id="tab-guide-btn"            onclick="switchTab('guide')" style="margin-left:auto;" data-i18n="tab_guide">📖 Guide</div>
@@ -2081,8 +2160,18 @@ body.light-mode {
     </div>
   </div>
 
-  <!-- ===== COMPETITOR BENCH TAB ===== -->
+  <!-- ===== COMPETITORS TAB (Ranking + Compare sub-tabs) ===== -->
   <div id="tab-competitor-bench" style="display:none;">
+
+    <!-- Sub-tab strip -->
+    <div class="subtabs">
+      <div class="subtab active" id="subtab-cb-ranking-btn" onclick="switchSubTab('competitor-bench','ranking')">⚔ Ranking</div>
+      <div class="subtab"        id="subtab-cb-compare-btn" onclick="switchSubTab('competitor-bench','compare')">⚖ Compare</div>
+      <div class="subtab-hint">Rank peers, then send selections to Compare for side-by-side analysis.</div>
+    </div>
+
+    <!-- RANKING sub-panel -->
+    <div id="subtab-cb-ranking">
     <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;">
 
       <!-- Left sidebar (sticky) -->
@@ -2204,8 +2293,8 @@ body.light-mode {
               <button class="cb-sort-pill active" style="background:var(--green-dim);border:1px solid rgba(16,185,129,0.4);color:var(--green);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;font-weight:600;">EBITDA %</button>
               <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">EBIT %</button>
               <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Revenue</button>
+              <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Net Profit</button>
               <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">ROE %</button>
-              <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Google ★</button>
             </div>
           </div>
 
@@ -2221,6 +2310,10 @@ body.light-mode {
       </div>
 
     </div>
+    </div><!-- /subtab-cb-ranking -->
+
+    <!-- COMPARE sub-panel is #tab-compare, relocated here by initSubTabs() at startup -->
+
   </div>
 
   <!-- ===== GUIDE TAB ===== -->
@@ -2541,7 +2634,7 @@ body.light-mode {
   </div>
 </div>
 
-<div id="toast"></div>
+<div id="toast"><span class="toast-msg"></span><button class="toast-action" id="toastAction" style="display:none;"></button></div>
 
 <script>
 // ============================================================
@@ -3057,18 +3150,38 @@ function updateClock() {
 let activeTab = 'company';
 
 function switchTab(name) {
+  // Compatibility: callers that ask for the old top-level 'compare' tab
+  // are redirected to Competitors → Compare sub-tab.
+  if (name === 'compare') {
+    activeTab = 'compare';
+    _switchTopTab('competitor-bench');
+    switchSubTab('competitor-bench', 'compare');
+    updateChatPills();
+    updateChatSuggestions();
+    return;
+  }
   activeTab = name;
-  ['company','financials','cashflow','cfo','ma','competitor-bench','compare','watchlist','benchmarks','guide'].forEach(t => {
-    document.getElementById('tab-' + t).style.display = (t === name) ? 'block' : 'none';
-    document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === name);
-  });
-  if (name === 'compare')           renderCompareTab();
+  _switchTopTab(name);
   if (name === 'benchmarks')        initBenchmarksTab();
   if (name === 'cashflow')          renderCashFlow();
   if (name === 'watchlist')         renderWatchlistTab();
-  if (name === 'competitor-bench')  { cbRenderSavedPills(); cbRenderPresets(cbActiveSNI); }
+  if (name === 'competitor-bench')  {
+    // Default to ranking unless user already picked a sub
+    const sub = _activeSubTab['competitor-bench'] || 'ranking';
+    switchSubTab('competitor-bench', sub);
+    cbRenderSavedPills(); cbRenderPresets(cbActiveSNI);
+  }
   updateChatPills();
   updateChatSuggestions();
+}
+
+function _switchTopTab(name) {
+  ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','benchmarks','guide'].forEach(t => {
+    const panel = document.getElementById('tab-' + t);
+    if (panel) panel.style.display = (t === name) ? 'block' : 'none';
+    const btn = document.getElementById('tab-' + t + '-btn');
+    if (btn) btn.classList.toggle('active', t === name);
+  });
 }
 
 // ============================================================
@@ -3148,13 +3261,129 @@ function updateAIStatus() {
 }
 
 // ============================================================
-// TOAST
+// TOAST — supports optional { action: { label, onClick } }
 // ============================================================
-function showToast(msg) {
+let _toastTimer = null;
+function showToast(msg, opts) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
+  if (!t) return;
+  const msgEl = t.querySelector('.toast-msg');
+  const btn   = t.querySelector('.toast-action');
+  if (msgEl) msgEl.textContent = msg;
+  else t.textContent = msg;
+  if (btn) {
+    if (opts && opts.action && typeof opts.action.onClick === 'function') {
+      btn.textContent = opts.action.label || 'View';
+      btn.style.display = 'inline-flex';
+      btn.onclick = () => {
+        try { opts.action.onClick(); } catch(e) { console.error(e); }
+        t.classList.remove('show');
+      };
+    } else {
+      btn.style.display = 'none';
+      btn.onclick = null;
+    }
+  }
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), (opts && opts.duration) || 3200);
+}
+
+// ============================================================
+// SUB-TABS — nested panels inside a top-level tab
+// ============================================================
+// Registry: { parentTab: { panels: { subId: panelElementId }, default: subId } }
+const SUBTAB_REGISTRY = {
+  'competitor-bench': {
+    panels: { ranking: 'subtab-cb-ranking', compare: 'tab-compare' },
+    default: 'ranking'
+  }
+};
+const _activeSubTab = {}; // parent -> active sub id
+
+function switchSubTab(parentTab, subId) {
+  const reg = SUBTAB_REGISTRY[parentTab];
+  if (!reg) return;
+  const panels = reg.panels;
+  if (!panels[subId]) subId = reg.default;
+
+  Object.keys(panels).forEach(k => {
+    const el = document.getElementById(panels[k]);
+    if (el) el.style.display = (k === subId) ? 'block' : 'none';
+    const btn = document.getElementById(`subtab-${abbrevParent(parentTab)}-${k}-btn`);
+    if (btn) btn.classList.toggle('active', k === subId);
+  });
+  _activeSubTab[parentTab] = subId;
+
+  // Call per-sub init hooks where useful
+  if (parentTab === 'competitor-bench' && subId === 'compare') {
+    if (typeof renderCompareTab === 'function') renderCompareTab();
+  }
+}
+function abbrevParent(p) {
+  // URL-safe short prefix for subtab button IDs
+  return p === 'competitor-bench' ? 'cb' : p;
+}
+function initSubTabs() {
+  // Relocate #tab-compare inside #tab-competitor-bench so it renders as a sub-panel
+  const parent = document.getElementById('tab-competitor-bench');
+  const compare = document.getElementById('tab-compare');
+  if (parent && compare && compare.parentElement !== parent) {
+    parent.appendChild(compare);
+  }
+  // Default: Ranking visible, Compare hidden
+  const rankPanel = document.getElementById('subtab-cb-ranking');
+  if (rankPanel) rankPanel.style.display = 'block';
+  if (compare) compare.style.display = 'none';
+}
+
+// ============================================================
+// CROSS-TAB NAVIGATION — sendTo(targetTab, payload)
+// ------------------------------------------------------------
+// Payload shape: { orgs?: string[], subTab?: string, source?: string, note?: string }
+// Each receiving tab implements its onNavIntent hook and reads __pendingNav.
+// ============================================================
+window.__pendingNav = null;
+
+function sendTo(targetTab, payload, opts) {
+  window.__pendingNav = payload || {};
+  switchTab(targetTab);
+  // After switchTab() renders, fire the receiver hook if defined
+  const hookName = 'onNavIntent_' + targetTab.replace(/-/g, '_');
+  if (typeof window[hookName] === 'function') {
+    try { window[hookName](window.__pendingNav); } catch(e) { console.error(e); }
+  }
+  if (!(opts && opts.silent)) {
+    const label = (payload && payload.toastLabel) || 'View';
+    const msg   = (payload && payload.toastMsg)   || `Opened ${targetTab}`;
+    showToast(msg, { action: { label, onClick: () => switchTab(targetTab) } });
+  }
+}
+
+// ============================================================
+// ACTIVE-CONTEXT PILL — shows which company is loaded
+// ============================================================
+function renderActiveContext() {
+  const pill = document.getElementById('activeContextPill');
+  const nameEl = document.getElementById('activeContextName');
+  if (!pill || !nameEl) return;
+  if (typeof companyData !== 'undefined' && companyData && companyData.name) {
+    nameEl.textContent = companyData.name;
+    pill.classList.add('show');
+    pill.title = `Loaded: ${companyData.name}${companyData.orgNr ? ' · ' + companyData.orgNr : ''} — click × to clear`;
+  } else {
+    pill.classList.remove('show');
+  }
+}
+function clearActiveContext() {
+  if (typeof companyData !== 'undefined') { companyData = null; }
+  if (typeof historyData !== 'undefined') { historyData = {}; }
+  const heroEmpty = document.getElementById('companyEmpty');
+  const heroFull  = document.getElementById('companyContent');
+  if (heroEmpty) heroEmpty.style.display = 'block';
+  if (heroFull)  heroFull.style.display  = 'none';
+  renderActiveContext();
+  showToast('Context cleared');
 }
 
 // ============================================================
@@ -3871,6 +4100,7 @@ async function loadCompanyByOrg(raw, knownName) {
 
   companyData = d;
   maScore     = null;
+  renderActiveContext();
 
   // Step 3 — Build year selector from doc list or API available years
   if (docList && docList.length > 0) {
@@ -4091,6 +4321,7 @@ async function switchToYear(year, docId) {
   historyData[year] = d;
   companyData       = d;
   renderYearView(d, year);
+  renderActiveContext();
   setStatusBar(`${t('status_loaded')} FY${year} · ${d.name}`, 'ok');
   showToast(`✓ Switched to FY${year}`);
 }
@@ -5835,6 +6066,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setStatusBar(t('status_ready'), 'na');
     initChatMode();
     initCompareTab();
+    initSubTabs();
+    renderActiveContext();
     // Populate year picker dynamically
     (function() {
       const sel = document.getElementById('fetchYearSelect');
@@ -6780,7 +7013,7 @@ function renderCompareAIOutput(data) {
 function addToCompareFromMain() {
   if (!companyData) { showToast('⚠ No company loaded'); return; }
   if (compareSlots.some(s => s && s.orgNr === companyData.orgNr)) {
-    showToast(`⚠ ${companyData.name} already in Compare tab`);
+    showToast(`⚠ ${companyData.name} already in Compare`);
     switchTab('compare');
     return;
   }
@@ -7786,8 +8019,9 @@ APP STRUCTURE (tabs in order):
 - 💧 Cash Flow: Waterfall bridge from Net Profit → Free Cash Flow with year toggle and multi-year comparison.
 - 📊 CFO Audit: Rule-engine flags + AI analysis of 3 operational concerns (Revenue Quality, Efficiency Drift, Aggressive Payouts).
 - 🎯 M&A Screener: 0–100 acquisition fit score (BUY/HOLD/PASS) across 4 dimensions.
-- ⚔ Competitor Bench: Rank up to 20 competitors side-by-side across Revenue, EBITDA%, EBIT%, Rev/Employee, Pers. Cost/Emp, and Google ratings.
-- ⚖ Compare: Load up to 5 companies for radar chart, M&A score bar chart, and risk flag matrix.
+- ⚔ Competitors: Two sub-tabs.
+    · Ranking — rank up to 20 peers across Revenue, EBITDA%, EBIT%, Net Profit, ROE, and Google ratings.
+    · Compare — load up to 5 companies for radar chart, M&A score bar chart, and risk flag matrix.
 - ★ Watchlist: Pinned companies persist across sessions. Quick-load or compare.
 - 📡 Benchmarks: Fetch live SCB sector medians from Statistics Sweden.
 - 📖 Guide: Reference docs for formulas and methodology.
@@ -7797,8 +8031,8 @@ HOW TO USE THE APP (step by step):
 2. The Company tab populates with key financials. Click "Run CFO Audit" or "Screen for M&A".
 3. Switch to Financials tab to see the revenue-to-profit waterfall and key ratios.
 4. Use Cash Flow tab to visualise how Net Profit converts to Free Cash Flow.
-5. Use Competitor Bench tab to add competitors by name/org.nr, run a benchmark ranking, and compare workforce efficiency.
-6. To compare companies side-by-side, click "⚖ Add to Compare" on the Company tab, then switch to Compare tab.
+5. Use Competitors → Ranking sub-tab to add peers by name/org.nr and run a benchmark ranking.
+6. To compare companies side-by-side, click "⚖ Add to Compare" on the Company tab, then open Competitors → Compare sub-tab.
 7. To use real sector benchmarks, go to Benchmarks tab and click Fetch from SCB.
 8. The chatbot (that's me) is always aware of what's on screen — ask me anything.
 
@@ -9356,9 +9590,8 @@ const CB_SORT_OPTIONS = [
   { key:'ebitdaPct',  label:'EBITDA %' },
   { key:'ebitPct',    label:'EBIT %' },
   { key:'netSales',   label:'Revenue' },
+  { key:'netProfit',  label:'Net Profit' },
   { key:'roePct',     label:'ROE %' },
-  { key:'revPerEmp',  label:'Rev/Emp' },
-  { key:'persPerEmp', label:'Pers/Emp' },
 ];
 
 function cbComputeMetrics(d) {
@@ -9460,8 +9693,8 @@ function cbRenderRankTable() {
       ${thSort('ebitdaPct','EBITDA %')}
       ${thSort('ebit','EBIT')}
       ${thSort('ebitPct','EBIT %')}
-      ${thSort('revPerEmp','Rev/Emp')}
-      ${thSort('persPerEmp','Pers/Emp')}
+      ${thSort('netProfit','Net Profit')}
+      ${thSort('roePct','ROE %')}
       <th style="text-align:center;">Action</th>
     </tr></thead>
     <tbody>`;
@@ -9519,11 +9752,10 @@ function cbRenderRankTable() {
         <div class="cb-metric-val" style="color:${ebitColor};font-weight:600;">${fmtPct(row.ebitPct)}</div>
       </td>
       <td>
-        <div class="cb-metric-val">${row.revPerEmp !== null ? fmtSEK(Math.round(row.revPerEmp)) : '<span style="color:var(--text3);">—</span>'}</div>
-        ${row.employees ? '<div style="font-size:8px;color:var(--text3);">' + row.employees + ' emp.</div>' : ''}
+        <div class="cb-metric-val" style="color:${(row.netProfit||0) > 0 ? 'var(--green)' : (row.netProfit||0) < 0 ? 'var(--red)' : 'var(--text)'};">${fmtSEK(row.netProfit)}</div>
       </td>
       <td>
-        <div class="cb-metric-val">${row.persPerEmp !== null ? fmtSEK(Math.round(row.persPerEmp)) : '<span style="color:var(--text3);">—</span>'}</div>
+        <div class="cb-metric-val" style="color:${(row.roePct||0) > 12 ? 'var(--green)' : (row.roePct||0) > 6 ? 'var(--amber)' : 'var(--text3)'};">${row.roePct !== null ? fmtPct(row.roePct) : '<span style="color:var(--text3);">—</span>'}</div>
       </td>
       <td style="text-align:center;">${actionBtn}</td>
     </tr>`;
