@@ -623,6 +623,94 @@ body {
 }
 .filter-pill-small:hover { color: var(--text); }
 
+/* ===== JOURNAL ===== */
+.journal-day-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 16px 0 8px;
+  font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--text3); font-weight: 700;
+}
+.journal-day-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+.journal-entry {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--amber);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.journal-entry:hover { border-color: var(--border2); }
+.journal-entry.source-ai-summary { border-left-color: var(--blue); }
+.journal-entry-meta {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 9px; color: var(--text3);
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+.journal-entry-time { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--text2); }
+.journal-entry-chip {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 9px;
+  color: var(--text2);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.journal-entry-chip.clickable { cursor: pointer; }
+.journal-entry-chip.clickable:hover { background: var(--bg4); color: var(--amber); }
+.journal-entry-chip.ai {
+  background: var(--blue-dim);
+  border-color: rgba(59,130,246,0.35);
+  color: var(--blue);
+  font-weight: 700;
+}
+.journal-entry-title {
+  font-size: 12px; font-weight: 700; color: var(--text);
+  margin-bottom: 3px;
+}
+.journal-entry-body {
+  font-size: 11px; color: var(--text2);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.journal-entry.expanded .journal-entry-body {
+  -webkit-line-clamp: unset;
+  display: block;
+  overflow: visible;
+}
+.journal-entry-actions {
+  display: none; gap: 6px; margin-top: 8px;
+}
+.journal-entry.expanded .journal-entry-actions { display: flex; }
+.journal-entry-action {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.journal-entry-action:hover { border-color: var(--border2); color: var(--text); }
+.journal-entry-action.danger:hover { border-color: var(--red); color: var(--red); }
+.journal-empty {
+  padding: 40px 20px; text-align: center; color: var(--text3);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: var(--bg3);
+}
+.journal-empty .icon { font-size: 36px; opacity: 0.3; margin-bottom: 10px; }
+
 /* ===== AI PERFORMANCE SUMMARY CARD ===== */
 .ai-summary-card {
   border: 1px solid rgba(59,130,246,0.25);
@@ -1780,6 +1868,44 @@ body.light-mode {
 </head>
 <body>
 
+<!-- JOURNAL MODAL (create / edit) -->
+<div class="modal-overlay" id="journalModal">
+  <div class="modal" style="width:480px;max-width:96vw;">
+    <div class="modal-title" id="journalModalTitle">📔 New Journal Note</div>
+    <div class="modal-sub">Notes are stored locally in your browser. Attaching a company lets you filter by it later.</div>
+
+    <div class="modal-field">
+      <label class="modal-label">Title</label>
+      <input class="modal-input" id="journalTitleInput" type="text" maxlength="120" placeholder="Short summary (e.g. Growth stalled YoY)">
+    </div>
+
+    <div class="modal-field">
+      <label class="modal-label">Body</label>
+      <textarea class="modal-input" id="journalBodyInput" rows="6" style="resize:vertical;min-height:120px;font-family:'DM Sans',sans-serif;line-height:1.5;" placeholder="Observations, numbers, next steps…"></textarea>
+    </div>
+
+    <div class="modal-field" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div>
+        <label class="modal-label">About (optional)</label>
+        <div id="journalCompanyPreview" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:8px 10px;font-size:11px;color:var(--text2);min-height:34px;display:flex;align-items:center;gap:6px;"></div>
+        <div style="display:flex;gap:4px;margin-top:4px;">
+          <button type="button" class="btn-secondary" style="font-size:9px;padding:3px 8px;" onclick="journalAttachActive()">Attach active</button>
+          <button type="button" class="btn-secondary" style="font-size:9px;padding:3px 8px;" onclick="journalClearAttachment()">Clear</button>
+        </div>
+      </div>
+      <div>
+        <label class="modal-label">Date</label>
+        <input class="modal-input" id="journalDateInput" type="datetime-local" style="margin:0;">
+      </div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="closeJournalModal()">Cancel</button>
+      <button class="btn-modal-save"   onclick="saveJournalEntry()" id="journalSaveBtn">Save Note</button>
+    </div>
+  </div>
+</div>
+
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settingsModal">
   <div class="modal">
@@ -1861,6 +1987,7 @@ body.light-mode {
     <span id="clockDisplay">--:--:-- CET</span>
     <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle light/dark mode">☀</button>
     <button class="settings-btn" id="langToggleBtn" onclick="toggleLanguage()" title="Switch language / Byt språk" style="letter-spacing:0.05em;">🇸🇪 Svenska</button>
+    <button class="settings-btn" onclick="openJournalModal()" title="Capture a note — works from any tab">📔 Note</button>
     <button class="settings-btn" onclick="openSettings()">⚙ API Keys</button>
   </div>
 </div>
@@ -1907,6 +2034,7 @@ body.light-mode {
   <div class="tab" id="tab-ma-btn"               onclick="switchTab('ma')" data-i18n="tab_ma">🎯 M&A Screener</div>
   <div class="tab" id="tab-competitor-bench-btn" onclick="switchTab('competitor-bench')">⚔ Competitors</div>
   <div class="tab" id="tab-watchlist-btn"        onclick="switchTab('watchlist')" data-i18n="tab_watchlist">★ Watchlist</div>
+  <div class="tab" id="tab-journal-btn"          onclick="switchTab('journal')">📔 Journal</div>
   <div class="tab" id="tab-benchmarks-btn"       onclick="switchTab('benchmarks')" data-i18n="tab_benchmarks">📡 Benchmarks</div>
   <div class="tab" id="tab-guide-btn"            onclick="switchTab('guide')" style="margin-left:auto;" data-i18n="tab_guide">📖 Guide</div>
 </div>
@@ -2282,6 +2410,7 @@ body.light-mode {
           </div>
           <div style="display:flex;gap:6px;align-items:center;">
             <span id="finAIStale" class="ai-stale-badge" style="display:none;" title="Filters changed since the last summary was generated">● Filters changed</span>
+            <button class="btn-copy" id="finAISaveBtn" onclick="saveAISummaryToJournal('financials')" title="Save this summary to your Journal" style="display:none;">📔 Save to Journal</button>
             <button class="btn-copy" id="finAICopyBtn" onclick="copyAIOutput('finAIBody', this)" title="Copy" style="display:none;">📋 Copy</button>
             <button class="btn-analyze" id="finAIRunBtn" onclick="runAIPerformanceSummary('financials')" style="background:linear-gradient(135deg,rgba(0,200,255,0.12),rgba(0,200,255,0.06));border-color:rgba(0,200,255,0.4);color:var(--blue);">🤖 Generate Summary</button>
           </div>
@@ -2359,6 +2488,7 @@ body.light-mode {
           </div>
           <div style="display:flex;gap:6px;align-items:center;">
             <span id="cfAIStale" class="ai-stale-badge" style="display:none;" title="Filters changed since the last summary was generated">● Filters changed</span>
+            <button class="btn-copy" id="cfAISaveBtn" onclick="saveAISummaryToJournal('cashflow')" title="Save this summary to your Journal" style="display:none;">📔 Save to Journal</button>
             <button class="btn-copy" id="cfAICopyBtn" onclick="copyAIOutput('cfAIBody', this)" title="Copy" style="display:none;">📋 Copy</button>
             <button class="btn-analyze" id="cfAIRunBtn" onclick="runAIPerformanceSummary('cashflow')" style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.06));border-color:rgba(16,185,129,0.4);color:var(--green);">🤖 Generate Summary</button>
           </div>
@@ -2405,6 +2535,42 @@ body.light-mode {
 
     <div id="wlGrid" class="wl-grid" style="display:none;">
       <!-- Rendered by JS -->
+    </div>
+  </div>
+
+  <!-- ===== JOURNAL TAB ===== -->
+  <div id="tab-journal" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:800;color:var(--amber);">📔 Journal</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">Capture notes, observations, and analysis snapshots over time</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn-secondary" onclick="exportJournalJSON()" title="Export all entries as JSON">⬇ Export JSON</button>
+        <button class="btn-analyze" onclick="openJournalModal()" style="background:var(--amber-dim);border-color:rgba(245,158,11,0.4);color:var(--amber);">+ New Note</button>
+      </div>
+    </div>
+
+    <!-- Search + filter pills -->
+    <div class="filter-bar" id="journalFilterBar" style="margin-bottom:12px;">
+      <div class="filter-group">
+        <span class="filter-label">Search</span>
+        <input type="text" id="journalSearchInput" placeholder="Search titles, body, or company…"
+          oninput="journalApplyFilters()"
+          style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
+      </div>
+      <div class="filter-group" id="journalFilterPills">
+        <span class="filter-label">Filter</span>
+        <button class="filter-pill active" data-filter="all" onclick="journalSetFilter('all')">All</button>
+        <button class="filter-pill" data-filter="company" onclick="journalSetFilter('company')">Active Company</button>
+        <button class="filter-pill" data-filter="week" onclick="journalSetFilter('week')">This Week</button>
+        <button class="filter-pill" data-filter="month" onclick="journalSetFilter('month')">This Month</button>
+        <button class="filter-pill" data-filter="ai" onclick="journalSetFilter('ai')">AI Summaries</button>
+      </div>
+    </div>
+
+    <div id="journalList">
+      <!-- rendered by JS -->
     </div>
   </div>
 
@@ -3472,6 +3638,7 @@ function switchTab(name) {
   if (name === 'benchmarks')        initBenchmarksTab();
   if (name === 'cashflow')          renderCashFlow();
   if (name === 'watchlist')         renderWatchlistTab();
+  if (name === 'journal')           renderJournalTab();
   if (name === 'competitor-bench')  {
     // Default to ranking unless user already picked a sub
     const sub = _activeSubTab['competitor-bench'] || 'ranking';
@@ -3483,7 +3650,7 @@ function switchTab(name) {
 }
 
 function _switchTopTab(name) {
-  ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','benchmarks','guide'].forEach(t => {
+  ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','journal','benchmarks','guide'].forEach(t => {
     const panel = document.getElementById('tab-' + t);
     if (panel) panel.style.display = (t === name) ? 'block' : 'none';
     const btn = document.getElementById('tab-' + t + '-btn');
@@ -6603,7 +6770,11 @@ async function runAIPerformanceSummary(tab) {
     if (!parsed) throw new Error('Could not parse AI response');
     renderAIPerformanceSummary(tab, parsed);
     st.lastFiltersHash = _filtersHash(c.filters);
+    st.lastParsed = parsed;
+    st.lastContextText = document.getElementById(c.ids.ctx)?.textContent || '';
     if (copyBtn) copyBtn.style.display = 'inline-flex';
+    const saveBtn = document.getElementById(tab === 'financials' ? 'finAISaveBtn' : 'cfAISaveBtn');
+    if (saveBtn) saveBtn.style.display = 'inline-flex';
   } catch(e) {
     body.innerHTML = `<div class="ai-summary-empty" style="color:var(--red);border-color:rgba(239,68,68,0.3);">⚠ ${escapeHtml(e.message || 'Summary failed')}<div style="font-size:10px;color:var(--text3);margin-top:6px;">Check your Anthropic API key in ⚙ Settings.</div></div>`;
   } finally {
@@ -6650,6 +6821,34 @@ function renderAIPerformanceSummary(tab, parsed) {
   `;
 
   renderAISummaryMiniChart(tab, chartId);
+}
+
+// Save the last-generated summary for `tab` to the Journal.
+function saveAISummaryToJournal(tab) {
+  const c = _aiSummaryConfig(tab);
+  const st = _aiSummaryState[tab];
+  if (!st || !st.lastParsed) { showToast('Generate a summary first'); return; }
+  const p = st.lastParsed;
+  const tabLabel = tab === 'financials' ? 'Financials' : 'Cash Flow';
+  const titleBase = companyData ? `${companyData.name} — ${tabLabel}` : tabLabel;
+  const title = `AI ${tabLabel} Summary · ${titleBase}`;
+  const sections = [];
+  if (p.narrative) sections.push(p.narrative);
+  if (p.goingWell && p.goingWell.length) sections.push('Going well:\n' + p.goingWell.map(x => '• ' + x).join('\n'));
+  if (p.concerns  && p.concerns.length)  sections.push('Concerning:\n'  + p.concerns.map(x => '• ' + x).join('\n'));
+  if (p.watch     && p.watch.length)     sections.push('Watch going forward:\n' + p.watch.map(x => '• ' + x).join('\n'));
+  const body = sections.join('\n\n');
+
+  addJournalEntry({
+    title,
+    body,
+    companyOrgNr: companyData?.orgNr || null,
+    companyName:  companyData?.name  || null,
+    contextTab:   tab,
+    contextLabel: st.lastContextText || '',
+    source: 'ai-summary',
+  });
+  showToast('✓ Saved to Journal', { action: { label: 'Open', onClick: () => switchTab('journal') } });
 }
 
 function renderAISummaryMiniChart(tab, canvasId) {
@@ -8923,6 +9122,7 @@ APP STRUCTURE (tabs in order):
     · Ranking — rank up to 20 peers across Revenue, EBITDA%, EBIT%, Net Profit, ROE, and Google ratings.
     · Compare — load up to 5 companies for radar chart, M&A score bar chart, and risk flag matrix.
 - ★ Watchlist: Pinned companies persist across sessions. Quick-load or compare.
+- 📔 Journal: Date-indexed notes. Capture observations from any tab via the 📔 Note button in the top bar, or save AI summaries from Financials and Cash Flow. Filter by active company, this week, this month, or AI-only.
 - 📡 Benchmarks: Fetch live SCB sector medians from Statistics Sweden.
 - 📖 Guide: Reference docs for formulas and methodology.
 
@@ -10233,6 +10433,297 @@ function exportWatchlistCSV() {
   URL.revokeObjectURL(url);
   showToast(t('toast_csv_exported'));
 }
+
+// ============================================================
+// JOURNAL — date-indexed notes (localStorage, company-attached optional)
+// ============================================================
+const JOURNAL_STORAGE_KEY = 'vcfo_journal';
+let journalEntries = _journalLoad();
+let journalFilter  = 'all';                // all | company | week | month | ai
+let journalSearch  = '';
+let _journalEditingId = null;              // null = create, else editing that id
+let _journalModalAttachment = null;        // { orgNr, name } | null
+
+function _journalLoad() {
+  try { const r = localStorage.getItem(JOURNAL_STORAGE_KEY); return r ? JSON.parse(r) : []; }
+  catch(e) { return []; }
+}
+function _journalSave() {
+  try { localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(journalEntries)); } catch(e) {}
+}
+function _journalId() { return 'j-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6); }
+
+// ── Modal control ──────────────────────────────────────────────
+function openJournalModal(idToEdit) {
+  _journalEditingId = idToEdit || null;
+  const modal = document.getElementById('journalModal');
+  const titleEl = document.getElementById('journalModalTitle');
+  const btnSave = document.getElementById('journalSaveBtn');
+
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const localIso = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  if (idToEdit) {
+    const e = journalEntries.find(x => x.id === idToEdit);
+    if (!e) return;
+    titleEl.textContent = '📔 Edit Journal Note';
+    btnSave.textContent = 'Save Changes';
+    document.getElementById('journalTitleInput').value = e.title || '';
+    document.getElementById('journalBodyInput').value  = e.body || '';
+    _journalModalAttachment = e.companyOrgNr ? { orgNr: e.companyOrgNr, name: e.companyName } : null;
+    const d = new Date(e.createdAt);
+    document.getElementById('journalDateInput').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } else {
+    titleEl.textContent = '📔 New Journal Note';
+    btnSave.textContent = 'Save Note';
+    document.getElementById('journalTitleInput').value = '';
+    document.getElementById('journalBodyInput').value  = '';
+    document.getElementById('journalDateInput').value  = localIso;
+    _journalModalAttachment = companyData ? { orgNr: companyData.orgNr, name: companyData.name } : null;
+  }
+  _renderJournalAttachmentPreview();
+  modal.classList.add('open');
+  setTimeout(() => document.getElementById('journalTitleInput').focus(), 50);
+}
+function closeJournalModal() {
+  document.getElementById('journalModal').classList.remove('open');
+  _journalEditingId = null;
+  _journalModalAttachment = null;
+}
+function _renderJournalAttachmentPreview() {
+  const el = document.getElementById('journalCompanyPreview');
+  if (!el) return;
+  if (_journalModalAttachment && _journalModalAttachment.orgNr) {
+    el.innerHTML = `<span style="color:var(--amber);font-weight:600;">${escapeHtml(_journalModalAttachment.name || _journalModalAttachment.orgNr)}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;">${escapeHtml(_journalModalAttachment.orgNr)}</span>`;
+  } else {
+    el.innerHTML = `<span style="color:var(--text3);">Not attached</span>`;
+  }
+}
+function journalAttachActive() {
+  if (!companyData) { showToast('No company loaded — use the search bar to load one first'); return; }
+  _journalModalAttachment = { orgNr: companyData.orgNr, name: companyData.name };
+  _renderJournalAttachmentPreview();
+}
+function journalClearAttachment() {
+  _journalModalAttachment = null;
+  _renderJournalAttachmentPreview();
+}
+
+function saveJournalEntry() {
+  const title = document.getElementById('journalTitleInput').value.trim();
+  const body  = document.getElementById('journalBodyInput').value.trim();
+  const rawDate = document.getElementById('journalDateInput').value;
+  if (!title && !body) { showToast('Add a title or body first'); return; }
+  const createdAt = rawDate ? new Date(rawDate).toISOString() : new Date().toISOString();
+  const now = new Date().toISOString();
+
+  if (_journalEditingId) {
+    const e = journalEntries.find(x => x.id === _journalEditingId);
+    if (!e) { closeJournalModal(); return; }
+    e.title = title || '(untitled)';
+    e.body  = body;
+    e.createdAt = createdAt;
+    e.updatedAt = now;
+    e.companyOrgNr = _journalModalAttachment?.orgNr || null;
+    e.companyName  = _journalModalAttachment?.name  || null;
+    _journalSave();
+    closeJournalModal();
+    renderJournalTab();
+    showToast('✓ Note updated');
+  } else {
+    journalEntries.push({
+      id: _journalId(),
+      createdAt, updatedAt: now,
+      title: title || '(untitled)',
+      body,
+      companyOrgNr: _journalModalAttachment?.orgNr || null,
+      companyName:  _journalModalAttachment?.name  || null,
+      contextTab:   activeTab || null,
+      source: 'manual',
+    });
+    _journalSave();
+    closeJournalModal();
+    showToast('✓ Note saved', { action: { label: 'Open', onClick: () => switchTab('journal') } });
+    if (activeTab === 'journal') renderJournalTab();
+  }
+}
+
+// ── Programmatic capture (used by AI summary) ────────────────
+function addJournalEntry(opts) {
+  // opts: { title, body, companyOrgNr?, companyName?, contextTab?, contextLabel?, source? }
+  const now = new Date().toISOString();
+  const e = {
+    id: _journalId(),
+    createdAt: now, updatedAt: now,
+    title: (opts.title || '(untitled)').slice(0, 200),
+    body:  opts.body  || '',
+    companyOrgNr: opts.companyOrgNr || null,
+    companyName:  opts.companyName  || null,
+    contextTab:   opts.contextTab   || activeTab || null,
+    contextLabel: opts.contextLabel || null,
+    source: opts.source || 'manual',
+  };
+  journalEntries.push(e);
+  _journalSave();
+  if (activeTab === 'journal') renderJournalTab();
+  return e.id;
+}
+
+// ── Delete + undo ────────────────────────────────────────────
+function deleteJournalEntry(id) {
+  const idx = journalEntries.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  const [removed] = journalEntries.splice(idx, 1);
+  _journalSave();
+  renderJournalTab();
+  showToast('Note deleted', { action: { label: 'Undo', onClick: () => {
+    journalEntries.splice(idx, 0, removed);
+    _journalSave();
+    renderJournalTab();
+  }}});
+}
+
+// ── Filtering ────────────────────────────────────────────────
+function journalSetFilter(name) {
+  journalFilter = name;
+  document.querySelectorAll('#journalFilterPills .filter-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === name);
+  });
+  renderJournalList();
+}
+function journalApplyFilters() {
+  journalSearch = document.getElementById('journalSearchInput').value.trim().toLowerCase();
+  renderJournalList();
+}
+
+function _journalFiltered() {
+  const now = Date.now();
+  const weekMs  = 7 * 86400000;
+  const monthMs = 30 * 86400000;
+  return journalEntries
+    .slice()
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .filter(e => {
+      if (journalFilter === 'company') {
+        if (!companyData || !e.companyOrgNr) return false;
+        if (e.companyOrgNr !== companyData.orgNr) return false;
+      } else if (journalFilter === 'week') {
+        if (now - new Date(e.createdAt).getTime() > weekMs) return false;
+      } else if (journalFilter === 'month') {
+        if (now - new Date(e.createdAt).getTime() > monthMs) return false;
+      } else if (journalFilter === 'ai') {
+        if (e.source !== 'ai-summary') return false;
+      }
+      if (journalSearch) {
+        const hay = ((e.title||'') + ' ' + (e.body||'') + ' ' + (e.companyName||'')).toLowerCase();
+        if (!hay.includes(journalSearch)) return false;
+      }
+      return true;
+    });
+}
+
+// ── Render ────────────────────────────────────────────────
+function renderJournalTab() {
+  // Re-sync filter pill states (e.g. if companyData cleared)
+  document.querySelectorAll('#journalFilterPills .filter-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === journalFilter);
+  });
+  renderJournalList();
+}
+
+function renderJournalList() {
+  const list = document.getElementById('journalList');
+  if (!list) return;
+  const entries = _journalFiltered();
+  if (entries.length === 0) {
+    const hint = journalEntries.length === 0
+      ? 'No notes yet. Click <strong>+ New Note</strong> above or the 📔 Note button in the top bar.'
+      : 'No notes match this filter.';
+    list.innerHTML = `<div class="journal-empty">
+      <div class="icon">📔</div>
+      <div style="font-size:12px;color:var(--text2);">${hint}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:6px;">Notes can be attached to a company so you can filter by it later. AI summaries can also be saved here from the Financials and Cash Flow tabs.</div>
+    </div>`;
+    return;
+  }
+
+  // Group by local calendar day
+  const groups = new Map();
+  for (const e of entries) {
+    const d = new Date(e.createdAt);
+    const key = d.toDateString();
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(e);
+  }
+
+  let html = '';
+  for (const [dayKey, dayEntries] of groups) {
+    const dateLabel = new Date(dayKey).toLocaleDateString(undefined, { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+    html += `<div class="journal-day-divider">${escapeHtml(dateLabel)}</div>`;
+    for (const e of dayEntries) html += _renderJournalEntry(e);
+  }
+  list.innerHTML = html;
+}
+
+function _renderJournalEntry(e) {
+  const d = new Date(e.createdAt);
+  const pad = n => String(n).padStart(2, '0');
+  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const isAi = e.source === 'ai-summary';
+  const tabLabels = {
+    financials:'Financials', cashflow:'Cash Flow', company:'Company',
+    cfo:'CFO Audit', ma:'M&A', 'competitor-bench':'Competitors',
+    compare:'Compare', watchlist:'Watchlist', benchmarks:'Benchmarks',
+    journal:'Journal', guide:'Guide'
+  };
+  const ctx = tabLabels[e.contextTab] || '';
+  const companyChip = e.companyOrgNr
+    ? `<span class="journal-entry-chip clickable" title="Open ${escapeHtml(e.companyName||e.companyOrgNr)} in Company" onclick="event.stopPropagation();sendTo('company',{orgs:[{orgNr:${JSON.stringify(e.companyOrgNr)},name:${JSON.stringify(e.companyName||'')}}],source:'journal'})">🏢 ${escapeHtml(e.companyName || e.companyOrgNr)}</span>`
+    : '';
+  const aiChip  = isAi ? `<span class="journal-entry-chip ai">AI</span>` : '';
+  const ctxChip = ctx   ? `<span class="journal-entry-chip">${escapeHtml(ctx)}${e.contextLabel ? ' · ' + escapeHtml(e.contextLabel) : ''}</span>` : '';
+
+  return `<div class="journal-entry${isAi?' source-ai-summary':''}" id="j-${escapeHtml(e.id)}" onclick="_toggleJournalEntry('${escapeHtml(e.id)}')">
+    <div class="journal-entry-meta">
+      <span class="journal-entry-time">${time}</span>
+      ${companyChip}
+      ${ctxChip}
+      ${aiChip}
+    </div>
+    <div class="journal-entry-title">${escapeHtml(e.title)}</div>
+    <div class="journal-entry-body">${escapeHtml(e.body || '')}</div>
+    <div class="journal-entry-actions">
+      <button class="journal-entry-action" onclick="event.stopPropagation();openJournalModal('${escapeHtml(e.id)}')">Edit</button>
+      <button class="journal-entry-action danger" onclick="event.stopPropagation();deleteJournalEntry('${escapeHtml(e.id)}')">Delete</button>
+    </div>
+  </div>`;
+}
+
+function _toggleJournalEntry(id) {
+  const el = document.getElementById('j-' + id);
+  if (el) el.classList.toggle('expanded');
+}
+
+function exportJournalJSON() {
+  if (journalEntries.length === 0) { showToast('Journal is empty'); return; }
+  const blob = new Blob([JSON.stringify(journalEntries, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `vcfo_journal_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('✓ Journal exported');
+}
+
+// Close modal on ESC / backdrop click
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const m = document.getElementById('journalModal');
+    if (m && m.classList.contains('open')) closeJournalModal();
+  }
+});
 
 // ============================================================
 // COMPETITOR BENCH — Your Company loader
