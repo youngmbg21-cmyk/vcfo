@@ -565,6 +565,64 @@ body {
   font-family:'JetBrains Mono',monospace;
 }
 
+/* ===== FILTER BAR (reused across Financials + Cash Flow) ===== */
+.filter-bar {
+  display: flex; flex-direction: column;
+  gap: 6px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 14px;
+}
+.filter-bar:empty { display: none; }
+.filter-group {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
+}
+.filter-label {
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text3); font-weight: 700;
+  min-width: 72px;
+  padding-right: 6px;
+}
+.filter-pill {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.filter-pill:hover { border-color: var(--border2); color: var(--text); }
+.filter-pill.active {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--green);
+}
+.filter-pill.group-years.active {
+  background: var(--amber-dim);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+.filter-pill.group-series.active {
+  background: var(--blue-dim);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.filter-pill-small {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+  cursor: pointer;
+  padding: 2px 6px;
+  margin-left: 4px;
+}
+.filter-pill-small:hover { color: var(--text); }
+
 /* ===== LOOKUP ACTION BUTTONS (chat + elsewhere) ===== */
 .lookup-action {
   background: var(--bg3);
@@ -2088,8 +2146,11 @@ body.light-mode {
       <div>Load a company to view financial data</div>
     </div>
     <div id="finContent" style="display:none;">
+      <!-- Shared FilterBar: years / sections / series — controls tables + chart -->
+      <div id="finFilterBar" class="filter-bar"></div>
+
       <!-- Revenue-to-Net-Profit waterfall chart (full width, above cards) -->
-      <div class="card" style="margin-bottom:16px;">
+      <div class="card" style="margin-bottom:16px;" data-section="waterfall">
         <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
           Revenue → Net Profit Waterfall
           <button id="finWfDiagBtn" style="display:none;background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:9px;color:var(--text3);cursor:pointer;font-family:'JetBrains Mono',monospace;" onclick="showFinWfDiag()" title="Show data diagnostic">Diagnostic</button>
@@ -2099,20 +2160,20 @@ body.light-mode {
           <canvas id="finWaterfallChart"></canvas>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="card" style="overflow-x:auto;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="finCardsGrid">
+        <div class="card" style="overflow-x:auto;" data-section="income">
           <div class="card-title">Income Statement (Resultaträkning)</div>
           <div id="finIncome">—</div>
         </div>
-        <div class="card" style="overflow-x:auto;">
+        <div class="card" style="overflow-x:auto;" data-section="balance">
           <div class="card-title">Balance Sheet (Balansräkning)</div>
           <div id="finBalance">—</div>
         </div>
-        <div class="card">
+        <div class="card" data-section="ratios">
           <div class="card-title">Key Ratios</div>
           <div id="finRatios">—</div>
         </div>
-        <div class="card">
+        <div class="card" data-section="auditor">
           <div class="card-title">Auditor Notes & Remarks</div>
           <div id="finAuditor">—</div>
         </div>
@@ -2135,10 +2196,13 @@ body.light-mode {
         <button class="btn-secondary" onclick="renderCashFlow()" data-i18n="btn_refresh_cf">↺ Refresh</button>
       </div>
 
+      <!-- Shared FilterBar: years / sections / series -->
+      <div id="cfFilterBar" class="filter-bar"></div>
+
       <div class="cf-waterfall-grid">
         <!-- Left: summary -->
         <div>
-          <div class="cf-summary-card">
+          <div class="cf-summary-card" data-section="components">
             <div class="card-title">Cash Flow Components <span style="color:var(--green);">BRIDGE</span></div>
             <div id="cfSummaryRows">
               <div style="color:var(--text3);font-size:11px;">Computing...</div>
@@ -2149,7 +2213,7 @@ body.light-mode {
             </div>
           </div>
 
-          <div class="cf-summary-card" style="margin-top:12px;">
+          <div class="cf-summary-card" style="margin-top:12px;" data-section="conversion">
             <div class="card-title">Cash Conversion Metrics</div>
             <div id="cfMetrics">
               <div style="color:var(--text3);font-size:11px;">—</div>
@@ -2158,7 +2222,7 @@ body.light-mode {
         </div>
 
         <!-- Right: chart -->
-        <div class="card">
+        <div class="card" data-section="waterfall">
           <div class="card-title">Waterfall Chart <span style="color:var(--green);">NET PROFIT → FCF</span></div>
           <div id="cfYearBar" class="cf-year-bar" style="display:none;"></div>
           <canvas id="cfWaterfallChart" style="max-height:320px;"></canvas>
@@ -2699,6 +2763,56 @@ let anthropicKey = ''; try { anthropicKey = localStorage.getItem('vcfo_anthropic
 let ANTHROPIC_PROXY_URL = ''; try { ANTHROPIC_PROXY_URL = localStorage.getItem('vcfo_proxy_url') || ''; } catch(e) {}
 let serpApiKey = ''; try { serpApiKey = localStorage.getItem('vcfo_serp') || ''; } catch(e) {}
 let companyData  = null;
+
+// ============================================================
+// FILTER STATE — source of truth for Financials & Cash Flow tabs.
+// Batch 4 AI summary reads from these to stay in sync with the UI.
+// ============================================================
+const FIN_SECTIONS  = [
+  { value:'waterfall', label:'Waterfall' },
+  { value:'income',    label:'Income Statement' },
+  { value:'balance',   label:'Balance Sheet' },
+  { value:'ratios',    label:'Key Ratios' },
+  { value:'auditor',   label:'Auditor Notes' },
+];
+const FIN_SERIES = [
+  { value:'revenue',      label:'Revenue' },
+  { value:'opcosts',      label:'Op. Costs (excl. D&A)' },
+  { value:'ebitda',       label:'EBITDA' },
+  { value:'depreciation', label:'Depreciation' },
+  { value:'ebit',         label:'EBIT' },
+  { value:'taxfin',       label:'Tax & Financials' },
+  { value:'netprofit',    label:'Net Profit' },
+];
+const CF_SECTIONS = [
+  { value:'components', label:'Components' },
+  { value:'conversion', label:'Conversion Metrics' },
+  { value:'waterfall',  label:'Waterfall Chart' },
+];
+const CF_SERIES = [
+  { value:'netprofit',    label:'Net Profit' },
+  { value:'depreciation', label:'+ Depreciation' },
+  { value:'deltawc',      label:'± ΔWorking Cap.' },
+  { value:'capex',        label:'− CapEx' },
+  { value:'fcf',          label:'Free Cash Flow' },
+];
+
+const financialsFilters = {
+  years:    new Set(),
+  sections: new Set(FIN_SECTIONS.map(s => s.value)),
+  series:   new Set(FIN_SERIES.map(s => s.value)),
+};
+const cashflowFilters = {
+  years:    new Set(),
+  sections: new Set(CF_SECTIONS.map(s => s.value)),
+  series:   new Set(CF_SERIES.map(s => s.value)),
+};
+
+// Reset year filters when a new company loads (years change)
+function resetFilterYearsFor(obj, years) {
+  obj.years.clear();
+  years.forEach(y => obj.years.add(String(y)));
+}
 let maScore      = null;
 let cfoRunning   = false;
 let maRunning    = false;
@@ -3415,6 +3529,80 @@ function sendTo(targetTab, payload, opts) {
     const msg   = (payload && payload.toastMsg)   || `Opened ${targetTab}`;
     showToast(msg, { action: { label, onClick: () => switchTab(targetTab) } });
   }
+}
+
+// ============================================================
+// FILTER BAR — reusable pill-group primitive
+// ------------------------------------------------------------
+// config = {
+//   groups: [
+//     { id:'years', label:'Years', allowAll:true, hideWhenSingle:true,
+//       options: () => [{value:'2023', label:'FY2023'}, ...] }
+//   ]
+// }
+// state = { years: Set<string>, sections: Set<string>, ... }
+// onChange(state, changed) is called after any toggle.
+// ============================================================
+const FILTER_BAR_REGISTRY = {};
+
+function renderFilterBar(containerId, config, state, onChange) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  FILTER_BAR_REGISTRY[containerId] = { config, state, onChange };
+  let html = '';
+  for (const group of config.groups) {
+    const options = typeof group.options === 'function' ? group.options() : (group.options || []);
+    if (!options.length && group.hideWhenEmpty !== false) continue;
+    if (options.length <= 1 && group.hideWhenSingle) continue;
+
+    html += `<div class="filter-group" data-group="${group.id}">`;
+    html += `<span class="filter-label">${escapeHtml(group.label)}</span>`;
+
+    const set = state[group.id] || new Set();
+    for (const opt of options) {
+      const isActive = set.has(opt.value);
+      const extraCls = `group-${group.id}`;
+      html += `<button class="filter-pill ${extraCls}${isActive?' active':''}"
+        data-group="${group.id}" data-value="${escapeHtml(opt.value)}"
+        onclick="_filterBarToggle('${containerId}','${group.id}','${escapeHtml(opt.value)}')"
+        title="${escapeHtml(opt.title || opt.label)}">${escapeHtml(opt.label)}</button>`;
+    }
+    if (group.allowAll && options.length > 1) {
+      const all = options.every(o => set.has(o.value));
+      html += `<button class="filter-pill-small" onclick="_filterBarAll('${containerId}','${group.id}',${!all})">${all?'Clear':'All'}</button>`;
+    }
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function _filterBarToggle(containerId, groupId, value) {
+  const reg = FILTER_BAR_REGISTRY[containerId]; if (!reg) return;
+  const set = reg.state[groupId]; if (!set) return;
+  if (set.has(value)) set.delete(value); else set.add(value);
+  renderFilterBar(containerId, reg.config, reg.state, reg.onChange);
+  try { reg.onChange && reg.onChange(reg.state, { groupId, value, action:'toggle' }); } catch(e) { console.error(e); }
+}
+function _filterBarAll(containerId, groupId, selectAll) {
+  const reg = FILTER_BAR_REGISTRY[containerId]; if (!reg) return;
+  const group = reg.config.groups.find(g => g.id === groupId); if (!group) return;
+  const options = typeof group.options === 'function' ? group.options() : (group.options || []);
+  const set = reg.state[groupId] || new Set();
+  set.clear();
+  if (selectAll) options.forEach(o => set.add(o.value));
+  reg.state[groupId] = set;
+  renderFilterBar(containerId, reg.config, reg.state, reg.onChange);
+  try { reg.onChange && reg.onChange(reg.state, { groupId, action: selectAll?'all':'clear' }); } catch(e) { console.error(e); }
+}
+
+// Section visibility helper — hides/shows elements marked with [data-section="..."]
+function applySectionVisibility(rootId, sectionsSet) {
+  const root = document.getElementById(rootId);
+  if (!root) return;
+  root.querySelectorAll('[data-section]').forEach(el => {
+    const id = el.getAttribute('data-section');
+    el.style.display = sectionsSet.has(id) ? '' : 'none';
+  });
 }
 
 // ============================================================
@@ -4828,6 +5016,10 @@ function buildFieldRows(rows) {
 // RENDER — Financials Tab
 // ============================================================
 function renderFinancialsTab(d) {
+  // Refresh the FilterBar (years depend on historyData; defaults = all on)
+  renderFinancialsFilterBar();
+  applySectionVisibility('finContent', financialsFilters.sections);
+
   const ros = d.netSales ? (d.opProfit / d.netSales * 100) : 0;
 
   // Find prior year data from historyData
@@ -4914,6 +5106,150 @@ function renderFinancialsTab(d) {
   if (diagBtn) diagBtn.style.display = 'inline-block';
 }
 
+// ── Financials FilterBar: years, sections, series ──
+function renderFinancialsFilterBar() {
+  // Seed years with all known if empty (first time or after company change)
+  const knownYears = Object.keys(historyData || {}).concat(companyData ? [String(companyData.fiscalYear)] : []);
+  const uniqueYears = Array.from(new Set(knownYears.filter(Boolean))).sort().reverse();
+  // Drop years no longer available (e.g. new company loaded)
+  Array.from(financialsFilters.years).forEach(y => { if (!uniqueYears.includes(y)) financialsFilters.years.delete(y); });
+  // If selection ended up empty but years exist, default to all
+  if (financialsFilters.years.size === 0 && uniqueYears.length) {
+    uniqueYears.forEach(y => financialsFilters.years.add(y));
+  }
+
+  const config = {
+    groups: [
+      { id:'years', label:'Years', allowAll:true, hideWhenSingle:true,
+        options: () => uniqueYears.map(y => ({ value:y, label:'FY'+y })) },
+      { id:'sections', label:'Sections', allowAll:true,
+        options: FIN_SECTIONS },
+      { id:'series', label:'Chart Series', allowAll:true,
+        options: FIN_SERIES },
+    ]
+  };
+  renderFilterBar('finFilterBar', config, financialsFilters, onFinancialsFilterChange);
+}
+
+function onFinancialsFilterChange(state, changed) {
+  // Sections: show/hide cards immediately without re-rendering content
+  applySectionVisibility('finContent', state.sections);
+  // Series: re-render waterfall only
+  if (changed && changed.groupId === 'series') {
+    const yr = finWfSelectedYear || (companyData ? companyData.fiscalYear : null);
+    const dd = (yr && historyData[yr]) || companyData;
+    if (dd) renderFinWaterfall(dd);
+    return;
+  }
+  // Years: re-render multi-year tables (income, balance, ratios) + waterfall uses primary year
+  if (changed && changed.groupId === 'years' && companyData) {
+    const years = Array.from(state.years).sort().reverse();
+    if (years.length) {
+      const primary = years[0];
+      const primaryData = historyData[primary] || companyData;
+      renderFinMultiYearTables(primaryData, years);
+      finWfSelectedYear = primary;
+      renderFinWaterfall(primaryData);
+    }
+  }
+}
+
+// Render Income Statement + Balance Sheet + Key Ratios with N columns (one per selected year)
+function renderFinMultiYearTables(primary, selectedYears) {
+  const yrs = (selectedYears && selectedYears.length ? selectedYears : [primary.fiscalYear]).map(String);
+  const rowData = yrs.map(y => historyData[y] || (String(primary.fiscalYear) === y ? primary : null)).filter(Boolean);
+  if (!rowData.length) return;
+
+  function yoyPct(curr, prior) {
+    if (!prior || prior === 0) return '—';
+    const pct = ((curr - prior) / Math.abs(prior) * 100);
+    if (Math.abs(pct) < 1) return '<span style="color:var(--text3);">→ 0%</span>';
+    if (pct > 0) return `<span class="pos">▲ +${pct.toFixed(1)}%</span>`;
+    return `<span class="neg">▼ ${pct.toFixed(1)}%</span>`;
+  }
+
+  const headerCells = rowData.map(r => `<th style="text-align:right">FY${r.fiscalYear}</th>`).join('');
+  const yoyCol = rowData.length === 2
+    ? `<th style="text-align:right">YoY Δ</th>`
+    : '';
+
+  const ebitdaOf = r => (r.opProfit || 0) + (r.depreciation || 0);
+  const rosOf    = r => r.netSales ? (r.opProfit / r.netSales * 100) : 0;
+
+  function row(label, valueFn, fmt, classFn, isPct) {
+    const vals = rowData.map(r => {
+      const v = valueFn(r);
+      const cls = classFn ? classFn(v, r) : '';
+      return `<td style="text-align:right" class="${cls}">${isPct ? fmtPct(v) : fmt(v)}</td>`;
+    }).join('');
+    let yoy = '';
+    if (rowData.length === 2) {
+      const curr = valueFn(rowData[0]);
+      const prior = valueFn(rowData[1]);
+      yoy = `<td style="text-align:right">${yoyPct(curr, prior)}</td>`;
+    }
+    return `<tr><td>${label}</td>${vals}${yoy}</tr>`;
+  }
+
+  // Income Statement
+  document.getElementById('finIncome').innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Line Item</th>${headerCells}${yoyCol}</tr></thead>
+      <tbody>
+        ${row('Net Sales',  r => r.netSales,  fmtSEK)}
+        ${row('EBIT (Operating Profit)', r => r.opProfit, fmtSEK, v => v>0?'pos':'neg')}
+        ${row('EBITDA', ebitdaOf, fmtSEK, v => v>0?'pos':'neg')}
+        ${row('Net Profit', r => r.netProfit, fmtSEK, v => v>0?'pos':'neg')}
+        ${row('ROS', rosOf, null, v => v>10?'pos':v>5?'amb':'neg', true)}
+        ${row('Dividends Paid', r => r.dividendsPaid || 0, fmtSEK, (v,r) => (r.dividendsPaid||0) > (r.netProfit||0) ? 'neg' : 'amb')}
+      </tbody>
+    </table>`;
+
+  // Balance Sheet
+  document.getElementById('finBalance').innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Item</th>${headerCells}${yoyCol}</tr></thead>
+      <tbody>
+        ${row('Fixed Assets',        r => r.totalFixedAssets || 0,   fmtSEK)}
+        ${row('Current Assets',      r => r.totalCurrentAssets || 0, fmtSEK)}
+        ${row('Total Assets',        r => r.totalAssets || 0,        fmtSEK)}
+        ${row('Equity',              r => r.equity || 0,             fmtSEK, () => 'pos')}
+        ${row('Long-term Debt',      r => r.longTermDebt || 0,       fmtSEK)}
+        ${row('Current Liabilities', r => r.currentLiabilities || 0, fmtSEK)}
+      </tbody>
+    </table>`;
+
+  // Key Ratios — when single year, keep the rich benchmark view; when multi, compact multi-col
+  if (rowData.length === 1) {
+    document.getElementById('finRatios').innerHTML = `
+      <table class="data-table">
+        <thead><tr><th>Ratio</th><th style="text-align:right">Value</th><th>Benchmark</th><th style="text-align:center">Status</th></tr></thead>
+        <tbody>${buildRatioRows(rowData[0])}</tbody>
+      </table>`;
+  } else {
+    const ratioRows = [
+      { name:'ROS',            fn: r => r.netSales ? r.opProfit/r.netSales*100 : null,   fmt: fmtPct },
+      { name:'ROE',            fn: r => r.equity   ? r.netProfit/r.equity*100 : null,    fmt: fmtPct },
+      { name:'Debt/Equity',    fn: r => r.equity   ? (r.longTermDebt+r.currentLiabilities)/r.equity : null, fmt: fmtRatio },
+      { name:'Current Ratio',  fn: r => r.currentLiabilities ? r.totalCurrentAssets/r.currentLiabilities : null, fmt: fmtRatio },
+      { name:'Payout Ratio',   fn: r => r.netProfit ? r.dividendsPaid/r.netProfit*100 : null, fmt: fmtPct },
+    ];
+    const header = `<tr><th>Ratio</th>${headerCells}</tr>`;
+    const body = ratioRows.map(rr => {
+      const cells = rowData.map(r => {
+        const v = rr.fn(r);
+        return `<td style="text-align:right">${v === null || v === undefined ? '—' : rr.fmt(v)}</td>`;
+      }).join('');
+      return `<tr><td>${rr.name}</td>${cells}</tr>`;
+    }).join('');
+    document.getElementById('finRatios').innerHTML = `
+      <table class="data-table">
+        <thead>${header}</thead>
+        <tbody>${body}</tbody>
+      </table>`;
+  }
+}
+
 // Show waterfall data diagnostic panel
 function showFinWfDiag() {
   const yr = finWfSelectedYear || (companyData ? companyData.fiscalYear : null);
@@ -4986,8 +5322,12 @@ let finWaterfallInst = null;
 let finWfSelectedYear = null;
 
 function renderFinWfYearBar() {
+  // Legacy per-chart year bar is now replaced by the shared FilterBar Years group.
+  // Keep this function as a no-op so call sites don't break.
   const bar = document.getElementById('finWfYearBar');
-  if (!bar) return;
+  if (bar) bar.style.display = 'none';
+  return;
+  // eslint-disable-next-line no-unreachable
   const years = Object.keys(historyData || {}).sort();
   if (years.length <= 1) { bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
@@ -5148,35 +5488,57 @@ function renderFinWaterfall(d) {
 
   // ── Build bars: only use fields allabolag reliably provides ──
   const bars = [];
+  const visibleSeries = financialsFilters.series; // Set<string>
+  const depreciation = d.depreciation || 0;
+  const ebitda = ebit + depreciation;
+  // Operating costs excluding D&A (so the Op Costs → EBITDA bridge adds up correctly)
+  const opCostsExDA = (netSales - ebitda);
 
   // 1. Net Sales (opening)
-  bars.push({ en: 'Net Sales', sv: 'Nettoomsättning', value: netSales, role: 'revenue' });
+  if (visibleSeries.has('revenue'))
+    bars.push({ en: 'Net Sales', sv: 'Nettoomsättning', value: netSales, role: 'revenue', key:'revenue' });
 
-  // 2. Operating Costs (derived: Net Sales - EBIT = total operating costs)
-  const opCosts = netSales - ebit;
-  if (netSales > 0 && opCosts > 0) {
-    bars.push({ en: 'Operating Costs', sv: 'Rörelsekostnader', value: -opCosts, role: 'step' });
+  // 2. Operating Costs (excluding D&A so the EBITDA subtotal balances)
+  if (visibleSeries.has('opcosts') && netSales > 0 && opCostsExDA > 0) {
+    bars.push({ en: 'Op. Costs (excl. D&A)', sv: 'Rörelsekostnader (exkl. avskr.)', value: -opCostsExDA, role: 'step', key:'opcosts' });
   }
 
-  // 3. EBIT (subtotal)
-  bars.push({ en: 'EBIT', sv: 'Rörelseresultat', value: ebit, role: 'subtotal' });
+  // 3. EBITDA (subtotal) — new
+  if (visibleSeries.has('ebitda')) {
+    bars.push({ en: 'EBITDA', sv: 'EBITDA', value: ebitda, role: 'subtotal', key:'ebitda' });
+  }
 
-  // 4. Below-the-line: derive the net adjustment from EBIT → Net Profit
-  //    This includes financial items, tax, group contributions, etc.
-  //    Showing them individually is unreliable for holding/group companies
-  //    where intercompany items can be larger than revenue.
+  // 4. Depreciation & Amortisation
+  if (visibleSeries.has('depreciation') && depreciation !== 0) {
+    bars.push({ en: 'Depreciation & Amort.', sv: 'Avskrivningar', value: -Math.abs(depreciation), role: 'step', key:'depreciation' });
+  }
+
+  // 5. EBIT (subtotal)
+  if (visibleSeries.has('ebit')) {
+    bars.push({ en: 'EBIT', sv: 'Rörelseresultat', value: ebit, role: 'subtotal', key:'ebit' });
+  }
+
+  // 6. Below-the-line: derive the net adjustment from EBIT → Net Profit
   const belowLine = netP - ebit;
-  if (Math.abs(belowLine) > 0) {
+  if (visibleSeries.has('taxfin') && Math.abs(belowLine) > 0) {
     if (belowLine < 0) {
-      bars.push({ en: 'Tax & Financials', sv: 'Skatt & finansnetto', value: belowLine, role: 'step' });
+      bars.push({ en: 'Tax & Financials', sv: 'Skatt & finansnetto', value: belowLine, role: 'step', key:'taxfin' });
     } else {
-      // Positive (unusual) — could be net financial income exceeding tax
-      bars.push({ en: 'Net Financial Items', sv: 'Finansnetto', value: belowLine, role: 'step' });
+      bars.push({ en: 'Net Financial Items', sv: 'Finansnetto', value: belowLine, role: 'step', key:'taxfin' });
     }
   }
 
-  // 5. Net Profit (closing)
-  bars.push({ en: 'Net Profit', sv: 'Årets resultat', value: netP, role: 'closing' });
+  // 7. Net Profit (closing)
+  if (visibleSeries.has('netprofit'))
+    bars.push({ en: 'Net Profit', sv: 'Årets resultat', value: netP, role: 'closing', key:'netprofit' });
+
+  if (bars.length === 0) {
+    if (finWaterfallInst) { finWaterfallInst.destroy(); finWaterfallInst = null; }
+    const c2d = canvas.getContext('2d'); c2d.clearRect(0, 0, canvas.width, canvas.height);
+    c2d.fillStyle = mutedColor; c2d.font = '12px DM Sans'; c2d.textAlign = 'center';
+    c2d.fillText('No series selected — use the Chart Series filter above to enable bars', canvas.width / 2, canvas.height / 2);
+    return;
+  }
 
   // ── Chart arrays ──
   const labels   = bars.map(b => b.en);
@@ -8875,8 +9237,11 @@ function getCfAvailableYears() {
 }
 
 function renderCfYearBar() {
+  // Legacy per-chart year bar is superseded by the shared FilterBar Years group.
   const bar = document.getElementById('cfYearBar');
-  if (!bar) return;
+  if (bar) bar.style.display = 'none';
+  return;
+  // eslint-disable-next-line no-unreachable
   const years = getCfAvailableYears();
   if (years.length <= 1) { bar.style.display = 'none'; return; }
 
@@ -8913,8 +9278,43 @@ function renderCashFlow() {
   wfCompareMode  = false;
   wfCompareYears = [];
   document.getElementById('cfCompareLegend').style.display = 'none';
+  renderCashflowFilterBar();
+  applySectionVisibility('cfContent', cashflowFilters.sections);
   renderCfYearBar();
-  renderCashFlowForYear(companyData);
+  // Choose primary year = most recent selected year (or companyData's year)
+  const years = Array.from(cashflowFilters.years).sort().reverse();
+  const primary = (years.length && historyData[years[0]]) || companyData;
+  renderCashFlowForYear(primary);
+}
+
+function renderCashflowFilterBar() {
+  const knownYears = Object.keys(historyData || {}).concat(companyData ? [String(companyData.fiscalYear)] : []);
+  const uniqueYears = Array.from(new Set(knownYears.filter(Boolean))).sort().reverse();
+  Array.from(cashflowFilters.years).forEach(y => { if (!uniqueYears.includes(y)) cashflowFilters.years.delete(y); });
+  if (cashflowFilters.years.size === 0 && uniqueYears.length) {
+    uniqueYears.forEach(y => cashflowFilters.years.add(y));
+  }
+
+  const config = {
+    groups: [
+      { id:'years', label:'Years', allowAll:true, hideWhenSingle:true,
+        options: () => uniqueYears.map(y => ({ value:y, label:'FY'+y })) },
+      { id:'sections', label:'Sections', allowAll:true,
+        options: CF_SECTIONS },
+      { id:'series', label:'Chart Series', allowAll:true,
+        options: CF_SERIES },
+    ]
+  };
+  renderFilterBar('cfFilterBar', config, cashflowFilters, onCashflowFilterChange);
+}
+
+function onCashflowFilterChange(state, changed) {
+  applySectionVisibility('cfContent', state.sections);
+  if (changed && (changed.groupId === 'series' || changed.groupId === 'years')) {
+    const years = Array.from(state.years).sort().reverse();
+    const primary = (years.length && historyData[years[0]]) || companyData;
+    if (primary) renderCashFlowForYear(primary);
+  }
 }
 
 function renderCashFlowForYear(d) {
@@ -8985,16 +9385,29 @@ function renderWaterfallChart(cf) {
   const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
   const mutedColor = isLight ? '#94a3b8' : '#64748b';
 
-  // Build bars dynamically — only include components that are available
+  const vs = cashflowFilters.series; // Set<string>
+
+  // Build bars dynamically — filtered by visible-series set
   const bars = [];
-  bars.push({ label: 'Net Profit', value: cf.netProfit, anchor: true });
-  if (cf.hasDepr && cf.depreciation !== 0)
-    bars.push({ label: '+ Depreciation', value: cf.depreciation });
-  if (cf.deltaWC != null)
-    bars.push({ label: (cf.deltaWC >= 0 ? '− ' : '+ ') + 'Δ Working Cap.', value: -cf.deltaWC, est: cf.wcSource !== 'calculated' });
-  if (cf.capex != null && cf.capex !== 0)
-    bars.push({ label: '− CapEx' + (cf.capexSource === 'est.' ? ' (est.)' : ''), value: -cf.capex, est: true });
-  bars.push({ label: 'Free Cash Flow', value: cf.fcf, anchor: true });
+  if (vs.has('netprofit'))
+    bars.push({ label: 'Net Profit', value: cf.netProfit, anchor: true, key:'netprofit' });
+  if (vs.has('depreciation') && cf.hasDepr && cf.depreciation !== 0)
+    bars.push({ label: '+ Depreciation', value: cf.depreciation, key:'depreciation' });
+  if (vs.has('deltawc') && cf.deltaWC != null)
+    bars.push({ label: (cf.deltaWC >= 0 ? '− ' : '+ ') + 'Δ Working Cap.', value: -cf.deltaWC, est: cf.wcSource !== 'calculated', key:'deltawc' });
+  if (vs.has('capex') && cf.capex != null && cf.capex !== 0)
+    bars.push({ label: '− CapEx' + (cf.capexSource === 'est.' ? ' (est.)' : ''), value: -cf.capex, est: true, key:'capex' });
+  if (vs.has('fcf'))
+    bars.push({ label: 'Free Cash Flow', value: cf.fcf, anchor: true, key:'fcf' });
+
+  if (bars.length === 0) {
+    if (cfWaterfallChartInst) { cfWaterfallChartInst.destroy(); cfWaterfallChartInst = null; }
+    const c2d = canvas.getContext('2d');
+    c2d.clearRect(0, 0, canvas.width, canvas.height);
+    c2d.fillStyle = mutedColor; c2d.font = '12px DM Sans'; c2d.textAlign = 'center';
+    c2d.fillText('No series selected — use the Chart Series filter above to enable bars', canvas.width / 2, canvas.height / 2);
+    return;
+  }
 
   const labels  = bars.map(b => b.label);
   const values  = bars.map(b => b.value);
