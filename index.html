@@ -711,6 +711,44 @@ body {
 }
 .journal-empty .icon { font-size: 36px; opacity: 0.3; margin-bottom: 10px; }
 
+/* ===== VAULT ===== */
+.vault-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--blue);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.vault-card-meta {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  margin-bottom: 6px;
+}
+.vault-card-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--text2); font-weight: 600;
+}
+.vault-card-chip {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 9px;
+  color: var(--text2);
+  letter-spacing: 0.04em;
+}
+.vault-card-narrative {
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.55;
+  margin: 4px 0 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.vault-card-actions { display: flex; gap: 6px; }
+
 /* ===== AI PERFORMANCE SUMMARY CARD ===== */
 .ai-summary-card {
   border: 1px solid rgba(59,130,246,0.25);
@@ -1864,9 +1902,51 @@ body.light-mode {
   background:transparent; border-color:transparent; color:var(--text3);
   cursor:default; pointer-events:none;
 }
+/* P3 — split row actions: Compare + M&A */
+.cb-row-actions {
+  display:flex; gap:4px; justify-content:center; flex-wrap:wrap;
+}
+.cb-row-action {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.cb-row-action.compare:hover { background: var(--blue-dim); color: var(--blue); border-color: rgba(59,130,246,0.4); }
+.cb-row-action.ma:hover      { background: var(--amber-dim); color: var(--amber); border-color: rgba(245,158,11,0.4); }
+.cb-row-action.disabled,
+.cb-row-action[disabled] {
+  background: transparent; border-color: transparent; color: var(--text3);
+  cursor: not-allowed;
+}
+.cb-row-action.disabled:hover { background: transparent; color: var(--text3); border-color: transparent; }
+@media (max-width: 720px) {
+  .cb-row-actions { flex-direction: column; }
+  .cb-row-action { padding: 3px 6px; font-size: 9px; }
+}
 </style>
 </head>
 <body>
+
+<!-- VAULT VIEWER MODAL -->
+<div class="modal-overlay" id="vaultViewerModal">
+  <div class="modal" style="width:760px;max-width:96vw;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;">
+      <div>
+        <div class="modal-title" id="vaultViewerTitle" style="margin-bottom:2px;">🗄 Vault Entry</div>
+        <div class="modal-sub" id="vaultViewerSub" style="margin-bottom:0;">—</div>
+      </div>
+      <button class="btn-secondary" onclick="closeVaultViewer()" style="font-size:14px;padding:4px 10px;">✕</button>
+    </div>
+    <div id="vaultViewerBody" style="margin-top:14px;">
+      <!-- rendered by VAULT_RENDERERS[sourceModule] -->
+    </div>
+  </div>
+</div>
 
 <!-- JOURNAL MODAL (create / edit) -->
 <div class="modal-overlay" id="journalModal">
@@ -2410,7 +2490,7 @@ body.light-mode {
           </div>
           <div style="display:flex;gap:6px;align-items:center;">
             <span id="finAIStale" class="ai-stale-badge" style="display:none;" title="Filters changed since the last summary was generated">● Filters changed</span>
-            <button class="btn-copy" id="finAISaveBtn" onclick="saveAISummaryToJournal('financials')" title="Save this summary to your Journal" style="display:none;">📔 Save to Journal</button>
+            <button class="btn-copy" id="finAISaveBtn" onclick="saveAISummaryToVault('financials')" title="Save this summary to the Vault for future reference" style="display:none;">🗄 Save to Vault</button>
             <button class="btn-copy" id="finAICopyBtn" onclick="copyAIOutput('finAIBody', this)" title="Copy" style="display:none;">📋 Copy</button>
             <button class="btn-analyze" id="finAIRunBtn" onclick="runAIPerformanceSummary('financials')" style="background:linear-gradient(135deg,rgba(0,200,255,0.12),rgba(0,200,255,0.06));border-color:rgba(0,200,255,0.4);color:var(--blue);">🤖 Generate Summary</button>
           </div>
@@ -2488,7 +2568,7 @@ body.light-mode {
           </div>
           <div style="display:flex;gap:6px;align-items:center;">
             <span id="cfAIStale" class="ai-stale-badge" style="display:none;" title="Filters changed since the last summary was generated">● Filters changed</span>
-            <button class="btn-copy" id="cfAISaveBtn" onclick="saveAISummaryToJournal('cashflow')" title="Save this summary to your Journal" style="display:none;">📔 Save to Journal</button>
+            <button class="btn-copy" id="cfAISaveBtn" onclick="saveAISummaryToVault('cashflow')" title="Save this summary to the Vault for future reference" style="display:none;">🗄 Save to Vault</button>
             <button class="btn-copy" id="cfAICopyBtn" onclick="copyAIOutput('cfAIBody', this)" title="Copy" style="display:none;">📋 Copy</button>
             <button class="btn-analyze" id="cfAIRunBtn" onclick="runAIPerformanceSummary('cashflow')" style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.06));border-color:rgba(16,185,129,0.4);color:var(--green);">🤖 Generate Summary</button>
           </div>
@@ -2538,39 +2618,72 @@ body.light-mode {
     </div>
   </div>
 
-  <!-- ===== JOURNAL TAB ===== -->
+  <!-- ===== JOURNAL TAB (Notes + Vault sub-tabs) ===== -->
   <div id="tab-journal" style="display:none;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:12px;">
       <div>
         <div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:800;color:var(--amber);">📔 Journal</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px;">Capture notes, observations, and analysis snapshots over time</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">Capture notes, observations, and AI analysis snapshots over time</div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center;">
-        <button class="btn-secondary" onclick="exportJournalJSON()" title="Export all entries as JSON">⬇ Export JSON</button>
-        <button class="btn-analyze" onclick="openJournalModal()" style="background:var(--amber-dim);border-color:rgba(245,158,11,0.4);color:var(--amber);">+ New Note</button>
-      </div>
-    </div>
-
-    <!-- Search + filter pills -->
-    <div class="filter-bar" id="journalFilterBar" style="margin-bottom:12px;">
-      <div class="filter-group">
-        <span class="filter-label">Search</span>
-        <input type="text" id="journalSearchInput" placeholder="Search titles, body, or company…"
-          oninput="journalApplyFilters()"
-          style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
-      </div>
-      <div class="filter-group" id="journalFilterPills">
-        <span class="filter-label">Filter</span>
-        <button class="filter-pill active" data-filter="all" onclick="journalSetFilter('all')">All</button>
-        <button class="filter-pill" data-filter="company" onclick="journalSetFilter('company')">Active Company</button>
-        <button class="filter-pill" data-filter="week" onclick="journalSetFilter('week')">This Week</button>
-        <button class="filter-pill" data-filter="month" onclick="journalSetFilter('month')">This Month</button>
-        <button class="filter-pill" data-filter="ai" onclick="journalSetFilter('ai')">AI Summaries</button>
+      <div style="display:flex;gap:6px;align-items:center;" id="journalHeaderActions">
+        <button class="btn-secondary" onclick="exportJournalJSON()" title="Export notes as JSON">⬇ Export Notes</button>
+        <button class="btn-secondary" onclick="exportVaultJSON()" title="Export Vault entries as JSON" style="display:none;" id="journalExportVaultBtn">⬇ Export Vault</button>
+        <button class="btn-analyze" onclick="openJournalModal()" id="journalNewBtn" style="background:var(--amber-dim);border-color:rgba(245,158,11,0.4);color:var(--amber);">+ New Note</button>
       </div>
     </div>
 
-    <div id="journalList">
-      <!-- rendered by JS -->
+    <!-- Sub-tabs -->
+    <div class="subtabs">
+      <div class="subtab active" id="subtab-jr-notes-btn" onclick="switchSubTab('journal','notes')">📝 Notes</div>
+      <div class="subtab"        id="subtab-jr-vault-btn" onclick="switchSubTab('journal','vault')">🗄 Vault</div>
+      <div class="subtab-hint">Notes = your manual observations · Vault = saved AI outputs you can reopen any time.</div>
+    </div>
+
+    <!-- NOTES sub-panel -->
+    <div id="subtab-jr-notes">
+      <!-- Search + filter pills -->
+      <div class="filter-bar" id="journalFilterBar" style="margin-bottom:12px;">
+        <div class="filter-group">
+          <span class="filter-label">Search</span>
+          <input type="text" id="journalSearchInput" placeholder="Search titles, body, or company…"
+            oninput="journalApplyFilters()"
+            style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
+        </div>
+        <div class="filter-group" id="journalFilterPills">
+          <span class="filter-label">Filter</span>
+          <button class="filter-pill active" data-filter="all" onclick="journalSetFilter('all')">All</button>
+          <button class="filter-pill" data-filter="company" onclick="journalSetFilter('company')">Active Company</button>
+          <button class="filter-pill" data-filter="week" onclick="journalSetFilter('week')">This Week</button>
+          <button class="filter-pill" data-filter="month" onclick="journalSetFilter('month')">This Month</button>
+          <button class="filter-pill" data-filter="ai" onclick="journalSetFilter('ai')">AI Summaries</button>
+        </div>
+      </div>
+
+      <div id="journalList">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+
+    <!-- VAULT sub-panel -->
+    <div id="subtab-jr-vault" style="display:none;">
+      <div class="filter-bar" id="vaultFilterBar" style="margin-bottom:12px;">
+        <div class="filter-group">
+          <span class="filter-label">Search</span>
+          <input type="text" id="vaultSearchInput" placeholder="Search company, narrative, or context…"
+            oninput="vaultApplyFilters()"
+            style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
+        </div>
+        <div class="filter-group" id="vaultFilterPills">
+          <span class="filter-label">Module</span>
+          <button class="filter-pill active" data-vfilter="all"        onclick="vaultSetFilter('all')">All</button>
+          <button class="filter-pill"        data-vfilter="financials" onclick="vaultSetFilter('financials')">Financials</button>
+          <button class="filter-pill"        data-vfilter="cashflow"   onclick="vaultSetFilter('cashflow')">Cash Flow</button>
+          <button class="filter-pill"        data-vfilter="company"    onclick="vaultSetFilter('company')">Active Company</button>
+        </div>
+      </div>
+      <div id="vaultList">
+        <!-- rendered by JS -->
+      </div>
     </div>
   </div>
 
@@ -3771,6 +3884,10 @@ const SUBTAB_REGISTRY = {
   'competitor-bench': {
     panels: { ranking: 'subtab-cb-ranking', compare: 'tab-compare' },
     default: 'ranking'
+  },
+  'journal': {
+    panels: { notes: 'subtab-jr-notes', vault: 'subtab-jr-vault' },
+    default: 'notes'
   }
 };
 const _activeSubTab = {}; // parent -> active sub id
@@ -3793,10 +3910,28 @@ function switchSubTab(parentTab, subId) {
   if (parentTab === 'competitor-bench' && subId === 'compare') {
     if (typeof renderCompareTab === 'function') renderCompareTab();
   }
+  if (parentTab === 'journal') {
+    // Toggle the per-sub header actions
+    const newBtn   = document.getElementById('journalNewBtn');
+    const expBtn   = document.getElementById('journalExportVaultBtn');
+    const expNotes = document.querySelector('#journalHeaderActions button[onclick="exportJournalJSON()"]');
+    if (subId === 'vault') {
+      if (newBtn)   newBtn.style.display   = 'none';
+      if (expNotes) expNotes.style.display = 'none';
+      if (expBtn)   expBtn.style.display   = 'inline-flex';
+      if (typeof renderVaultList === 'function') renderVaultList();
+    } else {
+      if (newBtn)   newBtn.style.display   = 'inline-flex';
+      if (expNotes) expNotes.style.display = 'inline-flex';
+      if (expBtn)   expBtn.style.display   = 'none';
+    }
+  }
 }
 function abbrevParent(p) {
   // URL-safe short prefix for subtab button IDs
-  return p === 'competitor-bench' ? 'cb' : p;
+  if (p === 'competitor-bench') return 'cb';
+  if (p === 'journal')          return 'jr';
+  return p;
 }
 function initSubTabs() {
   // Relocate #tab-compare inside #tab-competitor-bench so it renders as a sub-panel
@@ -5557,6 +5692,97 @@ function renderFinMultiYearTables(primary, selectedYears) {
 }
 
 // Show waterfall data diagnostic panel
+// P2: Multi-year grouped bar chart for Financials.
+// Renders the same series as the single-year waterfall (Revenue, Op.Costs,
+// EBITDA, Depreciation, EBIT, Tax/Fin, Net Profit) but with one dataset per
+// selected year — never sums or stacks years.
+function renderFinGroupedYearChart(canvas, selectedYears) {
+  const isLight   = document.body.classList.contains('light-mode');
+  const tickColor = isLight ? '#334155' : '#FFFFFF';
+  const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
+  const mutedColor = isLight ? '#94a3b8' : '#64748b';
+
+  const vs = financialsFilters.series;
+  // Build the visible category list in waterfall order
+  const allCats = [
+    { key:'revenue',      label:'Net Sales' },
+    { key:'opcosts',      label:'Op. Costs (excl. D&A)' },
+    { key:'ebitda',       label:'EBITDA' },
+    { key:'depreciation', label:'Depreciation & Amort.' },
+    { key:'ebit',         label:'EBIT' },
+    { key:'taxfin',       label:'Tax & Financials' },
+    { key:'netprofit',    label:'Net Profit' },
+  ];
+  const cats = allCats.filter(c => vs.has(c.key));
+
+  function valueFor(year, catKey) {
+    const r = historyData[year];
+    if (!r) return null;
+    const ebit = r.opProfit || 0;
+    const depreciation = r.depreciation || 0;
+    const ebitda = ebit + depreciation;
+    const opCostsExDA = (r.netSales || 0) - ebitda;
+    switch (catKey) {
+      case 'revenue':      return r.netSales || 0;
+      case 'opcosts':      return -Math.abs(opCostsExDA);
+      case 'ebitda':       return ebitda;
+      case 'depreciation': return -Math.abs(depreciation);
+      case 'ebit':         return ebit;
+      case 'taxfin':       return (r.netProfit || 0) - ebit;
+      case 'netprofit':    return r.netProfit || 0;
+    }
+    return null;
+  }
+
+  // Year palette — tinted blues -> greens for visual progression
+  const palette = ['#3b82f6','#10b981','#f59e0b','#a78bfa','#ef4444','#06b6d4','#facc15','#fb7185'];
+  const datasets = selectedYears.map((y, i) => ({
+    label: 'FY' + y,
+    data: cats.map(c => valueFor(y, c.key)),
+    backgroundColor: palette[i % palette.length] + 'cc',
+    borderColor:     palette[i % palette.length],
+    borderWidth: 1,
+    borderRadius: 3,
+    barPercentage: 0.85,
+    categoryPercentage: 0.78,
+  }));
+
+  if (cats.length === 0 || datasets.length === 0) {
+    if (finWaterfallInst) { finWaterfallInst.destroy(); finWaterfallInst = null; }
+    const c2d = canvas.getContext('2d');
+    c2d.clearRect(0, 0, canvas.width, canvas.height);
+    c2d.fillStyle = mutedColor; c2d.font = '12px DM Sans'; c2d.textAlign = 'center';
+    c2d.fillText('No series or years selected', canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  const draw = () => {
+    if (finWaterfallInst) finWaterfallInst.destroy();
+    finWaterfallInst = new Chart(canvas, {
+      type: 'bar',
+      data: { labels: cats.map(c => c.label), datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { ticks: { color: tickColor, font: { size: 10, family:'JetBrains Mono' } }, grid: { display:false } },
+          y: {
+            ticks: { color: tickColor, font: { size: 9, family:'JetBrains Mono' },
+              callback: v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(0)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'k'; return v; } },
+            grid: { color: gridColor }
+          }
+        },
+        plugins: {
+          legend: { position:'top', labels: { color: tickColor, font: { size: 10, family:'JetBrains Mono' }, boxWidth: 10, boxHeight: 10 } },
+          tooltip: { ...chartTooltipStyle(isLight), callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${fmtSEK(ctx.raw)}`
+          }}
+        }
+      }
+    });
+  };
+  if (typeof Chart === 'undefined') { loadChartJS(draw); } else { draw(); }
+}
+
 function showFinWfDiag() {
   const yr = finWfSelectedYear || (companyData ? companyData.fiscalYear : null);
   const d  = (yr && historyData[yr]) || companyData;
@@ -5759,6 +5985,12 @@ function renderFinCompareChart() {
 function renderFinWaterfall(d) {
   const canvas = document.getElementById('finWaterfallChart');
   if (!canvas || !d) return;
+
+  // P2: when 2+ years are selected, switch to grouped bar mode.
+  const selectedYears = [...financialsFilters.years].sort();
+  if (selectedYears.length >= 2) {
+    return renderFinGroupedYearChart(canvas, selectedYears);
+  }
   if (!d.netSales && !d.opProfit) {
     if (finWaterfallInst) { finWaterfallInst.destroy(); finWaterfallInst = null; }
     const c2d = canvas.getContext('2d'); c2d.clearRect(0, 0, canvas.width, canvas.height);
@@ -6705,6 +6937,12 @@ function _buildSummaryPrompt(tab) {
     ? 'revenue, margins, balance-sheet strength and returns'
     : 'cash generation, working-capital discipline, capex intensity, and free cash flow';
 
+  const lang = (typeof appLang !== 'undefined' && appLang === 'sv') ? 'sv' : 'en';
+  const langName = lang === 'sv' ? 'Swedish (svenska)' : 'English';
+  const langNote = lang === 'sv'
+    ? 'Skriv hela JSON-svaret på svenska — narrative, alla bullets, alla rubriker, allt. Behåll JSON-nycklarna oförändrade.'
+    : 'Write the entire JSON response in English — narrative, every bullet, all wording. Keep the JSON keys unchanged.';
+
   return `You are a Swedish CFO analyst writing a brief for an operator.
 
 Company: ${d.name} (org. nr ${d.orgNr}), ${d.type || 'AB'} in ${d.industry || 'unknown sector'}.
@@ -6715,6 +6953,8 @@ The user is looking at the ${tab === 'financials' ? 'Financials' : 'Cash Flow'} 
 - Visible chart series: ${visibleSeries.join(', ') || 'none'}
 
 Your commentary MUST stay focused on the selected years and the ${topic} — don't reference hidden years or hidden sections.
+
+LANGUAGE: ${langName}. ${langNote}
 
 DATA:
 ${yearData}
@@ -6768,9 +7008,16 @@ async function runAIPerformanceSummary(tab) {
       parsed = m ? JSON.parse(m[0]) : null;
     }
     if (!parsed) throw new Error('Could not parse AI response');
-    renderAIPerformanceSummary(tab, parsed);
+    const generatedLang = (typeof appLang !== 'undefined' && appLang === 'sv') ? 'sv' : 'en';
+    renderAIPerformanceSummary(tab, parsed, { lang: generatedLang });
     st.lastFiltersHash = _filtersHash(c.filters);
     st.lastParsed = parsed;
+    st.lastLang = generatedLang;
+    st.lastFiltersSnapshot = {
+      years:    [...c.filters.years],
+      sections: [...c.filters.sections],
+      series:   [...c.filters.series],
+    };
     st.lastContextText = document.getElementById(c.ids.ctx)?.textContent || '';
     if (copyBtn) copyBtn.style.display = 'inline-flex';
     const saveBtn = document.getElementById(tab === 'financials' ? 'finAISaveBtn' : 'cfAISaveBtn');
@@ -6785,36 +7032,39 @@ async function runAIPerformanceSummary(tab) {
   }
 }
 
-function renderAIPerformanceSummary(tab, parsed) {
+function renderAIPerformanceSummary(tab, parsed, opts) {
   const c = _aiSummaryConfig(tab);
   const body = document.getElementById(c.ids.body);
   if (!body) return;
 
-  const chartId = (tab === 'financials') ? 'finAISummaryChart' : 'cfAISummaryChart';
-  const chartTitle = (tab === 'financials') ? 'EBITDA Margin — All Available Years' : 'Free Cash Flow — All Available Years';
+  const chartId = (opts && opts.chartId) || ((tab === 'financials') ? 'finAISummaryChart' : 'cfAISummaryChart');
+  // Use the language the entry was generated in (defaults to current app language)
+  const lang = (opts && opts.lang) || ((typeof appLang !== 'undefined' && appLang === 'sv') ? 'sv' : 'en');
+  const L = AI_SUMMARY_I18N[lang] || AI_SUMMARY_I18N.en;
+  const chartTitle = (tab === 'financials') ? L.miniChartFin : L.miniChartCf;
 
-  const list = (items, kind) => {
-    if (!items || !items.length) return '<li style="color:var(--text3);">—</li>';
+  const list = (items) => {
+    if (!items || !items.length) return `<li style="color:var(--text3);">—</li>`;
     return items.slice(0, 4).map(x => `<li>${escapeHtml(x)}</li>`).join('');
   };
 
   body.innerHTML = `
     <div class="ai-summary-narrative">${escapeHtml(parsed.narrative || '')}</div>
     <div class="ai-summary-chart-wrap">
-      <div class="ai-summary-chart-title">${chartTitle}</div>
+      <div class="ai-summary-chart-title">${escapeHtml(chartTitle)}</div>
       <canvas id="${chartId}"></canvas>
     </div>
     <div class="ai-summary-grid">
       <div class="ai-summary-col good">
-        <div class="ai-summary-col-title">✓ Going Well</div>
+        <div class="ai-summary-col-title">✓ ${escapeHtml(L.goingWell)}</div>
         <ul class="ai-summary-col-list">${list(parsed.goingWell)}</ul>
       </div>
       <div class="ai-summary-col warn">
-        <div class="ai-summary-col-title">⚠ Concerning</div>
+        <div class="ai-summary-col-title">⚠ ${escapeHtml(L.concerning)}</div>
         <ul class="ai-summary-col-list">${list(parsed.concerns)}</ul>
       </div>
       <div class="ai-summary-col watch">
-        <div class="ai-summary-col-title">👁 Watch Going Forward</div>
+        <div class="ai-summary-col-title">👁 ${escapeHtml(L.watch)}</div>
         <ul class="ai-summary-col-list">${list(parsed.watch)}</ul>
       </div>
     </div>
@@ -6822,6 +7072,23 @@ function renderAIPerformanceSummary(tab, parsed) {
 
   renderAISummaryMiniChart(tab, chartId);
 }
+
+const AI_SUMMARY_I18N = {
+  en: {
+    goingWell:    'Going Well',
+    concerning:   'Concerning',
+    watch:        'Watch Going Forward',
+    miniChartFin: 'EBITDA Margin — All Available Years',
+    miniChartCf:  'Free Cash Flow — All Available Years',
+  },
+  sv: {
+    goingWell:    'Det går bra',
+    concerning:   'Oroande',
+    watch:        'Att bevaka framåt',
+    miniChartFin: 'EBITDA-marginal — alla tillgängliga år',
+    miniChartCf:  'Fritt kassaflöde — alla tillgängliga år',
+  }
+};
 
 // Save the last-generated summary for `tab` to the Journal.
 function saveAISummaryToJournal(tab) {
@@ -9122,7 +9389,9 @@ APP STRUCTURE (tabs in order):
     · Ranking — rank up to 20 peers across Revenue, EBITDA%, EBIT%, Net Profit, ROE, and Google ratings.
     · Compare — load up to 5 companies for radar chart, M&A score bar chart, and risk flag matrix.
 - ★ Watchlist: Pinned companies persist across sessions. Quick-load or compare.
-- 📔 Journal: Date-indexed notes. Capture observations from any tab via the 📔 Note button in the top bar, or save AI summaries from Financials and Cash Flow. Filter by active company, this week, this month, or AI-only.
+- 📔 Journal: Two sub-tabs.
+    · Notes — date-indexed manual observations captured from any tab via the 📔 Note button in the top bar.
+    · Vault — persistent archive of saved AI outputs (Financials and Cash Flow summaries). Reopen past analyses without regenerating; each entry preserves the language it was generated in.
 - 📡 Benchmarks: Fetch live SCB sector medians from Statistics Sweden.
 - 📖 Guide: Reference docs for formulas and methodology.
 
@@ -9995,6 +10264,12 @@ function renderWaterfallChart(cf) {
   const canvas = document.getElementById('cfWaterfallChart');
   if (!canvas) return;
 
+  // P2: when 2+ years selected, switch to grouped bar mode (no summing).
+  const selectedYears = [...cashflowFilters.years].sort();
+  if (selectedYears.length >= 2) {
+    return renderCfGroupedYearChart(canvas, selectedYears);
+  }
+
   const isLight   = document.body.classList.contains('light-mode');
   const tickColor = isLight ? '#334155' : '#FFFFFF';
   const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
@@ -10184,6 +10459,86 @@ function renderCfCompareChart() {
 }
 
 // Update just the sidebar summary without re-rendering the chart
+// P2: Multi-year grouped bar chart for Cash Flow.
+function renderCfGroupedYearChart(canvas, selectedYears) {
+  const isLight   = document.body.classList.contains('light-mode');
+  const tickColor = isLight ? '#334155' : '#FFFFFF';
+  const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
+  const mutedColor = isLight ? '#94a3b8' : '#64748b';
+
+  const vs = cashflowFilters.series;
+  const allCats = [
+    { key:'netprofit',    label:'Net Profit' },
+    { key:'depreciation', label:'+ Depreciation' },
+    { key:'deltawc',      label:'± Δ Working Cap.' },
+    { key:'capex',        label:'− CapEx' },
+    { key:'fcf',          label:'Free Cash Flow' },
+  ];
+  const cats = allCats.filter(c => vs.has(c.key));
+
+  function valueFor(year, catKey) {
+    const r = historyData[year];
+    if (!r) return null;
+    const cf = computeCashFlow(r);
+    if (!cf) return null;
+    switch (catKey) {
+      case 'netprofit':    return cf.netProfit;
+      case 'depreciation': return cf.depreciation || 0;
+      case 'deltawc':      return cf.deltaWC == null ? null : -cf.deltaWC;
+      case 'capex':        return cf.capex == null ? null : -cf.capex;
+      case 'fcf':          return cf.fcf;
+    }
+    return null;
+  }
+
+  const palette = ['#10b981','#3b82f6','#f59e0b','#a78bfa','#ef4444','#06b6d4','#facc15','#fb7185'];
+  const datasets = selectedYears.map((y, i) => ({
+    label: 'FY' + y,
+    data: cats.map(c => valueFor(y, c.key)),
+    backgroundColor: palette[i % palette.length] + 'cc',
+    borderColor:     palette[i % palette.length],
+    borderWidth: 1,
+    borderRadius: 3,
+    barPercentage: 0.85,
+    categoryPercentage: 0.78,
+  }));
+
+  if (cats.length === 0 || datasets.length === 0) {
+    if (cfWaterfallChartInst) { cfWaterfallChartInst.destroy(); cfWaterfallChartInst = null; }
+    const c2d = canvas.getContext('2d');
+    c2d.clearRect(0, 0, canvas.width, canvas.height);
+    c2d.fillStyle = mutedColor; c2d.font = '12px DM Sans'; c2d.textAlign = 'center';
+    c2d.fillText('No series or years selected', canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  const draw = () => {
+    if (cfWaterfallChartInst) cfWaterfallChartInst.destroy();
+    cfWaterfallChartInst = new Chart(canvas, {
+      type: 'bar',
+      data: { labels: cats.map(c => c.label), datasets },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        scales: {
+          x: { ticks: { color: tickColor, font: { size: 10, family:'JetBrains Mono' } }, grid: { display:false } },
+          y: {
+            ticks: { color: tickColor, font: { size: 9, family:'JetBrains Mono' },
+              callback: v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(0)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'k'; return v; } },
+            grid: { color: gridColor }
+          }
+        },
+        plugins: {
+          legend: { position:'top', labels: { color: tickColor, font: { size: 10, family:'JetBrains Mono' }, boxWidth: 10, boxHeight: 10 } },
+          tooltip: { ...chartTooltipStyle(isLight), callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${fmtSEK(ctx.raw)}`
+          }}
+        }
+      }
+    });
+  };
+  if (typeof Chart === 'undefined') { loadChartJS(draw); } else { draw(); }
+}
+
 function renderCashFlowSidebar(d) {
   if (!d) return;
   const cf = computeCashFlow(d);
@@ -10722,8 +11077,242 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     const m = document.getElementById('journalModal');
     if (m && m.classList.contains('open')) closeJournalModal();
+    const v = document.getElementById('vaultViewerModal');
+    if (v && v.classList.contains('open')) closeVaultViewer();
   }
 });
+
+// ============================================================
+// VAULT — persistent archive of AI-generated outputs
+// Schema: { id, savedAt, sourceModule, companyOrgNr, companyName,
+//           language, filtersSnapshot, contextLabel, parsed }
+// 'parsed' is the structured AI payload so entries can be
+// re-rendered exactly as originally generated, without re-running
+// the AI. The shape is module-namespaced so future modules can
+// register their own renderers via VAULT_RENDERERS.
+// ============================================================
+const VAULT_STORAGE_KEY = 'vcfo_vault';
+let vaultEntries = _vaultLoad();
+let vaultFilter  = 'all';     // all | financials | cashflow | company
+let vaultSearch  = '';
+
+function _vaultLoad() {
+  try { const r = localStorage.getItem(VAULT_STORAGE_KEY); return r ? JSON.parse(r) : []; }
+  catch(e) { return []; }
+}
+function _vaultSave() {
+  try { localStorage.setItem(VAULT_STORAGE_KEY, JSON.stringify(vaultEntries)); } catch(e) {}
+}
+function _vaultId() { return 'v-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6); }
+
+// Module → display label
+const VAULT_MODULE_LABELS = {
+  financials: { en: 'Financials AI Summary',  sv: 'Finansiell AI-sammanfattning' },
+  cashflow:   { en: 'Cash Flow AI Summary',    sv: 'Kassaflödes AI-sammanfattning' },
+};
+function _vaultModuleLabel(mod, lang) {
+  const map = VAULT_MODULE_LABELS[mod];
+  if (!map) return mod;
+  return map[lang] || map.en || mod;
+}
+
+// Renderer registry — extensible. Each renderer takes the stored
+// `parsed` payload + entry meta and writes into the given container.
+const VAULT_RENDERERS = {
+  financials: (entry, container) => _vaultRenderAISummary('financials', entry, container),
+  cashflow:   (entry, container) => _vaultRenderAISummary('cashflow',   entry, container),
+};
+
+function _vaultRenderAISummary(tab, entry, container) {
+  const lang = entry.language || 'en';
+  const L = AI_SUMMARY_I18N[lang] || AI_SUMMARY_I18N.en;
+  const p = entry.parsed || {};
+  const list = (items) => (!items || !items.length)
+    ? `<li style="color:var(--text3);">—</li>`
+    : items.slice(0, 6).map(x => `<li>${escapeHtml(x)}</li>`).join('');
+  const chartId = 'vaultChart-' + entry.id;
+  const chartTitle = (tab === 'financials') ? L.miniChartFin : L.miniChartCf;
+  container.innerHTML = `
+    <div class="ai-summary-narrative">${escapeHtml(p.narrative || '')}</div>
+    <div class="ai-summary-chart-wrap">
+      <div class="ai-summary-chart-title">${escapeHtml(chartTitle)}</div>
+      <canvas id="${chartId}"></canvas>
+    </div>
+    <div class="ai-summary-grid">
+      <div class="ai-summary-col good">
+        <div class="ai-summary-col-title">✓ ${escapeHtml(L.goingWell)}</div>
+        <ul class="ai-summary-col-list">${list(p.goingWell)}</ul>
+      </div>
+      <div class="ai-summary-col warn">
+        <div class="ai-summary-col-title">⚠ ${escapeHtml(L.concerning)}</div>
+        <ul class="ai-summary-col-list">${list(p.concerns)}</ul>
+      </div>
+      <div class="ai-summary-col watch">
+        <div class="ai-summary-col-title">👁 ${escapeHtml(L.watch)}</div>
+        <ul class="ai-summary-col-list">${list(p.watch)}</ul>
+      </div>
+    </div>
+  `;
+  // Re-render the trend chart inside this container's canvas
+  setTimeout(() => renderAISummaryMiniChart(tab, chartId), 0);
+}
+
+// Save the last-generated AI summary for `tab` to the Vault.
+function saveAISummaryToVault(tab) {
+  const c = _aiSummaryConfig(tab);
+  const st = _aiSummaryState[tab];
+  if (!st || !st.lastParsed) { showToast('Generate a summary first'); return; }
+  const entry = {
+    id: _vaultId(),
+    savedAt: new Date().toISOString(),
+    sourceModule: tab,                                    // 'financials' | 'cashflow'
+    companyOrgNr: companyData?.orgNr || null,
+    companyName:  companyData?.name  || null,
+    language: st.lastLang || ((typeof appLang !== 'undefined' && appLang === 'sv') ? 'sv' : 'en'),
+    filtersSnapshot: st.lastFiltersSnapshot || null,
+    contextLabel: st.lastContextText || '',
+    parsed: st.lastParsed,
+  };
+  vaultEntries.push(entry);
+  _vaultSave();
+  showToast('🗄 Saved to Vault', { action: { label: 'Open Vault', onClick: () => {
+    switchTab('journal');
+    switchSubTab('journal','vault');
+  }}});
+  if (activeTab === 'journal' && _activeSubTab['journal'] === 'vault') renderVaultList();
+}
+
+function deleteVaultEntry(id) {
+  const idx = vaultEntries.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  const [removed] = vaultEntries.splice(idx, 1);
+  _vaultSave();
+  renderVaultList();
+  showToast('Vault entry removed', { action: { label: 'Undo', onClick: () => {
+    vaultEntries.splice(idx, 0, removed);
+    _vaultSave();
+    renderVaultList();
+  }}});
+}
+
+function vaultSetFilter(name) {
+  vaultFilter = name;
+  document.querySelectorAll('#vaultFilterPills .filter-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.vfilter === name);
+  });
+  renderVaultList();
+}
+function vaultApplyFilters() {
+  vaultSearch = document.getElementById('vaultSearchInput').value.trim().toLowerCase();
+  renderVaultList();
+}
+
+function _vaultFiltered() {
+  return vaultEntries
+    .slice()
+    .sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt))
+    .filter(e => {
+      if (vaultFilter === 'company') {
+        if (!companyData || !e.companyOrgNr) return false;
+        if (e.companyOrgNr !== companyData.orgNr) return false;
+      } else if (vaultFilter !== 'all') {
+        if (e.sourceModule !== vaultFilter) return false;
+      }
+      if (vaultSearch) {
+        const hay = (
+          (e.companyName||'') + ' ' +
+          (e.parsed?.narrative||'') + ' ' +
+          (e.parsed?.goingWell||[]).join(' ') + ' ' +
+          (e.parsed?.concerns||[]).join(' ') + ' ' +
+          (e.parsed?.watch||[]).join(' ') + ' ' +
+          (e.contextLabel||'')
+        ).toLowerCase();
+        if (!hay.includes(vaultSearch)) return false;
+      }
+      return true;
+    });
+}
+
+function renderVaultList() {
+  const list = document.getElementById('vaultList');
+  if (!list) return;
+  document.querySelectorAll('#vaultFilterPills .filter-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.vfilter === vaultFilter);
+  });
+  const entries = _vaultFiltered();
+  if (entries.length === 0) {
+    const hint = vaultEntries.length === 0
+      ? 'Vault is empty. Generate an AI summary on the Financials or Cash Flow tab and click <strong>🗄 Save to Vault</strong>.'
+      : 'No vault entries match this filter.';
+    list.innerHTML = `<div class="journal-empty">
+      <div class="icon">🗄</div>
+      <div style="font-size:12px;color:var(--text2);">${hint}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:6px;">Vault entries are persistent — reopen them to review past analyses without re-running the AI. Each entry preserves the language it was generated in.</div>
+    </div>`;
+    return;
+  }
+  list.innerHTML = entries.map(_vaultRenderCard).join('');
+}
+
+function _vaultRenderCard(e) {
+  const d = new Date(e.savedAt);
+  const time = d.toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
+  const langLabel = (e.language === 'sv') ? '🇸🇪 SV' : '🇬🇧 EN';
+  const moduleLabel = _vaultModuleLabel(e.sourceModule, e.language || 'en');
+  const accent = e.sourceModule === 'cashflow' ? 'var(--green)' : 'var(--blue)';
+  const company = e.companyName ? escapeHtml(e.companyName) : '—';
+  const filterSummary = e.filtersSnapshot
+    ? `${e.filtersSnapshot.years.length} year${e.filtersSnapshot.years.length===1?'':'s'} · ${e.filtersSnapshot.series.length} series`
+    : '';
+  return `<div class="vault-card" id="vc-${escapeHtml(e.id)}" style="border-left-color:${accent};">
+    <div class="vault-card-meta">
+      <span class="vault-card-time">${escapeHtml(time)}</span>
+      <span class="vault-card-chip" style="color:${accent};border-color:${accent};">${escapeHtml(moduleLabel)}</span>
+      <span class="vault-card-chip">${escapeHtml(company)}</span>
+      <span class="vault-card-chip">${langLabel}</span>
+      ${filterSummary ? `<span class="vault-card-chip">${escapeHtml(filterSummary)}</span>` : ''}
+    </div>
+    <div class="vault-card-narrative">${escapeHtml(e.parsed?.narrative || '')}</div>
+    <div class="vault-card-actions">
+      <button class="journal-entry-action" onclick="openVaultViewer('${escapeHtml(e.id)}')">Open</button>
+      <button class="journal-entry-action danger" onclick="deleteVaultEntry('${escapeHtml(e.id)}')">Delete</button>
+    </div>
+  </div>`;
+}
+
+function openVaultViewer(id) {
+  const entry = vaultEntries.find(x => x.id === id);
+  if (!entry) return;
+  const modal = document.getElementById('vaultViewerModal');
+  const body  = document.getElementById('vaultViewerBody');
+  const title = document.getElementById('vaultViewerTitle');
+  const sub   = document.getElementById('vaultViewerSub');
+  if (!modal || !body) return;
+  const lang = entry.language || 'en';
+  title.textContent = '🗄 ' + _vaultModuleLabel(entry.sourceModule, lang);
+  const d = new Date(entry.savedAt);
+  const company = entry.companyName ? `${entry.companyName} · ` : '';
+  sub.textContent = `${company}${d.toLocaleString()} · ${(lang==='sv'?'svenska':'english')}`;
+  const renderer = VAULT_RENDERERS[entry.sourceModule];
+  if (renderer) renderer(entry, body);
+  else body.innerHTML = `<pre style="font-size:11px;color:var(--text2);white-space:pre-wrap;">${escapeHtml(JSON.stringify(entry.parsed, null, 2))}</pre>`;
+  modal.classList.add('open');
+}
+function closeVaultViewer() {
+  const m = document.getElementById('vaultViewerModal');
+  if (m) m.classList.remove('open');
+}
+
+function exportVaultJSON() {
+  if (vaultEntries.length === 0) { showToast('Vault is empty'); return; }
+  const blob = new Blob([JSON.stringify(vaultEntries, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `vcfo_vault_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('✓ Vault exported');
+}
 
 // ============================================================
 // COMPETITOR BENCH — Your Company loader
@@ -11283,10 +11872,17 @@ function cbRenderRankTable() {
     const ebitdaColor  = (row.ebitdaPct||0) > 10 ? 'var(--green)' : (row.ebitdaPct||0) > 5 ? 'var(--amber)' : 'var(--red)';
     const ebitColor    = (row.ebitPct||0) > 8 ? 'var(--green)' : (row.ebitPct||0) > 3 ? 'var(--amber)' : 'var(--red)';
 
-    // Action button
+    // Action buttons — split into Compare + M&A. "You" row shows disabled state.
+    const orgQ  = JSON.stringify(row.orgNr);
+    const nameQ = JSON.stringify(row.name);
     const actionBtn = isMe
-      ? '<span class="cb-btn-ma is-mine">You</span>'
-      : `<button class="cb-btn-ma" onclick="cbLoadIntoMATab('${row.orgNr}')" title="Load ${row.name} into M&A Screener">🎯 M&A Tab</button>`;
+      ? `<div class="cb-row-actions">
+           <span class="cb-row-action disabled" title="This is your loaded company">You</span>
+         </div>`
+      : `<div class="cb-row-actions">
+           <button class="cb-row-action compare" onclick="cbRowSendToCompare(${orgQ},${nameQ})" title="Add ${row.name} to Compare">⚖ Compare</button>
+           <button class="cb-row-action ma" onclick="cbLoadIntoMATab(${orgQ})" title="Load ${row.name} into M&A Screener">🎯 M&A</button>
+         </div>`;
 
     const isChecked = cbSelectedOrgs.has(row.orgNr);
     html += `<tr class="${isMe ? 'cb-is-mine' : ''}${isChecked ? ' cb-row-selected' : ''}">
@@ -11510,6 +12106,16 @@ function cbLoadIntoMATab(orgNr) {
   loadCompanyByOrg(orgNr).then(() => {
     switchTab('ma');
     if (typeof runMAScreen === 'function') runMAScreen();
+  });
+}
+
+// P3 — Send a single ranking row to the Compare sub-tab.
+function cbRowSendToCompare(orgNr, name) {
+  sendTo('compare', {
+    orgs: [{ orgNr, name }],
+    source: 'competitor-ranking-row',
+    toastMsg: `Adding ${name || orgNr} to Compare…`,
+    toastLabel: 'View'
   });
 }
 
