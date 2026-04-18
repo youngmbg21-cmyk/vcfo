@@ -7444,7 +7444,7 @@ function setStatusBar(msg, state='ok') {
 // Build tracer — lets you confirm the deployed JS is up to date
 // (open DevTools console and look for this line). Cache-busting
 // aside, if you don't see VCFO_BUILD, you're on a stale copy.
-window.VCFO_BUILD = 'ranking-sync-v2';
+window.VCFO_BUILD = 'ranking-click-fix-v3';
 try { console.log('VCFO Terminal build:', window.VCFO_BUILD); } catch(e){}
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -7775,8 +7775,8 @@ function renderSlots() {
       const dataTag    = d._isEstimated
         ? `<span style="font-size:8px;background:rgba(255,184,0,0.15);color:var(--amber);padding:1px 5px;border-radius:2px;">ESTIMATED</span>`
         : `<span style="font-size:8px;background:rgba(0,255,136,0.1);color:var(--green);padding:1px 5px;border-radius:2px;">FY${d.fiscalYear}</span>`;
-      const orgQ = JSON.stringify(d.orgNr);
-      const nameQ = JSON.stringify(d.name);
+      const orgQ = _attrJS(d.orgNr);
+      const nameQ = _attrJS(d.name);
       const pulseCls = (i === pulseIdx) ? ' cmp-slot-pulse' : '';
       html += `<div class="cmp-slot filled${pulseCls}">
           <button class="cmp-slot-close" onclick="clearCompareSlot(${i})" title="Remove">✕</button>
@@ -9665,8 +9665,8 @@ function renderLookupTableHTML(query, results) {
     </div>`;
   }
   const rows = results.slice(0, 15).map(r => {
-    const orgQ  = JSON.stringify(r.orgNr);
-    const nameQ = JSON.stringify(r.name || '');
+    const orgQ  = _attrJS(r.orgNr);
+    const nameQ = _attrJS(r.name || '');
     const ind = r.industry ? `<div style="font-size:8px;color:var(--text3);margin-top:1px;">${escapeHtml(r.industry)}</div>` : '';
     return `<tr>
       <td style="padding:5px 6px;">
@@ -9702,6 +9702,14 @@ function renderLookupTableHTML(query, results) {
 }
 function escapeHtml(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Safely embed a JS string/value into an onclick="…" attribute.
+// JSON.stringify alone breaks the attribute because its own double
+// quotes collide with the onclick attribute's delimiters. HTML-encoding
+// the quotes lets the browser decode them back at parse time.
+function _attrJS(v) {
+  return JSON.stringify(v).replace(/"/g, '&quot;');
 }
 
 // Row-click handler for lookup tables (also used by the Business Lookup)
@@ -11107,7 +11115,7 @@ function _renderJournalEntry(e) {
   };
   const ctx = tabLabels[e.contextTab] || '';
   const companyChip = e.companyOrgNr
-    ? `<span class="journal-entry-chip clickable" title="Open ${escapeHtml(e.companyName||e.companyOrgNr)} in Company" onclick="event.stopPropagation();sendTo('company',{orgs:[{orgNr:${JSON.stringify(e.companyOrgNr)},name:${JSON.stringify(e.companyName||'')}}],source:'journal'})">🏢 ${escapeHtml(e.companyName || e.companyOrgNr)}</span>`
+    ? `<span class="journal-entry-chip clickable" title="Open ${escapeHtml(e.companyName||e.companyOrgNr)} in Company" onclick="event.stopPropagation();sendTo('company',{orgs:[{orgNr:${_attrJS(e.companyOrgNr)},name:${_attrJS(e.companyName||'')}}],source:'journal'})">🏢 ${escapeHtml(e.companyName || e.companyOrgNr)}</span>`
     : '';
   const aiChip  = isAi ? `<span class="journal-entry-chip ai">AI</span>` : '';
   const ctxChip = ctx   ? `<span class="journal-entry-chip">${escapeHtml(ctx)}${e.contextLabel ? ' · ' + escapeHtml(e.contextLabel) : ''}</span>` : '';
@@ -11954,8 +11962,8 @@ function cbRenderRankTable() {
     // whether this org is currently in Compare slots / is the active M&A
     // company. Cached state automatically resets when the underlying
     // state changes (cbSyncRowStates re-renders on compareSlots / companyData changes).
-    const orgQ  = JSON.stringify(row.orgNr);
-    const nameQ = JSON.stringify(row.name);
+    const orgQ  = _attrJS(row.orgNr);
+    const nameQ = _attrJS(row.name);
     const isInCompare = compareSlots.some(s => s && s.orgNr === row.orgNr);
     const isActiveMA  = !isMe && companyData && companyData.orgNr === row.orgNr;
     const compareCls  = 'cb-row-action compare' + (isInCompare ? ' loaded' : '');
