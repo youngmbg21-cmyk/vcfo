@@ -1918,6 +1918,33 @@ body.light-mode {
 }
 .cb-row-action.compare:hover { background: var(--blue-dim); color: var(--blue); border-color: rgba(59,130,246,0.4); }
 .cb-row-action.ma:hover      { background: var(--amber-dim); color: var(--amber); border-color: rgba(245,158,11,0.4); }
+
+/* Loaded-state caching — once a row's Compare or M&A action has
+   successfully loaded that company, the button stays lit so the
+   user sees at a glance which rows are already in a destination. */
+.cb-row-action.loaded.compare {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.35), 0 0 10px rgba(59,130,246,0.25);
+}
+.cb-row-action.loaded.compare:hover {
+  background: var(--blue);
+  color: #fff;
+  filter: brightness(1.1);
+}
+.cb-row-action.loaded.ma {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #000;
+  box-shadow: 0 0 0 1px rgba(245,158,11,0.35), 0 0 10px rgba(245,158,11,0.25);
+}
+.cb-row-action.loaded.ma:hover {
+  background: var(--amber);
+  color: #000;
+  filter: brightness(1.08);
+}
+
 .cb-row-action.disabled,
 .cb-row-action[disabled] {
   background: transparent; border-color: transparent; color: var(--text3);
@@ -4033,7 +4060,11 @@ function _normalizeOrgList(payload) {
   return payload.orgs.map(o => typeof o === 'string' ? { orgNr: o, name: null } : o);
 }
 
-// Compare: place up to MAX_SLOTS companies into empty slots
+// Compare: place up to MAX_SLOTS companies into empty slots.
+// Payload items may include `.data` — an already-loaded companyData
+// object. When present we take a fast path and assign directly to
+// the slot (no BV re-fetch, no demo-jitter rename). Callers from
+// the Ranking tab always include data because it's already there.
 window.onNavIntent_compare = async function(payload) {
   const list = _normalizeOrgList(payload);
   if (!list.length) return;
@@ -4044,17 +4075,35 @@ window.onNavIntent_compare = async function(payload) {
     if (compareSlots.some(s => s && s.orgNr === item.orgNr)) { skipped++; continue; }
     const emptyIdx = compareSlots.findIndex(s => s === null);
     if (emptyIdx === -1) { blockedFull++; continue; }
-    // Use the existing slot-loader so we benefit from caching + search
-    try { await loadCompareSlotByOrg(emptyIdx, item.orgNr, item.name || null); placed++; }
-    catch(e) { console.warn('Compare slot load failed:', e); }
+
+    if (item.data && typeof item.data === 'object') {
+      // Fast path — use data the caller already has
+      const merged = { ...item.data };
+      if (item.orgNr) merged.orgNr = item.orgNr;
+      if (item.name)  merged.name  = item.name;
+      compareSlots[emptyIdx] = merged;
+      placed++;
+    } else {
+      // Slow path — fetch via BV
+      try { await loadCompareSlotByOrg(emptyIdx, item.orgNr, item.name || null); placed++; }
+      catch(e) { console.warn('Compare slot load failed:', e); }
+    }
     if (placed + skipped >= max) break;
   }
+  renderSlots();
   renderCompareTab();
+  cbSyncRowStates();
   // Surface clear feedback for the slots-full case so it's never silent.
   if (placed === 0 && blockedFull > 0) {
     showToast(`⚠ All ${max} compare slots are already filled. Remove a slot to add more.`);
   } else if (placed > 0 && blockedFull > 0) {
     showToast(`Added ${placed} · ${blockedFull} skipped (compare slots full)`);
+  } else if (placed > 0) {
+    // Per-item success toasts would stack; one summary is enough.
+    const names = list.filter(it => compareSlots.some(s => s && s.orgNr === it.orgNr))
+                      .map(it => it.name || it.orgNr);
+    const msg = names.length === 1 ? `✓ ${names[0]} added to Compare` : `✓ Added ${placed} to Compare`;
+    showToast(msg, { action: { label: 'View', onClick: () => switchTab('compare') } });
   }
 };
 
@@ -4094,6 +4143,7 @@ function clearActiveContext() {
   if (heroEmpty) heroEmpty.style.display = 'block';
   if (heroFull)  heroFull.style.display  = 'none';
   renderActiveContext();
+  cbSyncRowStates();
   showToast('Context cleared');
 }
 
@@ -4812,6 +4862,7 @@ async function loadCompanyByOrg(raw, knownName) {
   companyData = d;
   maScore     = null;
   renderActiveContext();
+  cbSyncRowStates();
 
   // Step 3 — Build year selector from doc list or API available years
   if (docList && docList.length > 0) {
@@ -5033,6 +5084,7 @@ async function switchToYear(year, docId) {
   companyData       = d;
   renderYearView(d, year);
   renderActiveContext();
+  cbSyncRowStates();
   setStatusBar(`${t('status_loaded')} FY${year} · ${d.name}`, 'ok');
   showToast(`✓ Switched to FY${year}`);
 }
@@ -7851,6 +7903,7 @@ async function loadCompareSlotByOrg(i, raw, knownName) {
   showToast(`✓ ${d.name}`);
   renderSlots();
   renderCompareTab();
+  cbSyncRowStates();
 }
 
 // Slightly vary demo data for different slots so comparison has meaning
@@ -7886,6 +7939,8 @@ function clearCompareSlot(i) {
   }
   renderSlots();
   renderCompareTab();
+  // Loaded-state caching: reset row action highlighting when a slot is freed.
+  cbSyncRowStates();
 }
 
 // ============================================================
@@ -11732,6 +11787,15 @@ let cbSortKey   = 'ebitdaPct';
 let cbSortDir   = 'desc';
 const cbSelectedOrgs = new Set();
 
+// Keeps the Ranking row-action loaded states in sync with global
+// compareSlots and companyData. Safe to call any time — no-op if
+// the Ranking tab has no data yet or is not in the DOM.
+function cbSyncRowStates() {
+  if (!cbRankData || cbRankData.length === 0) return;
+  if (!document.getElementById('cbRankTableWrap')) return;
+  try { cbRenderRankTable(); } catch(e) { /* defensive */ }
+}
+
 const CB_SORT_OPTIONS = [
   { key:'ebitdaPct',  label:'EBITDA %' },
   { key:'ebitPct',    label:'EBIT %' },
@@ -11866,16 +11930,31 @@ function cbRenderRankTable() {
     const ebitdaColor  = (row.ebitdaPct||0) > 10 ? 'var(--green)' : (row.ebitdaPct||0) > 5 ? 'var(--amber)' : 'var(--red)';
     const ebitColor    = (row.ebitPct||0) > 8 ? 'var(--green)' : (row.ebitPct||0) > 3 ? 'var(--amber)' : 'var(--red)';
 
-    // Action buttons — split into Compare + M&A. "You" row shows disabled state.
+    // Action buttons — split into Compare + M&A. Loaded state reflects
+    // whether this org is currently in Compare slots / is the active M&A
+    // company. Cached state automatically resets when the underlying
+    // state changes (cbSyncRowStates re-renders on compareSlots / companyData changes).
     const orgQ  = JSON.stringify(row.orgNr);
     const nameQ = JSON.stringify(row.name);
+    const isInCompare = compareSlots.some(s => s && s.orgNr === row.orgNr);
+    const isActiveMA  = !isMe && companyData && companyData.orgNr === row.orgNr;
+    const compareCls  = 'cb-row-action compare' + (isInCompare ? ' loaded' : '');
+    const maCls       = 'cb-row-action ma'      + (isActiveMA  ? ' loaded' : '');
+    const compareTitle = isInCompare
+      ? `${row.name} is already in Compare — click to view`
+      : `Add ${row.name} to Compare`;
+    const maTitle = isActiveMA
+      ? `${row.name} is loaded in M&A Screener — click to view`
+      : `Load ${row.name} into M&A Screener`;
+    const compareLabel = isInCompare ? '✓ Compare'  : '⚖ Compare';
+    const maLabel      = isActiveMA  ? '✓ M&A'      : '🎯 M&A';
     const actionBtn = isMe
       ? `<div class="cb-row-actions">
            <span class="cb-row-action disabled" title="This is your loaded company">You</span>
          </div>`
       : `<div class="cb-row-actions">
-           <button class="cb-row-action compare" onclick="cbRowSendToCompare(${orgQ},${nameQ})" title="Add ${row.name} to Compare">⚖ Compare</button>
-           <button class="cb-row-action ma" onclick="cbLoadIntoMATab(${orgQ})" title="Load ${row.name} into M&A Screener">🎯 M&A</button>
+           <button class="${compareCls}" onclick="cbRowSendToCompare(${orgQ},${nameQ})" title="${compareTitle}">${compareLabel}</button>
+           <button class="${maCls}"      onclick="cbLoadIntoMATab(${orgQ})" title="${maTitle}">${maLabel}</button>
          </div>`;
 
     const isChecked = cbSelectedOrgs.has(row.orgNr);
@@ -11979,20 +12058,29 @@ function cbSendSelectionToCompare() {
   const cantFit = newOrgs.length - take.length;
   // Include any duplicates (already in slots) only for messaging
   const duplicates = orgs.length - newOrgs.length;
-  // Attach names from cbRankData so receiver doesn't need to re-search
+
+  // Attach names + already-loaded data so the slot fills reliably.
   const named = take.map(org => {
     const r = cbRankData.find(x => x.orgNr === org);
-    return { orgNr: org, name: r?.name };
+    let data = null;
+    if (cbMyCompany && cbMyCompany.orgNr === org) data = cbMyCompany;
+    else {
+      const c = (cbCompetitors || []).find(x => x && x.orgNr === org);
+      if (c && c.data) data = c.data;
+    }
+    return { orgNr: org, name: r?.name, data };
   });
-  let msg = `⚖ Loading ${take.length} into Compare`;
-  if (cantFit > 0)    msg += ` · ${cantFit} skipped (slots full)`;
-  if (duplicates > 0) msg += ` · ${duplicates} already in Compare`;
+  if (cantFit > 0 || duplicates > 0) {
+    // User needs a breadcrumb of what happened; post an advisory before nav.
+    let preMsg = `⚖ Loading ${take.length} into Compare`;
+    if (cantFit > 0)    preMsg += ` · ${cantFit} skipped (slots full)`;
+    if (duplicates > 0) preMsg += ` · ${duplicates} already in Compare`;
+    showToast(preMsg);
+  }
   sendTo('compare', {
     orgs: named,
     source: 'competitor-ranking',
-    toastMsg: msg,
-    toastLabel: 'View'
-  });
+  }, { silent: true });
   // Keep selection in case user navigates back
 }
 
@@ -12113,6 +12201,13 @@ function cbLoadIntoMATab(orgNr) {
     : null;
   const label = (known && known.name) ? known.name : orgNr;
 
+  // Already loaded → focus the destination instead of re-fetching.
+  if (companyData && companyData.orgNr === orgNr) {
+    switchTab('ma');
+    showToast(`${label} is already loaded in M&A`, { action: { label: 'View', onClick: () => switchTab('ma') } });
+    return;
+  }
+
   const input = document.getElementById('orgInput');
   if (input) input.value = orgNr;
   showToast(`🎯 Loading ${label} into M&A Screener…`);
@@ -12124,6 +12219,7 @@ function cbLoadIntoMATab(orgNr) {
       }
       showToast(`✓ ${label} loaded in M&A Screener`,
         { action: { label: 'View', onClick: () => switchTab('ma') } });
+      cbSyncRowStates();
     })
     .catch(err => {
       console.warn('M&A load failed:', err);
@@ -12132,14 +12228,31 @@ function cbLoadIntoMATab(orgNr) {
 }
 
 // P3 — Send a single ranking row to the Compare sub-tab.
+// Includes the already-loaded company data so the slot fills
+// instantly and reliably (no BV re-fetch, no demo-jitter rename).
 function cbRowSendToCompare(orgNr, name) {
-  if (!_compareCanAccept(orgNr)) return; // pre-check so user isn't silently nav'd away
+  // If the row is already in a Compare slot, just focus the destination.
+  if (compareSlots.some(s => s && s.orgNr === orgNr)) {
+    showToast('Already in Compare', { action: { label: 'View', onClick: () => switchTab('compare') } });
+    switchTab('compare');
+    return;
+  }
+  if (!_compareCanAccept(orgNr)) return;
+
+  // Look up full data from the Ranking tab's own state — no refetch.
+  let data = null;
+  if (cbMyCompany && cbMyCompany.orgNr === orgNr) data = cbMyCompany;
+  else {
+    const c = (cbCompetitors || []).find(x => x && x.orgNr === orgNr);
+    if (c && c.data) data = c.data;
+  }
+
+  // Silent because onNavIntent_compare emits the authoritative
+  // success/failure toast once the slot assignment resolves.
   sendTo('compare', {
-    orgs: [{ orgNr, name }],
+    orgs: [{ orgNr, name, data }],
     source: 'competitor-ranking-row',
-    toastMsg: `⚖ Adding ${name || orgNr} to Compare…`,
-    toastLabel: 'View'
-  });
+  }, { silent: true });
 }
 
 function cbExportCSV() {
