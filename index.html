@@ -2115,6 +2115,7 @@ body.light-mode {
   <div class="tab" id="tab-competitor-bench-btn" onclick="switchTab('competitor-bench')">⚔ Competitors</div>
   <div class="tab" id="tab-watchlist-btn"        onclick="switchTab('watchlist')" data-i18n="tab_watchlist">★ Watchlist</div>
   <div class="tab" id="tab-journal-btn"          onclick="switchTab('journal')">📔 Journal</div>
+  <div class="tab" id="tab-vault-btn"            onclick="switchTab('vault')">🗄 Vault</div>
   <div class="tab" id="tab-benchmarks-btn"       onclick="switchTab('benchmarks')" data-i18n="tab_benchmarks">📡 Benchmarks</div>
   <div class="tab" id="tab-guide-btn"            onclick="switchTab('guide')" style="margin-left:auto;" data-i18n="tab_guide">📖 Guide</div>
 </div>
@@ -2618,72 +2619,70 @@ body.light-mode {
     </div>
   </div>
 
-  <!-- ===== JOURNAL TAB (Notes + Vault sub-tabs) ===== -->
+  <!-- ===== JOURNAL TAB (manual notes only — Vault is its own tab) ===== -->
   <div id="tab-journal" style="display:none;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:12px;">
       <div>
         <div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:800;color:var(--amber);">📔 Journal</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px;">Capture notes, observations, and AI analysis snapshots over time</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">Capture manual notes and observations · For saved AI outputs, see the 🗄 Vault tab.</div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center;" id="journalHeaderActions">
-        <button class="btn-secondary" onclick="exportJournalJSON()" title="Export notes as JSON">⬇ Export Notes</button>
-        <button class="btn-secondary" onclick="exportVaultJSON()" title="Export Vault entries as JSON" style="display:none;" id="journalExportVaultBtn">⬇ Export Vault</button>
-        <button class="btn-analyze" onclick="openJournalModal()" id="journalNewBtn" style="background:var(--amber-dim);border-color:rgba(245,158,11,0.4);color:var(--amber);">+ New Note</button>
-      </div>
-    </div>
-
-    <!-- Sub-tabs -->
-    <div class="subtabs">
-      <div class="subtab active" id="subtab-jr-notes-btn" onclick="switchSubTab('journal','notes')">📝 Notes</div>
-      <div class="subtab"        id="subtab-jr-vault-btn" onclick="switchSubTab('journal','vault')">🗄 Vault</div>
-      <div class="subtab-hint">Notes = your manual observations · Vault = saved AI outputs you can reopen any time.</div>
-    </div>
-
-    <!-- NOTES sub-panel -->
-    <div id="subtab-jr-notes">
-      <!-- Search + filter pills -->
-      <div class="filter-bar" id="journalFilterBar" style="margin-bottom:12px;">
-        <div class="filter-group">
-          <span class="filter-label">Search</span>
-          <input type="text" id="journalSearchInput" placeholder="Search titles, body, or company…"
-            oninput="journalApplyFilters()"
-            style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
-        </div>
-        <div class="filter-group" id="journalFilterPills">
-          <span class="filter-label">Filter</span>
-          <button class="filter-pill active" data-filter="all" onclick="journalSetFilter('all')">All</button>
-          <button class="filter-pill" data-filter="company" onclick="journalSetFilter('company')">Active Company</button>
-          <button class="filter-pill" data-filter="week" onclick="journalSetFilter('week')">This Week</button>
-          <button class="filter-pill" data-filter="month" onclick="journalSetFilter('month')">This Month</button>
-          <button class="filter-pill" data-filter="ai" onclick="journalSetFilter('ai')">AI Summaries</button>
-        </div>
-      </div>
-
-      <div id="journalList">
-        <!-- rendered by JS -->
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn-secondary" onclick="exportJournalJSON()" title="Export notes as JSON">⬇ Export JSON</button>
+        <button class="btn-analyze" onclick="openJournalModal()" style="background:var(--amber-dim);border-color:rgba(245,158,11,0.4);color:var(--amber);">+ New Note</button>
       </div>
     </div>
 
-    <!-- VAULT sub-panel -->
-    <div id="subtab-jr-vault" style="display:none;">
-      <div class="filter-bar" id="vaultFilterBar" style="margin-bottom:12px;">
-        <div class="filter-group">
-          <span class="filter-label">Search</span>
-          <input type="text" id="vaultSearchInput" placeholder="Search company, narrative, or context…"
-            oninput="vaultApplyFilters()"
-            style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
-        </div>
-        <div class="filter-group" id="vaultFilterPills">
-          <span class="filter-label">Module</span>
-          <button class="filter-pill active" data-vfilter="all"        onclick="vaultSetFilter('all')">All</button>
-          <button class="filter-pill"        data-vfilter="financials" onclick="vaultSetFilter('financials')">Financials</button>
-          <button class="filter-pill"        data-vfilter="cashflow"   onclick="vaultSetFilter('cashflow')">Cash Flow</button>
-          <button class="filter-pill"        data-vfilter="company"    onclick="vaultSetFilter('company')">Active Company</button>
-        </div>
+    <div class="filter-bar" id="journalFilterBar" style="margin-bottom:12px;">
+      <div class="filter-group">
+        <span class="filter-label">Search</span>
+        <input type="text" id="journalSearchInput" placeholder="Search titles, body, or company…"
+          oninput="journalApplyFilters()"
+          style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
       </div>
-      <div id="vaultList">
-        <!-- rendered by JS -->
+      <div class="filter-group" id="journalFilterPills">
+        <span class="filter-label">Filter</span>
+        <button class="filter-pill active" data-filter="all" onclick="journalSetFilter('all')">All</button>
+        <button class="filter-pill" data-filter="company" onclick="journalSetFilter('company')">Active Company</button>
+        <button class="filter-pill" data-filter="week" onclick="journalSetFilter('week')">This Week</button>
+        <button class="filter-pill" data-filter="month" onclick="journalSetFilter('month')">This Month</button>
+        <button class="filter-pill" data-filter="ai" onclick="journalSetFilter('ai')">AI Summaries</button>
       </div>
+    </div>
+
+    <div id="journalList">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+
+  <!-- ===== VAULT TAB (persistent archive of AI outputs) ===== -->
+  <div id="tab-vault" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:800;color:var(--blue);">🗄 Vault</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">Saved AI outputs · reopen any time without re-running · preserves company context, filters, language, and timestamp.</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn-secondary" onclick="exportVaultJSON()" title="Export Vault entries as JSON">⬇ Export Vault</button>
+      </div>
+    </div>
+
+    <div class="filter-bar" id="vaultFilterBar" style="margin-bottom:12px;">
+      <div class="filter-group">
+        <span class="filter-label">Search</span>
+        <input type="text" id="vaultSearchInput" placeholder="Search company, narrative, or context…"
+          oninput="vaultApplyFilters()"
+          style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
+      </div>
+      <div class="filter-group" id="vaultFilterPills">
+        <span class="filter-label">Module</span>
+        <button class="filter-pill active" data-vfilter="all"        onclick="vaultSetFilter('all')">All</button>
+        <button class="filter-pill"        data-vfilter="financials" onclick="vaultSetFilter('financials')">Financials</button>
+        <button class="filter-pill"        data-vfilter="cashflow"   onclick="vaultSetFilter('cashflow')">Cash Flow</button>
+        <button class="filter-pill"        data-vfilter="company"    onclick="vaultSetFilter('company')">Active Company</button>
+      </div>
+    </div>
+    <div id="vaultList">
+      <!-- rendered by JS -->
     </div>
   </div>
 
@@ -3380,7 +3379,7 @@ const STRINGS = {
     toast_no_company:       '⚠ Load a company first',
     toast_no_api_key:       '⚠ Set your Anthropic API key',
     toast_already_in_compare:'⚠ Already in the comparison',
-    toast_slots_full:       '⚠ All 5 compare slots are full',
+    toast_slots_full:       '⚠ All 5 compare slots are already filled. Remove a slot to add more.',
     toast_added_compare:    '✓ Added to Compare',
     toast_csv_exported:     '✓ CSV exported',
     toast_benchmarks_updated:'✓ Benchmarks updated',
@@ -3561,7 +3560,7 @@ const STRINGS = {
     toast_no_company:       '⚠ Ladda ett företag först',
     toast_no_api_key:       '⚠ Ange din Anthropic API-nyckel',
     toast_already_in_compare:'⚠ Finns redan i jämförelsen',
-    toast_slots_full:       '⚠ Alla 5 jämförelseplatser är fulla',
+    toast_slots_full:       '⚠ Alla 5 jämförelseplatser är fyllda. Frigör en plats för att lägga till fler.',
     toast_added_compare:    '✓ Tillagd i jämförelse',
     toast_csv_exported:     '✓ CSV exporterad',
     toast_benchmarks_updated:'✓ Nyckeltal uppdaterade',
@@ -3752,6 +3751,7 @@ function switchTab(name) {
   if (name === 'cashflow')          renderCashFlow();
   if (name === 'watchlist')         renderWatchlistTab();
   if (name === 'journal')           renderJournalTab();
+  if (name === 'vault')             renderVaultList();
   if (name === 'competitor-bench')  {
     // Default to ranking unless user already picked a sub
     const sub = _activeSubTab['competitor-bench'] || 'ranking';
@@ -3763,7 +3763,7 @@ function switchTab(name) {
 }
 
 function _switchTopTab(name) {
-  ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','journal','benchmarks','guide'].forEach(t => {
+  ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','journal','vault','benchmarks','guide'].forEach(t => {
     const panel = document.getElementById('tab-' + t);
     if (panel) panel.style.display = (t === name) ? 'block' : 'none';
     const btn = document.getElementById('tab-' + t + '-btn');
@@ -3884,10 +3884,6 @@ const SUBTAB_REGISTRY = {
   'competitor-bench': {
     panels: { ranking: 'subtab-cb-ranking', compare: 'tab-compare' },
     default: 'ranking'
-  },
-  'journal': {
-    panels: { notes: 'subtab-jr-notes', vault: 'subtab-jr-vault' },
-    default: 'notes'
   }
 };
 const _activeSubTab = {}; // parent -> active sub id
@@ -3910,27 +3906,10 @@ function switchSubTab(parentTab, subId) {
   if (parentTab === 'competitor-bench' && subId === 'compare') {
     if (typeof renderCompareTab === 'function') renderCompareTab();
   }
-  if (parentTab === 'journal') {
-    // Toggle the per-sub header actions
-    const newBtn   = document.getElementById('journalNewBtn');
-    const expBtn   = document.getElementById('journalExportVaultBtn');
-    const expNotes = document.querySelector('#journalHeaderActions button[onclick="exportJournalJSON()"]');
-    if (subId === 'vault') {
-      if (newBtn)   newBtn.style.display   = 'none';
-      if (expNotes) expNotes.style.display = 'none';
-      if (expBtn)   expBtn.style.display   = 'inline-flex';
-      if (typeof renderVaultList === 'function') renderVaultList();
-    } else {
-      if (newBtn)   newBtn.style.display   = 'inline-flex';
-      if (expNotes) expNotes.style.display = 'inline-flex';
-      if (expBtn)   expBtn.style.display   = 'none';
-    }
-  }
 }
 function abbrevParent(p) {
   // URL-safe short prefix for subtab button IDs
   if (p === 'competitor-bench') return 'cb';
-  if (p === 'journal')          return 'jr';
   return p;
 }
 function initSubTabs() {
@@ -4059,18 +4038,24 @@ window.onNavIntent_compare = async function(payload) {
   const list = _normalizeOrgList(payload);
   if (!list.length) return;
   const max = (typeof MAX_SLOTS !== 'undefined') ? MAX_SLOTS : 5;
-  let placed = 0, skipped = 0;
+  let placed = 0, skipped = 0, blockedFull = 0;
   for (const item of list) {
     // Skip duplicates
     if (compareSlots.some(s => s && s.orgNr === item.orgNr)) { skipped++; continue; }
     const emptyIdx = compareSlots.findIndex(s => s === null);
-    if (emptyIdx === -1) break;
+    if (emptyIdx === -1) { blockedFull++; continue; }
     // Use the existing slot-loader so we benefit from caching + search
     try { await loadCompareSlotByOrg(emptyIdx, item.orgNr, item.name || null); placed++; }
     catch(e) { console.warn('Compare slot load failed:', e); }
     if (placed + skipped >= max) break;
   }
   renderCompareTab();
+  // Surface clear feedback for the slots-full case so it's never silent.
+  if (placed === 0 && blockedFull > 0) {
+    showToast(`⚠ All ${max} compare slots are already filled. Remove a slot to add more.`);
+  } else if (placed > 0 && blockedFull > 0) {
+    showToast(`Added ${placed} · ${blockedFull} skipped (compare slots full)`);
+  }
 };
 
 // Company / Financials / Cash Flow / M&A: load the first org in the payload
@@ -7446,6 +7431,19 @@ document.addEventListener('DOMContentLoaded', () => {
 // Up to 5 comparison slots
 const MAX_SLOTS = 5;
 let compareSlots = Array(MAX_SLOTS).fill(null); // null = empty, object = loaded company
+
+// ── Slot-limit guard ────────────────────────────────────────────
+// Returns true if the caller may proceed; otherwise shows an error
+// toast and returns false. Always passes when the org is already in
+// a slot (handled separately by the duplicate path).
+function _compareCanAccept(orgNr) {
+  // duplicates are not blocked here — just a "no free slot" check
+  if (orgNr && compareSlots.some(s => s && s.orgNr === orgNr)) return true;
+  if (compareSlots.some(s => s === null)) return true;
+  showToast(`⚠ All ${MAX_SLOTS} compare slots are already filled. Remove a slot to add more.`,
+    { action: { label: 'Open Compare', onClick: () => switchTab('compare') } });
+  return false;
+}
 let activeSNI    = 'all'; // active benchmark sector key
 let radarChartInst = null;
 let barChartInst   = null;
@@ -9389,9 +9387,8 @@ APP STRUCTURE (tabs in order):
     · Ranking — rank up to 20 peers across Revenue, EBITDA%, EBIT%, Net Profit, ROE, and Google ratings.
     · Compare — load up to 5 companies for radar chart, M&A score bar chart, and risk flag matrix.
 - ★ Watchlist: Pinned companies persist across sessions. Quick-load or compare.
-- 📔 Journal: Two sub-tabs.
-    · Notes — date-indexed manual observations captured from any tab via the 📔 Note button in the top bar.
-    · Vault — persistent archive of saved AI outputs (Financials and Cash Flow summaries). Reopen past analyses without regenerating; each entry preserves the language it was generated in.
+- 📔 Journal: Date-indexed manual notes captured from any tab via the 📔 Note button in the top bar. Filter by active company, week, month, or AI-only.
+- 🗄 Vault: Persistent archive of saved AI outputs (Financials and Cash Flow summaries). Reopen past analyses without regenerating; each entry preserves the company context, filters, language, and timestamp it was saved with.
 - 📡 Benchmarks: Fetch live SCB sector medians from Statistics Sweden.
 - 📖 Guide: Reference docs for formulas and methodology.
 
@@ -11175,11 +11172,8 @@ function saveAISummaryToVault(tab) {
   };
   vaultEntries.push(entry);
   _vaultSave();
-  showToast('🗄 Saved to Vault', { action: { label: 'Open Vault', onClick: () => {
-    switchTab('journal');
-    switchSubTab('journal','vault');
-  }}});
-  if (activeTab === 'journal' && _activeSubTab['journal'] === 'vault') renderVaultList();
+  showToast('🗄 Saved to Vault', { action: { label: 'Open Vault', onClick: () => switchTab('vault') } });
+  if (activeTab === 'vault') renderVaultList();
 }
 
 function deleteVaultEntry(id) {
@@ -11970,21 +11964,33 @@ function cbRenderSelectBar() {
 function cbSendSelectionToCompare() {
   const orgs = Array.from(cbSelectedOrgs);
   if (orgs.length === 0) { showToast('Select at least one company'); return; }
-  // MAX_SLOTS guard — Compare supports 5
-  const max  = (typeof MAX_SLOTS !== 'undefined') ? MAX_SLOTS : 5;
-  const take = orgs.slice(0, max);
-  const clipped = orgs.length > max;
+  const max = (typeof MAX_SLOTS !== 'undefined') ? MAX_SLOTS : 5;
+
+  // Pre-check available capacity so we never silently lose selections.
+  const freeSlots = compareSlots.filter(s => s === null).length;
+  const newOrgs   = orgs.filter(o => !compareSlots.some(s => s && s.orgNr === o));
+  if (freeSlots === 0 && newOrgs.length > 0) {
+    showToast(`⚠ All ${max} compare slots are already filled. Remove a slot to add more.`,
+      { action: { label: 'Open Compare', onClick: () => switchTab('compare') } });
+    return;
+  }
+
+  const take = newOrgs.slice(0, freeSlots);
+  const cantFit = newOrgs.length - take.length;
+  // Include any duplicates (already in slots) only for messaging
+  const duplicates = orgs.length - newOrgs.length;
   // Attach names from cbRankData so receiver doesn't need to re-search
   const named = take.map(org => {
     const r = cbRankData.find(x => x.orgNr === org);
     return { orgNr: org, name: r?.name };
   });
+  let msg = `⚖ Loading ${take.length} into Compare`;
+  if (cantFit > 0)    msg += ` · ${cantFit} skipped (slots full)`;
+  if (duplicates > 0) msg += ` · ${duplicates} already in Compare`;
   sendTo('compare', {
     orgs: named,
     source: 'competitor-ranking',
-    toastMsg: clipped
-      ? `Loaded ${take.length} into Compare (max ${max}; ${orgs.length - max} skipped)`
-      : `Loaded ${take.length} into Compare`,
+    toastMsg: msg,
     toastLabel: 'View'
   });
   // Keep selection in case user navigates back
@@ -12101,20 +12107,37 @@ function cbUpdateSerpStatus() {
 }
 
 function cbLoadIntoMATab(orgNr) {
-  document.getElementById('orgInput').value = orgNr;
-  showToast(`🎯 Loading ${orgNr} into M&A tab…`);
-  loadCompanyByOrg(orgNr).then(() => {
-    switchTab('ma');
-    if (typeof runMAScreen === 'function') runMAScreen();
-  });
+  // Resolve a friendly name for toasts, when available
+  const known = (typeof cbRankData !== 'undefined' && cbRankData.find)
+    ? cbRankData.find(r => r.orgNr === orgNr)
+    : null;
+  const label = (known && known.name) ? known.name : orgNr;
+
+  const input = document.getElementById('orgInput');
+  if (input) input.value = orgNr;
+  showToast(`🎯 Loading ${label} into M&A Screener…`);
+  loadCompanyByOrg(orgNr, known ? known.name : undefined)
+    .then(() => {
+      switchTab('ma');
+      if (typeof runMAScreen === 'function') {
+        try { runMAScreen(); } catch (e) { console.warn('runMAScreen failed:', e); }
+      }
+      showToast(`✓ ${label} loaded in M&A Screener`,
+        { action: { label: 'View', onClick: () => switchTab('ma') } });
+    })
+    .catch(err => {
+      console.warn('M&A load failed:', err);
+      showToast(`⚠ Failed to load ${label} — check your connection or API status`);
+    });
 }
 
 // P3 — Send a single ranking row to the Compare sub-tab.
 function cbRowSendToCompare(orgNr, name) {
+  if (!_compareCanAccept(orgNr)) return; // pre-check so user isn't silently nav'd away
   sendTo('compare', {
     orgs: [{ orgNr, name }],
     source: 'competitor-ranking-row',
-    toastMsg: `Adding ${name || orgNr} to Compare…`,
+    toastMsg: `⚖ Adding ${name || orgNr} to Compare…`,
     toastLabel: 'View'
   });
 }
