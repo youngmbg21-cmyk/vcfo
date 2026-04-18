@@ -7444,7 +7444,7 @@ function setStatusBar(msg, state='ok') {
 // Build tracer — lets you confirm the deployed JS is up to date
 // (open DevTools console and look for this line). Cache-busting
 // aside, if you don't see VCFO_BUILD, you're on a stale copy.
-window.VCFO_BUILD = 'ranking-click-fix-v3';
+window.VCFO_BUILD = 'ranking-stay-on-page-v4';
 try { console.log('VCFO Terminal build:', window.VCFO_BUILD); } catch(e){}
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -7756,14 +7756,19 @@ function renderCompareTab() {
 }
 
 // ── Render the 5 slot cards ──
-let _cbJustAddedSlot = -1; // one-shot pulse hint for renderSlots
+// Pulses for slots that were just filled from Ranking / bulk. We
+// defer consuming until the Compare view is actually visible so the
+// animation plays on first arrival (user may add several before
+// navigating).
+let _cbPulseSlots = new Set();
 
 function renderSlots() {
   const container = document.getElementById('compareSlots');
   if (!container) return;
 
-  const pulseIdx = _cbJustAddedSlot;
-  _cbJustAddedSlot = -1; // consume
+  const cmpEl = document.getElementById('tab-compare');
+  const compareVisible = cmpEl && cmpEl.style.display !== 'none';
+  const pulseSet = compareVisible ? _cbPulseSlots : new Set();
   let html = '';
   for (let i = 0; i < MAX_SLOTS; i++) {
     const d = compareSlots[i];
@@ -7777,7 +7782,7 @@ function renderSlots() {
         : `<span style="font-size:8px;background:rgba(0,255,136,0.1);color:var(--green);padding:1px 5px;border-radius:2px;">FY${d.fiscalYear}</span>`;
       const orgQ = _attrJS(d.orgNr);
       const nameQ = _attrJS(d.name);
-      const pulseCls = (i === pulseIdx) ? ' cmp-slot-pulse' : '';
+      const pulseCls = pulseSet.has(i) ? ' cmp-slot-pulse' : '';
       html += `<div class="cmp-slot filled${pulseCls}">
           <button class="cmp-slot-close" onclick="clearCompareSlot(${i})" title="Remove">✕</button>
           <div class="cmp-slot-num">Slot ${i+1} ${dataTag}</div>
@@ -7814,6 +7819,8 @@ function renderSlots() {
     }
   }
   container.innerHTML = html;
+  // Consume pending pulses only once the animation could actually be seen.
+  if (compareVisible) _cbPulseSlots = new Set();
 }
 
 function focusSlotInput(i) {
@@ -12099,29 +12106,28 @@ function cbSendSelectionToCompare() {
   });
 
   // Synchronous slot fill for all items with data — reliable & immediate.
+  // Stay on Ranking so the user can keep adding peers.
   let placed = 0;
-  let firstAddedIdx = -1;
   const needsFetch = [];
   for (const item of resolved) {
     const emptyIdx = compareSlots.findIndex(s => s === null);
     if (emptyIdx === -1) break;
     if (item.data) {
       compareSlots[emptyIdx] = { ...item.data, orgNr: item.orgNr, name: item.name || item.data.name };
-      if (firstAddedIdx === -1) firstAddedIdx = emptyIdx;
+      _cbPulseSlots.add(emptyIdx);
       placed++;
     } else {
       needsFetch.push(item);  // fall through to slow path
     }
   }
-  if (firstAddedIdx !== -1) _cbJustAddedSlot = firstAddedIdx;
 
-  switchTab('compare');
   renderSlots();
   renderCompareTab();
   cbSyncRowStates();
 
   // Summary toast
-  let msg = placed > 0 ? `⚖ Added ${placed} to Compare` : '⚖ Ready';
+  const filled = compareSlots.filter(Boolean).length;
+  let msg = placed > 0 ? `⚖ Added ${placed} to Compare (${filled}/${MAX_SLOTS})` : '⚖ Ready';
   if (cantFit > 0)    msg += ` · ${cantFit} skipped (slots full)`;
   if (duplicates > 0) msg += ` · ${duplicates} already in Compare`;
   showToast(msg, { action: { label: 'View', onClick: () => switchTab('compare') } });
@@ -12276,16 +12282,16 @@ function cbLoadIntoMATab(orgNr) {
     });
 }
 
-// P3 — Send a single ranking row to the Compare sub-tab.
-// SYNCHRONOUS slot assignment when the data is already local
-// (Ranking always has it). Navigation + render happen after the
-// assignment so the Compare view shows the filled slot immediately
-// with no microtask/await race.
+// P3 — Add a single ranking row to a Compare slot.
+// IMPORTANT: we do NOT navigate to the Compare sub-tab here — users
+// typically want to keep adding peers from the Ranking. The row's
+// ✓ Compare loaded state, the slot pulse (on arrival), and the
+// toast's View action cover the feedback.
 function cbRowSendToCompare(orgNr, name) {
-  // Already there → focus destination instead of reloading.
+  // Already there → don't re-add, but don't yank the user away either.
   if (compareSlots.some(s => s && s.orgNr === orgNr)) {
-    switchTab('compare');
-    showToast('Already in Compare', { action: { label: 'View', onClick: () => switchTab('compare') } });
+    showToast('Already in Compare',
+      { action: { label: 'View', onClick: () => switchTab('compare') } });
     return;
   }
   if (!_compareCanAccept(orgNr)) return;
@@ -12299,16 +12305,16 @@ function cbRowSendToCompare(orgNr, name) {
   }
 
   if (data) {
-    // Fast path: assign synchronously, navigate, render.
+    // Fast path: assign synchronously, update state, STAY on Ranking.
     const emptyIdx = compareSlots.findIndex(s => s === null);
     const merged = { ...data, orgNr, name: name || data.name };
     compareSlots[emptyIdx] = merged;
-    _cbJustAddedSlot = emptyIdx;            // triggers pulse in renderSlots
-    switchTab('compare');                    // competitor-bench → compare sub-tab
-    renderSlots();
+    _cbPulseSlots.add(emptyIdx);             // pulses on first visible render
+    renderSlots();                            // updates hidden Compare DOM
     renderCompareTab();
-    cbSyncRowStates();
-    showToast(`✓ ${merged.name} added to Compare`,
+    cbSyncRowStates();                        // flips row button to ✓ loaded
+    const filled = compareSlots.filter(Boolean).length;
+    showToast(`✓ ${merged.name} added to Compare (${filled}/${MAX_SLOTS})`,
       { action: { label: 'View', onClick: () => switchTab('compare') } });
     return;
   }
