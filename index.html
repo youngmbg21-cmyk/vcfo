@@ -1450,6 +1450,15 @@ body {
   cursor: pointer;
 }
 .cmp-slot.empty:hover { border-color: var(--blue); }
+/* One-shot pulse when a slot was just filled from Ranking / bulk. */
+@keyframes cmpSlotPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(59,130,246,0.55); border-color: var(--blue); }
+  40%  { box-shadow: 0 0 0 10px rgba(59,130,246,0);   border-color: var(--blue); }
+  100% { box-shadow: 0 0 0 0 rgba(59,130,246,0);     border-color: rgba(0,200,255,0.3); }
+}
+.cmp-slot.cmp-slot-pulse {
+  animation: cmpSlotPulse 1.2s ease-out 1;
+}
 .cmp-slot-actions {
   display:flex; gap:4px;
   margin-top:6px;
@@ -7432,6 +7441,12 @@ function setStatusBar(msg, state='ok') {
 // ============================================================
 // INIT
 // ============================================================
+// Build tracer — lets you confirm the deployed JS is up to date
+// (open DevTools console and look for this line). Cache-busting
+// aside, if you don't see VCFO_BUILD, you're on a stale copy.
+window.VCFO_BUILD = 'ranking-sync-v2';
+try { console.log('VCFO Terminal build:', window.VCFO_BUILD); } catch(e){}
+
 document.addEventListener('DOMContentLoaded', () => {
   try {
     updateClock();
@@ -7741,10 +7756,14 @@ function renderCompareTab() {
 }
 
 // ── Render the 5 slot cards ──
+let _cbJustAddedSlot = -1; // one-shot pulse hint for renderSlots
+
 function renderSlots() {
   const container = document.getElementById('compareSlots');
   if (!container) return;
 
+  const pulseIdx = _cbJustAddedSlot;
+  _cbJustAddedSlot = -1; // consume
   let html = '';
   for (let i = 0; i < MAX_SLOTS; i++) {
     const d = compareSlots[i];
@@ -7758,7 +7777,8 @@ function renderSlots() {
         : `<span style="font-size:8px;background:rgba(0,255,136,0.1);color:var(--green);padding:1px 5px;border-radius:2px;">FY${d.fiscalYear}</span>`;
       const orgQ = JSON.stringify(d.orgNr);
       const nameQ = JSON.stringify(d.name);
-      html += `<div class="cmp-slot filled">
+      const pulseCls = (i === pulseIdx) ? ' cmp-slot-pulse' : '';
+      html += `<div class="cmp-slot filled${pulseCls}">
           <button class="cmp-slot-close" onclick="clearCompareSlot(${i})" title="Remove">✕</button>
           <div class="cmp-slot-num">Slot ${i+1} ${dataTag}</div>
           <div class="cmp-slot-name">${d.name}</div>
@@ -12056,11 +12076,10 @@ function cbSendSelectionToCompare() {
 
   const take = newOrgs.slice(0, freeSlots);
   const cantFit = newOrgs.length - take.length;
-  // Include any duplicates (already in slots) only for messaging
   const duplicates = orgs.length - newOrgs.length;
 
-  // Attach names + already-loaded data so the slot fills reliably.
-  const named = take.map(org => {
+  // Resolve full data from Ranking's own state (same as cbRowSendToCompare).
+  const resolved = take.map(org => {
     const r = cbRankData.find(x => x.orgNr === org);
     let data = null;
     if (cbMyCompany && cbMyCompany.orgNr === org) data = cbMyCompany;
@@ -12070,17 +12089,39 @@ function cbSendSelectionToCompare() {
     }
     return { orgNr: org, name: r?.name, data };
   });
-  if (cantFit > 0 || duplicates > 0) {
-    // User needs a breadcrumb of what happened; post an advisory before nav.
-    let preMsg = `⚖ Loading ${take.length} into Compare`;
-    if (cantFit > 0)    preMsg += ` · ${cantFit} skipped (slots full)`;
-    if (duplicates > 0) preMsg += ` · ${duplicates} already in Compare`;
-    showToast(preMsg);
+
+  // Synchronous slot fill for all items with data — reliable & immediate.
+  let placed = 0;
+  let firstAddedIdx = -1;
+  const needsFetch = [];
+  for (const item of resolved) {
+    const emptyIdx = compareSlots.findIndex(s => s === null);
+    if (emptyIdx === -1) break;
+    if (item.data) {
+      compareSlots[emptyIdx] = { ...item.data, orgNr: item.orgNr, name: item.name || item.data.name };
+      if (firstAddedIdx === -1) firstAddedIdx = emptyIdx;
+      placed++;
+    } else {
+      needsFetch.push(item);  // fall through to slow path
+    }
   }
-  sendTo('compare', {
-    orgs: named,
-    source: 'competitor-ranking',
-  }, { silent: true });
+  if (firstAddedIdx !== -1) _cbJustAddedSlot = firstAddedIdx;
+
+  switchTab('compare');
+  renderSlots();
+  renderCompareTab();
+  cbSyncRowStates();
+
+  // Summary toast
+  let msg = placed > 0 ? `⚖ Added ${placed} to Compare` : '⚖ Ready';
+  if (cantFit > 0)    msg += ` · ${cantFit} skipped (slots full)`;
+  if (duplicates > 0) msg += ` · ${duplicates} already in Compare`;
+  showToast(msg, { action: { label: 'View', onClick: () => switchTab('compare') } });
+
+  // If any lacked local data, delegate to the slow path (rare).
+  if (needsFetch.length) {
+    sendTo('compare', { orgs: needsFetch }, { silent: true });
+  }
   // Keep selection in case user navigates back
 }
 
@@ -12228,18 +12269,20 @@ function cbLoadIntoMATab(orgNr) {
 }
 
 // P3 — Send a single ranking row to the Compare sub-tab.
-// Includes the already-loaded company data so the slot fills
-// instantly and reliably (no BV re-fetch, no demo-jitter rename).
+// SYNCHRONOUS slot assignment when the data is already local
+// (Ranking always has it). Navigation + render happen after the
+// assignment so the Compare view shows the filled slot immediately
+// with no microtask/await race.
 function cbRowSendToCompare(orgNr, name) {
-  // If the row is already in a Compare slot, just focus the destination.
+  // Already there → focus destination instead of reloading.
   if (compareSlots.some(s => s && s.orgNr === orgNr)) {
-    showToast('Already in Compare', { action: { label: 'View', onClick: () => switchTab('compare') } });
     switchTab('compare');
+    showToast('Already in Compare', { action: { label: 'View', onClick: () => switchTab('compare') } });
     return;
   }
   if (!_compareCanAccept(orgNr)) return;
 
-  // Look up full data from the Ranking tab's own state — no refetch.
+  // Resolve full data from Ranking's own state.
   let data = null;
   if (cbMyCompany && cbMyCompany.orgNr === orgNr) data = cbMyCompany;
   else {
@@ -12247,12 +12290,23 @@ function cbRowSendToCompare(orgNr, name) {
     if (c && c.data) data = c.data;
   }
 
-  // Silent because onNavIntent_compare emits the authoritative
-  // success/failure toast once the slot assignment resolves.
-  sendTo('compare', {
-    orgs: [{ orgNr, name, data }],
-    source: 'competitor-ranking-row',
-  }, { silent: true });
+  if (data) {
+    // Fast path: assign synchronously, navigate, render.
+    const emptyIdx = compareSlots.findIndex(s => s === null);
+    const merged = { ...data, orgNr, name: name || data.name };
+    compareSlots[emptyIdx] = merged;
+    _cbJustAddedSlot = emptyIdx;            // triggers pulse in renderSlots
+    switchTab('compare');                    // competitor-bench → compare sub-tab
+    renderSlots();
+    renderCompareTab();
+    cbSyncRowStates();
+    showToast(`✓ ${merged.name} added to Compare`,
+      { action: { label: 'View', onClick: () => switchTab('compare') } });
+    return;
+  }
+
+  // Slow path (shouldn't normally hit from Ranking): fetch via BV.
+  sendTo('compare', { orgs: [{ orgNr, name }] }, { silent: true });
 }
 
 function cbExportCSV() {
