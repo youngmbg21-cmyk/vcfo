@@ -142,6 +142,65 @@ body {
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--green); border-bottom-color: var(--green); }
 
+/* ===== SUB-TABS (nested inside a top-level tab) ===== */
+.subtabs {
+  display:flex; align-items:center; gap:0;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 14px;
+}
+.subtab {
+  padding: 7px 16px;
+  font-size: 12px; font-weight: 600;
+  color: var(--text3); cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.18s, color 0.18s;
+  user-select: none;
+  letter-spacing: 0.01em;
+}
+.subtab:hover { color: var(--text); }
+.subtab.active {
+  background: var(--bg2);
+  color: var(--amber);
+  box-shadow: 0 0 0 1px var(--border2) inset;
+}
+.subtab-hint {
+  margin-left: auto; padding-right: 8px;
+  font-size: 10px; color: var(--text3);
+  letter-spacing: 0.01em;
+}
+
+/* ===== ACTIVE-CONTEXT PILL (visible when a company is loaded) ===== */
+.active-context {
+  display: none; align-items: center; gap: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--amber);
+  border-radius: 16px;
+  padding: 4px 6px 4px 12px;
+  margin-left: 10px;
+  max-width: 260px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.active-context.show { display: inline-flex; }
+.active-context .ac-label {
+  font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text3);
+}
+.active-context .ac-name {
+  font-size: 11px; font-weight: 600; color: var(--amber);
+  max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.active-context .ac-clear {
+  background: none; border: none; color: var(--text3);
+  width: 18px; height: 18px; border-radius: 50%;
+  cursor: pointer; font-size: 12px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.active-context .ac-clear:hover { background: var(--bg4); color: var(--text); }
+
 /* ===== CONTENT ===== */
 .content { padding: 20px; max-width: 1320px; margin: 0 auto; }
 
@@ -506,18 +565,289 @@ body {
   font-family:'JetBrains Mono',monospace;
 }
 
+/* ===== FILTER BAR (reused across Financials + Cash Flow) ===== */
+.filter-bar {
+  display: flex; flex-direction: column;
+  gap: 6px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 14px;
+}
+.filter-bar:empty { display: none; }
+.filter-group {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
+}
+.filter-label {
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text3); font-weight: 700;
+  min-width: 72px;
+  padding-right: 6px;
+}
+.filter-pill {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.filter-pill:hover { border-color: var(--border2); color: var(--text); }
+.filter-pill.active {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--green);
+}
+.filter-pill.group-years.active {
+  background: var(--amber-dim);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+.filter-pill.group-series.active {
+  background: var(--blue-dim);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.filter-pill-small {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+  cursor: pointer;
+  padding: 2px 6px;
+  margin-left: 4px;
+}
+.filter-pill-small:hover { color: var(--text); }
+
+/* ===== JOURNAL ===== */
+.journal-day-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 16px 0 8px;
+  font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--text3); font-weight: 700;
+}
+.journal-day-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+.journal-entry {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--amber);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.journal-entry:hover { border-color: var(--border2); }
+.journal-entry.source-ai-summary { border-left-color: var(--blue); }
+.journal-entry-meta {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 9px; color: var(--text3);
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+.journal-entry-time { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--text2); }
+.journal-entry-chip {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 9px;
+  color: var(--text2);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.journal-entry-chip.clickable { cursor: pointer; }
+.journal-entry-chip.clickable:hover { background: var(--bg4); color: var(--amber); }
+.journal-entry-chip.ai {
+  background: var(--blue-dim);
+  border-color: rgba(59,130,246,0.35);
+  color: var(--blue);
+  font-weight: 700;
+}
+.journal-entry-title {
+  font-size: 12px; font-weight: 700; color: var(--text);
+  margin-bottom: 3px;
+}
+.journal-entry-body {
+  font-size: 11px; color: var(--text2);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.journal-entry.expanded .journal-entry-body {
+  -webkit-line-clamp: unset;
+  display: block;
+  overflow: visible;
+}
+.journal-entry-actions {
+  display: none; gap: 6px; margin-top: 8px;
+}
+.journal-entry.expanded .journal-entry-actions { display: flex; }
+.journal-entry-action {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.journal-entry-action:hover { border-color: var(--border2); color: var(--text); }
+.journal-entry-action.danger:hover { border-color: var(--red); color: var(--red); }
+.journal-empty {
+  padding: 40px 20px; text-align: center; color: var(--text3);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: var(--bg3);
+}
+.journal-empty .icon { font-size: 36px; opacity: 0.3; margin-bottom: 10px; }
+
+/* ===== AI PERFORMANCE SUMMARY CARD ===== */
+.ai-summary-card {
+  border: 1px solid rgba(59,130,246,0.25);
+  background:
+    linear-gradient(135deg, rgba(59,130,246,0.04), rgba(16,185,129,0.03)),
+    var(--bg2);
+}
+.ai-summary-body { }
+.ai-summary-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text2);
+  font-size: 12px;
+  line-height: 1.6;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: var(--bg3);
+}
+.ai-summary-narrative {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--blue);
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.ai-summary-chart-wrap {
+  position: relative;
+  height: 140px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.ai-summary-chart-title {
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text3); font-weight: 700; margin-bottom: 4px;
+}
+.ai-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+@media (max-width: 860px) {
+  .ai-summary-grid { grid-template-columns: 1fr; }
+}
+.ai-summary-col {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.ai-summary-col.good   { border-top: 2px solid var(--green); }
+.ai-summary-col.warn   { border-top: 2px solid var(--red); }
+.ai-summary-col.watch  { border-top: 2px solid var(--amber); }
+.ai-summary-col-title {
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  font-weight: 700; margin-bottom: 4px;
+}
+.ai-summary-col.good  .ai-summary-col-title { color: var(--green); }
+.ai-summary-col.warn  .ai-summary-col-title { color: var(--red); }
+.ai-summary-col.watch .ai-summary-col-title { color: var(--amber); }
+.ai-summary-col-list {
+  list-style: none;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.ai-summary-col-list li {
+  font-size: 11px; line-height: 1.5; color: var(--text);
+  padding-left: 12px;
+  position: relative;
+}
+.ai-summary-col-list li::before {
+  content: '•';
+  position: absolute; left: 0;
+  color: var(--text3);
+}
+.ai-summary-col.good  .ai-summary-col-list li::before { color: var(--green); }
+.ai-summary-col.warn  .ai-summary-col-list li::before { color: var(--red); }
+.ai-summary-col.watch .ai-summary-col-list li::before { color: var(--amber); }
+.ai-stale-badge {
+  font-size: 9px; font-weight: 700;
+  color: var(--amber);
+  background: var(--amber-dim);
+  border: 1px solid rgba(245,158,11,0.3);
+  border-radius: 4px;
+  padding: 3px 8px;
+  letter-spacing: 0.04em;
+}
+
+/* ===== LOOKUP ACTION BUTTONS (chat + elsewhere) ===== */
+.lookup-action {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 11px;
+  padding: 2px 6px;
+  margin: 0 1px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.lookup-action:hover {
+  background: var(--blue-dim);
+  color: var(--blue);
+  border-color: rgba(59,130,246,0.35);
+}
+
 /* ===== TOAST ===== */
 #toast {
   position:fixed; bottom:24px; right:24px;
+  display:flex; align-items:center; gap:12px;
   background:var(--bg4);
   border:1px solid var(--border2);
   color:var(--text); font-size:11px;
-  padding:10px 18px; border-radius:10px;
+  padding:10px 14px 10px 18px; border-radius:10px;
   opacity:0; transform:translateY(8px);
   transition: opacity 0.25s, transform 0.25s;
   pointer-events:none; z-index:9998;
+  max-width: 380px;
 }
-#toast.show { opacity:1; transform:translateY(0); }
+#toast.show { opacity:1; transform:translateY(0); pointer-events:auto; }
+#toast .toast-msg { flex:1; line-height:1.45; }
+#toast .toast-action {
+  background: var(--amber-dim);
+  border: 1px solid rgba(245,158,11,0.35);
+  color: var(--amber);
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 5px;
+  cursor: pointer; white-space: nowrap;
+}
+#toast .toast-action:hover { background: var(--amber); color: var(--bg); }
 
 /* ===== RAW DATA DISPLAY ===== */
 .raw-section { margin-top: 16px; }
@@ -1082,6 +1412,28 @@ body {
   cursor: pointer;
 }
 .cmp-slot.empty:hover { border-color: var(--blue); }
+.cmp-slot-actions {
+  display:flex; gap:4px;
+  margin-top:6px;
+  padding-top:6px;
+  border-top:1px solid var(--border);
+}
+.cmp-slot-action {
+  flex:1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 12px;
+  padding: 3px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.cmp-slot-action:hover {
+  background: var(--blue-dim);
+  color: var(--blue);
+  border-color: rgba(59,130,246,0.35);
+}
 
 .cmp-slot-num {
   font-size: 9px;
@@ -1468,6 +1820,14 @@ body.light-mode {
 .cb-rank-table tr.cb-is-mine td:first-child {
   border-left:3px solid var(--amber);
 }
+.cb-rank-table tr.cb-row-selected td {
+  background: rgba(59,130,246,0.08);
+}
+.cb-rank-table input[type="checkbox"].cb-row-check,
+.cb-rank-table input[type="checkbox"]#cbSelectAll {
+  accent-color: var(--blue);
+  cursor: pointer;
+}
 .cb-rank-badge {
   display:inline-flex; align-items:center; justify-content:center;
   width:26px; height:26px; border-radius:50%;
@@ -1507,6 +1867,44 @@ body.light-mode {
 </style>
 </head>
 <body>
+
+<!-- JOURNAL MODAL (create / edit) -->
+<div class="modal-overlay" id="journalModal">
+  <div class="modal" style="width:480px;max-width:96vw;">
+    <div class="modal-title" id="journalModalTitle">📔 New Journal Note</div>
+    <div class="modal-sub">Notes are stored locally in your browser. Attaching a company lets you filter by it later.</div>
+
+    <div class="modal-field">
+      <label class="modal-label">Title</label>
+      <input class="modal-input" id="journalTitleInput" type="text" maxlength="120" placeholder="Short summary (e.g. Growth stalled YoY)">
+    </div>
+
+    <div class="modal-field">
+      <label class="modal-label">Body</label>
+      <textarea class="modal-input" id="journalBodyInput" rows="6" style="resize:vertical;min-height:120px;font-family:'DM Sans',sans-serif;line-height:1.5;" placeholder="Observations, numbers, next steps…"></textarea>
+    </div>
+
+    <div class="modal-field" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div>
+        <label class="modal-label">About (optional)</label>
+        <div id="journalCompanyPreview" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:8px 10px;font-size:11px;color:var(--text2);min-height:34px;display:flex;align-items:center;gap:6px;"></div>
+        <div style="display:flex;gap:4px;margin-top:4px;">
+          <button type="button" class="btn-secondary" style="font-size:9px;padding:3px 8px;" onclick="journalAttachActive()">Attach active</button>
+          <button type="button" class="btn-secondary" style="font-size:9px;padding:3px 8px;" onclick="journalClearAttachment()">Clear</button>
+        </div>
+      </div>
+      <div>
+        <label class="modal-label">Date</label>
+        <input class="modal-input" id="journalDateInput" type="datetime-local" style="margin:0;">
+      </div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="closeJournalModal()">Cancel</button>
+      <button class="btn-modal-save"   onclick="saveJournalEntry()" id="journalSaveBtn">Save Note</button>
+    </div>
+  </div>
+</div>
 
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settingsModal">
@@ -1573,6 +1971,14 @@ body.light-mode {
       </select>
     </div>
     <div style="font-size:10px;color:var(--text3);" id="apiHint">SE Registry · UC AB via allabolag.se</div>
+
+    <!-- Active-context pill — shows which company is loaded -->
+    <div class="active-context" id="activeContextPill" title="Click × to clear the loaded company">
+      <span class="ac-label">Active</span>
+      <span class="ac-name" id="activeContextName">—</span>
+      <button class="ac-clear" onclick="clearActiveContext()" title="Clear loaded company">×</button>
+    </div>
+
     <!-- Search results dropdown -->
     <div id="searchDropdown" style="display:none;position:fixed;top:48px;left:50%;transform:translateX(-50%);width:420px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:500;overflow:hidden;"></div>
   </div>
@@ -1581,6 +1987,7 @@ body.light-mode {
     <span id="clockDisplay">--:--:-- CET</span>
     <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle light/dark mode">☀</button>
     <button class="settings-btn" id="langToggleBtn" onclick="toggleLanguage()" title="Switch language / Byt språk" style="letter-spacing:0.05em;">🇸🇪 Svenska</button>
+    <button class="settings-btn" onclick="openJournalModal()" title="Capture a note — works from any tab">📔 Note</button>
     <button class="settings-btn" onclick="openSettings()">⚙ API Keys</button>
   </div>
 </div>
@@ -1625,9 +2032,9 @@ body.light-mode {
   <div class="tab" id="tab-cashflow-btn"         onclick="switchTab('cashflow')" data-i18n="tab_cashflow">💧 Cash Flow</div>
   <div class="tab" id="tab-cfo-btn"              onclick="switchTab('cfo')" data-i18n="tab_cfo">📊 CFO Audit</div>
   <div class="tab" id="tab-ma-btn"               onclick="switchTab('ma')" data-i18n="tab_ma">🎯 M&A Screener</div>
-  <div class="tab" id="tab-competitor-bench-btn" onclick="switchTab('competitor-bench')">⚔ Competitor Bench</div>
-  <div class="tab" id="tab-compare-btn"          onclick="switchTab('compare')" data-i18n="tab_compare">⚖ Compare</div>
+  <div class="tab" id="tab-competitor-bench-btn" onclick="switchTab('competitor-bench')">⚔ Competitors</div>
   <div class="tab" id="tab-watchlist-btn"        onclick="switchTab('watchlist')" data-i18n="tab_watchlist">★ Watchlist</div>
+  <div class="tab" id="tab-journal-btn"          onclick="switchTab('journal')">📔 Journal</div>
   <div class="tab" id="tab-benchmarks-btn"       onclick="switchTab('benchmarks')" data-i18n="tab_benchmarks">📡 Benchmarks</div>
   <div class="tab" id="tab-guide-btn"            onclick="switchTab('guide')" style="margin-left:auto;" data-i18n="tab_guide">📖 Guide</div>
 </div>
@@ -1961,8 +2368,11 @@ body.light-mode {
       <div>Load a company to view financial data</div>
     </div>
     <div id="finContent" style="display:none;">
+      <!-- Shared FilterBar: years / sections / series — controls tables + chart -->
+      <div id="finFilterBar" class="filter-bar"></div>
+
       <!-- Revenue-to-Net-Profit waterfall chart (full width, above cards) -->
-      <div class="card" style="margin-bottom:16px;">
+      <div class="card" style="margin-bottom:16px;" data-section="waterfall">
         <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
           Revenue → Net Profit Waterfall
           <button id="finWfDiagBtn" style="display:none;background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:9px;color:var(--text3);cursor:pointer;font-family:'JetBrains Mono',monospace;" onclick="showFinWfDiag()" title="Show data diagnostic">Diagnostic</button>
@@ -1972,22 +2382,44 @@ body.light-mode {
           <canvas id="finWaterfallChart"></canvas>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="card" style="overflow-x:auto;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="finCardsGrid">
+        <div class="card" style="overflow-x:auto;" data-section="income">
           <div class="card-title">Income Statement (Resultaträkning)</div>
           <div id="finIncome">—</div>
         </div>
-        <div class="card" style="overflow-x:auto;">
+        <div class="card" style="overflow-x:auto;" data-section="balance">
           <div class="card-title">Balance Sheet (Balansräkning)</div>
           <div id="finBalance">—</div>
         </div>
-        <div class="card">
+        <div class="card" data-section="ratios">
           <div class="card-title">Key Ratios</div>
           <div id="finRatios">—</div>
         </div>
-        <div class="card">
+        <div class="card" data-section="auditor">
           <div class="card-title">Auditor Notes & Remarks</div>
           <div id="finAuditor">—</div>
+        </div>
+      </div>
+
+      <!-- AI Performance Summary (reacts to FilterBar state) -->
+      <div class="card ai-summary-card" data-section="aiSummary" style="margin-top:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+          <div>
+            <div style="font-weight:800;font-size:14px;color:var(--blue);">🤖 AI Performance Summary</div>
+            <div id="finAIContext" style="font-size:10px;color:var(--text3);margin-top:2px;">—</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span id="finAIStale" class="ai-stale-badge" style="display:none;" title="Filters changed since the last summary was generated">● Filters changed</span>
+            <button class="btn-copy" id="finAISaveBtn" onclick="saveAISummaryToJournal('financials')" title="Save this summary to your Journal" style="display:none;">📔 Save to Journal</button>
+            <button class="btn-copy" id="finAICopyBtn" onclick="copyAIOutput('finAIBody', this)" title="Copy" style="display:none;">📋 Copy</button>
+            <button class="btn-analyze" id="finAIRunBtn" onclick="runAIPerformanceSummary('financials')" style="background:linear-gradient(135deg,rgba(0,200,255,0.12),rgba(0,200,255,0.06));border-color:rgba(0,200,255,0.4);color:var(--blue);">🤖 Generate Summary</button>
+          </div>
+        </div>
+        <div id="finAIBody" class="ai-summary-body">
+          <div class="ai-summary-empty">
+            <div>Click <strong>Generate Summary</strong> for an AI-written performance analysis tuned to your current filters.</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:6px;">Covers what's going well, what's concerning, and what to watch going forward.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -2008,10 +2440,13 @@ body.light-mode {
         <button class="btn-secondary" onclick="renderCashFlow()" data-i18n="btn_refresh_cf">↺ Refresh</button>
       </div>
 
+      <!-- Shared FilterBar: years / sections / series -->
+      <div id="cfFilterBar" class="filter-bar"></div>
+
       <div class="cf-waterfall-grid">
         <!-- Left: summary -->
         <div>
-          <div class="cf-summary-card">
+          <div class="cf-summary-card" data-section="components">
             <div class="card-title">Cash Flow Components <span style="color:var(--green);">BRIDGE</span></div>
             <div id="cfSummaryRows">
               <div style="color:var(--text3);font-size:11px;">Computing...</div>
@@ -2022,7 +2457,7 @@ body.light-mode {
             </div>
           </div>
 
-          <div class="cf-summary-card" style="margin-top:12px;">
+          <div class="cf-summary-card" style="margin-top:12px;" data-section="conversion">
             <div class="card-title">Cash Conversion Metrics</div>
             <div id="cfMetrics">
               <div style="color:var(--text3);font-size:11px;">—</div>
@@ -2031,7 +2466,7 @@ body.light-mode {
         </div>
 
         <!-- Right: chart -->
-        <div class="card">
+        <div class="card" data-section="waterfall">
           <div class="card-title">Waterfall Chart <span style="color:var(--green);">NET PROFIT → FCF</span></div>
           <div id="cfYearBar" class="cf-year-bar" style="display:none;"></div>
           <canvas id="cfWaterfallChart" style="max-height:320px;"></canvas>
@@ -2040,6 +2475,28 @@ body.light-mode {
             FCF = Net Profit + Depreciation − Change in Working Capital − CapEx.<br>
             Working Capital = (Current Assets − Cash) − Current Liabilities.<br>
             CapEx is estimated from depreciation charge (approx. replacement cost).
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Performance Summary (reacts to FilterBar state) -->
+      <div class="card ai-summary-card" data-section="aiSummary" style="margin-top:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+          <div>
+            <div style="font-weight:800;font-size:14px;color:var(--green);">🤖 AI Cash Flow Summary</div>
+            <div id="cfAIContext" style="font-size:10px;color:var(--text3);margin-top:2px;">—</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span id="cfAIStale" class="ai-stale-badge" style="display:none;" title="Filters changed since the last summary was generated">● Filters changed</span>
+            <button class="btn-copy" id="cfAISaveBtn" onclick="saveAISummaryToJournal('cashflow')" title="Save this summary to your Journal" style="display:none;">📔 Save to Journal</button>
+            <button class="btn-copy" id="cfAICopyBtn" onclick="copyAIOutput('cfAIBody', this)" title="Copy" style="display:none;">📋 Copy</button>
+            <button class="btn-analyze" id="cfAIRunBtn" onclick="runAIPerformanceSummary('cashflow')" style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.06));border-color:rgba(16,185,129,0.4);color:var(--green);">🤖 Generate Summary</button>
+          </div>
+        </div>
+        <div id="cfAIBody" class="ai-summary-body">
+          <div class="ai-summary-empty">
+            <div>Click <strong>Generate Summary</strong> for an AI read on cash generation quality, conversion efficiency, and capex discipline.</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:6px;">Tuned to the years, sections, and chart series you have selected.</div>
           </div>
         </div>
       </div>
@@ -2081,8 +2538,54 @@ body.light-mode {
     </div>
   </div>
 
-  <!-- ===== COMPETITOR BENCH TAB ===== -->
+  <!-- ===== JOURNAL TAB ===== -->
+  <div id="tab-journal" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:800;color:var(--amber);">📔 Journal</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">Capture notes, observations, and analysis snapshots over time</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn-secondary" onclick="exportJournalJSON()" title="Export all entries as JSON">⬇ Export JSON</button>
+        <button class="btn-analyze" onclick="openJournalModal()" style="background:var(--amber-dim);border-color:rgba(245,158,11,0.4);color:var(--amber);">+ New Note</button>
+      </div>
+    </div>
+
+    <!-- Search + filter pills -->
+    <div class="filter-bar" id="journalFilterBar" style="margin-bottom:12px;">
+      <div class="filter-group">
+        <span class="filter-label">Search</span>
+        <input type="text" id="journalSearchInput" placeholder="Search titles, body, or company…"
+          oninput="journalApplyFilters()"
+          style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
+      </div>
+      <div class="filter-group" id="journalFilterPills">
+        <span class="filter-label">Filter</span>
+        <button class="filter-pill active" data-filter="all" onclick="journalSetFilter('all')">All</button>
+        <button class="filter-pill" data-filter="company" onclick="journalSetFilter('company')">Active Company</button>
+        <button class="filter-pill" data-filter="week" onclick="journalSetFilter('week')">This Week</button>
+        <button class="filter-pill" data-filter="month" onclick="journalSetFilter('month')">This Month</button>
+        <button class="filter-pill" data-filter="ai" onclick="journalSetFilter('ai')">AI Summaries</button>
+      </div>
+    </div>
+
+    <div id="journalList">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+
+  <!-- ===== COMPETITORS TAB (Ranking + Compare sub-tabs) ===== -->
   <div id="tab-competitor-bench" style="display:none;">
+
+    <!-- Sub-tab strip -->
+    <div class="subtabs">
+      <div class="subtab active" id="subtab-cb-ranking-btn" onclick="switchSubTab('competitor-bench','ranking')">⚔ Ranking</div>
+      <div class="subtab"        id="subtab-cb-compare-btn" onclick="switchSubTab('competitor-bench','compare')">⚖ Compare</div>
+      <div class="subtab-hint">Rank peers, then send selections to Compare for side-by-side analysis.</div>
+    </div>
+
+    <!-- RANKING sub-panel -->
+    <div id="subtab-cb-ranking">
     <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;">
 
       <!-- Left sidebar (sticky) -->
@@ -2204,9 +2707,16 @@ body.light-mode {
               <button class="cb-sort-pill active" style="background:var(--green-dim);border:1px solid rgba(16,185,129,0.4);color:var(--green);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;font-weight:600;">EBITDA %</button>
               <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">EBIT %</button>
               <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Revenue</button>
+              <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Net Profit</button>
               <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">ROE %</button>
-              <button class="cb-sort-pill" style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:3px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;cursor:pointer;">Google ★</button>
             </div>
+          </div>
+
+          <!-- Selection action bar — appears only when rows are selected -->
+          <div id="cbSelectBar" style="display:none;align-items:center;gap:10px;background:var(--blue-dim);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:7px 12px;margin-bottom:10px;">
+            <span style="font-size:11px;color:var(--blue);font-weight:600;" id="cbSelectCount">0 selected</span>
+            <button class="btn-secondary" style="font-size:10px;padding:4px 10px;" onclick="cbSendSelectionToCompare()">⚖ Send to Compare</button>
+            <button style="background:none;border:none;color:var(--text3);font-size:10px;cursor:pointer;padding:0;margin-left:auto;" onclick="cbClearSelection()">Clear selection</button>
           </div>
 
           <!-- Ranking table / empty state -->
@@ -2221,6 +2731,10 @@ body.light-mode {
       </div>
 
     </div>
+    </div><!-- /subtab-cb-ranking -->
+
+    <!-- COMPARE sub-panel is #tab-compare, relocated here by initSubTabs() at startup -->
+
   </div>
 
   <!-- ===== GUIDE TAB ===== -->
@@ -2541,7 +3055,7 @@ body.light-mode {
   </div>
 </div>
 
-<div id="toast"></div>
+<div id="toast"><span class="toast-msg"></span><button class="toast-action" id="toastAction" style="display:none;"></button></div>
 
 <script>
 // ============================================================
@@ -2551,6 +3065,58 @@ let anthropicKey = ''; try { anthropicKey = localStorage.getItem('vcfo_anthropic
 let ANTHROPIC_PROXY_URL = ''; try { ANTHROPIC_PROXY_URL = localStorage.getItem('vcfo_proxy_url') || ''; } catch(e) {}
 let serpApiKey = ''; try { serpApiKey = localStorage.getItem('vcfo_serp') || ''; } catch(e) {}
 let companyData  = null;
+
+// ============================================================
+// FILTER STATE — source of truth for Financials & Cash Flow tabs.
+// Batch 4 AI summary reads from these to stay in sync with the UI.
+// ============================================================
+const FIN_SECTIONS  = [
+  { value:'waterfall', label:'Waterfall' },
+  { value:'income',    label:'Income Statement' },
+  { value:'balance',   label:'Balance Sheet' },
+  { value:'ratios',    label:'Key Ratios' },
+  { value:'auditor',   label:'Auditor Notes' },
+  { value:'aiSummary', label:'AI Summary' },
+];
+const FIN_SERIES = [
+  { value:'revenue',      label:'Revenue' },
+  { value:'opcosts',      label:'Op. Costs (excl. D&A)' },
+  { value:'ebitda',       label:'EBITDA' },
+  { value:'depreciation', label:'Depreciation' },
+  { value:'ebit',         label:'EBIT' },
+  { value:'taxfin',       label:'Tax & Financials' },
+  { value:'netprofit',    label:'Net Profit' },
+];
+const CF_SECTIONS = [
+  { value:'components', label:'Components' },
+  { value:'conversion', label:'Conversion Metrics' },
+  { value:'waterfall',  label:'Waterfall Chart' },
+  { value:'aiSummary',  label:'AI Summary' },
+];
+const CF_SERIES = [
+  { value:'netprofit',    label:'Net Profit' },
+  { value:'depreciation', label:'+ Depreciation' },
+  { value:'deltawc',      label:'± ΔWorking Cap.' },
+  { value:'capex',        label:'− CapEx' },
+  { value:'fcf',          label:'Free Cash Flow' },
+];
+
+const financialsFilters = {
+  years:    new Set(),
+  sections: new Set(FIN_SECTIONS.map(s => s.value)),
+  series:   new Set(FIN_SERIES.map(s => s.value)),
+};
+const cashflowFilters = {
+  years:    new Set(),
+  sections: new Set(CF_SECTIONS.map(s => s.value)),
+  series:   new Set(CF_SERIES.map(s => s.value)),
+};
+
+// Reset year filters when a new company loads (years change)
+function resetFilterYearsFor(obj, years) {
+  obj.years.clear();
+  years.forEach(y => obj.years.add(String(y)));
+}
 let maScore      = null;
 let cfoRunning   = false;
 let maRunning    = false;
@@ -3057,18 +3623,39 @@ function updateClock() {
 let activeTab = 'company';
 
 function switchTab(name) {
+  // Compatibility: callers that ask for the old top-level 'compare' tab
+  // are redirected to Competitors → Compare sub-tab.
+  if (name === 'compare') {
+    activeTab = 'compare';
+    _switchTopTab('competitor-bench');
+    switchSubTab('competitor-bench', 'compare');
+    updateChatPills();
+    updateChatSuggestions();
+    return;
+  }
   activeTab = name;
-  ['company','financials','cashflow','cfo','ma','competitor-bench','compare','watchlist','benchmarks','guide'].forEach(t => {
-    document.getElementById('tab-' + t).style.display = (t === name) ? 'block' : 'none';
-    document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === name);
-  });
-  if (name === 'compare')           renderCompareTab();
+  _switchTopTab(name);
   if (name === 'benchmarks')        initBenchmarksTab();
   if (name === 'cashflow')          renderCashFlow();
   if (name === 'watchlist')         renderWatchlistTab();
-  if (name === 'competitor-bench')  { cbRenderSavedPills(); cbRenderPresets(cbActiveSNI); }
+  if (name === 'journal')           renderJournalTab();
+  if (name === 'competitor-bench')  {
+    // Default to ranking unless user already picked a sub
+    const sub = _activeSubTab['competitor-bench'] || 'ranking';
+    switchSubTab('competitor-bench', sub);
+    cbRenderSavedPills(); cbRenderPresets(cbActiveSNI);
+  }
   updateChatPills();
   updateChatSuggestions();
+}
+
+function _switchTopTab(name) {
+  ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','journal','benchmarks','guide'].forEach(t => {
+    const panel = document.getElementById('tab-' + t);
+    if (panel) panel.style.display = (t === name) ? 'block' : 'none';
+    const btn = document.getElementById('tab-' + t + '-btn');
+    if (btn) btn.classList.toggle('active', t === name);
+  });
 }
 
 // ============================================================
@@ -3148,13 +3735,246 @@ function updateAIStatus() {
 }
 
 // ============================================================
-// TOAST
+// TOAST — supports optional { action: { label, onClick } }
 // ============================================================
-function showToast(msg) {
+let _toastTimer = null;
+function showToast(msg, opts) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
+  if (!t) return;
+  const msgEl = t.querySelector('.toast-msg');
+  const btn   = t.querySelector('.toast-action');
+  if (msgEl) msgEl.textContent = msg;
+  else t.textContent = msg;
+  if (btn) {
+    if (opts && opts.action && typeof opts.action.onClick === 'function') {
+      btn.textContent = opts.action.label || 'View';
+      btn.style.display = 'inline-flex';
+      btn.onclick = () => {
+        try { opts.action.onClick(); } catch(e) { console.error(e); }
+        t.classList.remove('show');
+      };
+    } else {
+      btn.style.display = 'none';
+      btn.onclick = null;
+    }
+  }
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), (opts && opts.duration) || 3200);
+}
+
+// ============================================================
+// SUB-TABS — nested panels inside a top-level tab
+// ============================================================
+// Registry: { parentTab: { panels: { subId: panelElementId }, default: subId } }
+const SUBTAB_REGISTRY = {
+  'competitor-bench': {
+    panels: { ranking: 'subtab-cb-ranking', compare: 'tab-compare' },
+    default: 'ranking'
+  }
+};
+const _activeSubTab = {}; // parent -> active sub id
+
+function switchSubTab(parentTab, subId) {
+  const reg = SUBTAB_REGISTRY[parentTab];
+  if (!reg) return;
+  const panels = reg.panels;
+  if (!panels[subId]) subId = reg.default;
+
+  Object.keys(panels).forEach(k => {
+    const el = document.getElementById(panels[k]);
+    if (el) el.style.display = (k === subId) ? 'block' : 'none';
+    const btn = document.getElementById(`subtab-${abbrevParent(parentTab)}-${k}-btn`);
+    if (btn) btn.classList.toggle('active', k === subId);
+  });
+  _activeSubTab[parentTab] = subId;
+
+  // Call per-sub init hooks where useful
+  if (parentTab === 'competitor-bench' && subId === 'compare') {
+    if (typeof renderCompareTab === 'function') renderCompareTab();
+  }
+}
+function abbrevParent(p) {
+  // URL-safe short prefix for subtab button IDs
+  return p === 'competitor-bench' ? 'cb' : p;
+}
+function initSubTabs() {
+  // Relocate #tab-compare inside #tab-competitor-bench so it renders as a sub-panel
+  const parent = document.getElementById('tab-competitor-bench');
+  const compare = document.getElementById('tab-compare');
+  if (parent && compare && compare.parentElement !== parent) {
+    parent.appendChild(compare);
+  }
+  // Default: Ranking visible, Compare hidden
+  const rankPanel = document.getElementById('subtab-cb-ranking');
+  if (rankPanel) rankPanel.style.display = 'block';
+  if (compare) compare.style.display = 'none';
+}
+
+// ============================================================
+// CROSS-TAB NAVIGATION — sendTo(targetTab, payload)
+// ------------------------------------------------------------
+// Payload shape: { orgs?: string[], subTab?: string, source?: string, note?: string }
+// Each receiving tab implements its onNavIntent hook and reads __pendingNav.
+// ============================================================
+window.__pendingNav = null;
+
+function sendTo(targetTab, payload, opts) {
+  window.__pendingNav = payload || {};
+  switchTab(targetTab);
+  // After switchTab() renders, fire the receiver hook if defined (supports async)
+  const hookName = 'onNavIntent_' + targetTab.replace(/-/g, '_');
+  if (typeof window[hookName] === 'function') {
+    Promise.resolve()
+      .then(() => window[hookName](window.__pendingNav))
+      .catch(err => console.error('onNavIntent error:', err));
+  }
+  if (!(opts && opts.silent)) {
+    const label = (payload && payload.toastLabel) || 'View';
+    const msg   = (payload && payload.toastMsg)   || `Opened ${targetTab}`;
+    showToast(msg, { action: { label, onClick: () => switchTab(targetTab) } });
+  }
+}
+
+// ============================================================
+// FILTER BAR — reusable pill-group primitive
+// ------------------------------------------------------------
+// config = {
+//   groups: [
+//     { id:'years', label:'Years', allowAll:true, hideWhenSingle:true,
+//       options: () => [{value:'2023', label:'FY2023'}, ...] }
+//   ]
+// }
+// state = { years: Set<string>, sections: Set<string>, ... }
+// onChange(state, changed) is called after any toggle.
+// ============================================================
+const FILTER_BAR_REGISTRY = {};
+
+function renderFilterBar(containerId, config, state, onChange) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  FILTER_BAR_REGISTRY[containerId] = { config, state, onChange };
+  let html = '';
+  for (const group of config.groups) {
+    const options = typeof group.options === 'function' ? group.options() : (group.options || []);
+    if (!options.length && group.hideWhenEmpty !== false) continue;
+    if (options.length <= 1 && group.hideWhenSingle) continue;
+
+    html += `<div class="filter-group" data-group="${group.id}">`;
+    html += `<span class="filter-label">${escapeHtml(group.label)}</span>`;
+
+    const set = state[group.id] || new Set();
+    for (const opt of options) {
+      const isActive = set.has(opt.value);
+      const extraCls = `group-${group.id}`;
+      html += `<button class="filter-pill ${extraCls}${isActive?' active':''}"
+        data-group="${group.id}" data-value="${escapeHtml(opt.value)}"
+        onclick="_filterBarToggle('${containerId}','${group.id}','${escapeHtml(opt.value)}')"
+        title="${escapeHtml(opt.title || opt.label)}">${escapeHtml(opt.label)}</button>`;
+    }
+    if (group.allowAll && options.length > 1) {
+      const all = options.every(o => set.has(o.value));
+      html += `<button class="filter-pill-small" onclick="_filterBarAll('${containerId}','${group.id}',${!all})">${all?'Clear':'All'}</button>`;
+    }
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function _filterBarToggle(containerId, groupId, value) {
+  const reg = FILTER_BAR_REGISTRY[containerId]; if (!reg) return;
+  const set = reg.state[groupId]; if (!set) return;
+  if (set.has(value)) set.delete(value); else set.add(value);
+  renderFilterBar(containerId, reg.config, reg.state, reg.onChange);
+  try { reg.onChange && reg.onChange(reg.state, { groupId, value, action:'toggle' }); } catch(e) { console.error(e); }
+}
+function _filterBarAll(containerId, groupId, selectAll) {
+  const reg = FILTER_BAR_REGISTRY[containerId]; if (!reg) return;
+  const group = reg.config.groups.find(g => g.id === groupId); if (!group) return;
+  const options = typeof group.options === 'function' ? group.options() : (group.options || []);
+  const set = reg.state[groupId] || new Set();
+  set.clear();
+  if (selectAll) options.forEach(o => set.add(o.value));
+  reg.state[groupId] = set;
+  renderFilterBar(containerId, reg.config, reg.state, reg.onChange);
+  try { reg.onChange && reg.onChange(reg.state, { groupId, action: selectAll?'all':'clear' }); } catch(e) { console.error(e); }
+}
+
+// Section visibility helper — hides/shows elements marked with [data-section="..."]
+function applySectionVisibility(rootId, sectionsSet) {
+  const root = document.getElementById(rootId);
+  if (!root) return;
+  root.querySelectorAll('[data-section]').forEach(el => {
+    const id = el.getAttribute('data-section');
+    el.style.display = sectionsSet.has(id) ? '' : 'none';
+  });
+}
+
+// ============================================================
+// NAV INTENT RECEIVERS — called by sendTo() after switchTab()
+// Payload shape: { orgs: Array<string | {orgNr, name}>, source?, ... }
+// ------------------------------------------------------------
+function _normalizeOrgList(payload) {
+  if (!payload || !payload.orgs) return [];
+  return payload.orgs.map(o => typeof o === 'string' ? { orgNr: o, name: null } : o);
+}
+
+// Compare: place up to MAX_SLOTS companies into empty slots
+window.onNavIntent_compare = async function(payload) {
+  const list = _normalizeOrgList(payload);
+  if (!list.length) return;
+  const max = (typeof MAX_SLOTS !== 'undefined') ? MAX_SLOTS : 5;
+  let placed = 0, skipped = 0;
+  for (const item of list) {
+    // Skip duplicates
+    if (compareSlots.some(s => s && s.orgNr === item.orgNr)) { skipped++; continue; }
+    const emptyIdx = compareSlots.findIndex(s => s === null);
+    if (emptyIdx === -1) break;
+    // Use the existing slot-loader so we benefit from caching + search
+    try { await loadCompareSlotByOrg(emptyIdx, item.orgNr, item.name || null); placed++; }
+    catch(e) { console.warn('Compare slot load failed:', e); }
+    if (placed + skipped >= max) break;
+  }
+  renderCompareTab();
+};
+
+// Company / Financials / Cash Flow / M&A: load the first org in the payload
+async function _loadFirstOrgFromPayload(payload) {
+  const list = _normalizeOrgList(payload);
+  if (!list.length) return;
+  const { orgNr, name } = list[0];
+  try { await loadCompanyByOrg(orgNr, name || undefined); }
+  catch(e) { console.warn('Load failed:', e); showToast('Failed to load company'); }
+}
+window.onNavIntent_company    = _loadFirstOrgFromPayload;
+window.onNavIntent_financials = _loadFirstOrgFromPayload;
+window.onNavIntent_cashflow   = _loadFirstOrgFromPayload;
+window.onNavIntent_ma         = _loadFirstOrgFromPayload;
+
+// ============================================================
+// ACTIVE-CONTEXT PILL — shows which company is loaded
+// ============================================================
+function renderActiveContext() {
+  const pill = document.getElementById('activeContextPill');
+  const nameEl = document.getElementById('activeContextName');
+  if (!pill || !nameEl) return;
+  if (typeof companyData !== 'undefined' && companyData && companyData.name) {
+    nameEl.textContent = companyData.name;
+    pill.classList.add('show');
+    pill.title = `Loaded: ${companyData.name}${companyData.orgNr ? ' · ' + companyData.orgNr : ''} — click × to clear`;
+  } else {
+    pill.classList.remove('show');
+  }
+}
+function clearActiveContext() {
+  if (typeof companyData !== 'undefined') { companyData = null; }
+  if (typeof historyData !== 'undefined') { historyData = {}; }
+  const heroEmpty = document.getElementById('companyEmpty');
+  const heroFull  = document.getElementById('companyContent');
+  if (heroEmpty) heroEmpty.style.display = 'block';
+  if (heroFull)  heroFull.style.display  = 'none';
+  renderActiveContext();
+  showToast('Context cleared');
 }
 
 // ============================================================
@@ -3871,6 +4691,7 @@ async function loadCompanyByOrg(raw, knownName) {
 
   companyData = d;
   maScore     = null;
+  renderActiveContext();
 
   // Step 3 — Build year selector from doc list or API available years
   if (docList && docList.length > 0) {
@@ -4091,6 +4912,7 @@ async function switchToYear(year, docId) {
   historyData[year] = d;
   companyData       = d;
   renderYearView(d, year);
+  renderActiveContext();
   setStatusBar(`${t('status_loaded')} FY${year} · ${d.name}`, 'ok');
   showToast(`✓ Switched to FY${year}`);
 }
@@ -4499,6 +5321,11 @@ function buildFieldRows(rows) {
 // RENDER — Financials Tab
 // ============================================================
 function renderFinancialsTab(d) {
+  // Refresh the FilterBar (years depend on historyData; defaults = all on)
+  renderFinancialsFilterBar();
+  applySectionVisibility('finContent', financialsFilters.sections);
+  updateAISummaryContext('financials');
+
   const ros = d.netSales ? (d.opProfit / d.netSales * 100) : 0;
 
   // Find prior year data from historyData
@@ -4585,6 +5412,150 @@ function renderFinancialsTab(d) {
   if (diagBtn) diagBtn.style.display = 'inline-block';
 }
 
+// ── Financials FilterBar: years, sections, series ──
+function renderFinancialsFilterBar() {
+  // Seed years with all known if empty (first time or after company change)
+  const knownYears = Object.keys(historyData || {}).concat(companyData ? [String(companyData.fiscalYear)] : []);
+  const uniqueYears = Array.from(new Set(knownYears.filter(Boolean))).sort().reverse();
+  // Drop years no longer available (e.g. new company loaded)
+  Array.from(financialsFilters.years).forEach(y => { if (!uniqueYears.includes(y)) financialsFilters.years.delete(y); });
+  // If selection ended up empty but years exist, default to all
+  if (financialsFilters.years.size === 0 && uniqueYears.length) {
+    uniqueYears.forEach(y => financialsFilters.years.add(y));
+  }
+
+  const config = {
+    groups: [
+      { id:'years', label:'Years', allowAll:true, hideWhenSingle:true,
+        options: () => uniqueYears.map(y => ({ value:y, label:'FY'+y })) },
+      { id:'sections', label:'Sections', allowAll:true,
+        options: FIN_SECTIONS },
+      { id:'series', label:'Chart Series', allowAll:true,
+        options: FIN_SERIES },
+    ]
+  };
+  renderFilterBar('finFilterBar', config, financialsFilters, onFinancialsFilterChange);
+}
+
+function onFinancialsFilterChange(state, changed) {
+  // Sections: show/hide cards immediately without re-rendering content
+  applySectionVisibility('finContent', state.sections);
+  // Series: re-render waterfall only
+  if (changed && changed.groupId === 'series') {
+    const yr = finWfSelectedYear || (companyData ? companyData.fiscalYear : null);
+    const dd = (yr && historyData[yr]) || companyData;
+    if (dd) renderFinWaterfall(dd);
+  }
+  // Years: re-render multi-year tables (income, balance, ratios) + waterfall uses primary year
+  if (changed && changed.groupId === 'years' && companyData) {
+    const years = Array.from(state.years).sort().reverse();
+    if (years.length) {
+      const primary = years[0];
+      const primaryData = historyData[primary] || companyData;
+      renderFinMultiYearTables(primaryData, years);
+      finWfSelectedYear = primary;
+      renderFinWaterfall(primaryData);
+    }
+  }
+  markAISummaryStale('financials');
+}
+
+// Render Income Statement + Balance Sheet + Key Ratios with N columns (one per selected year)
+function renderFinMultiYearTables(primary, selectedYears) {
+  const yrs = (selectedYears && selectedYears.length ? selectedYears : [primary.fiscalYear]).map(String);
+  const rowData = yrs.map(y => historyData[y] || (String(primary.fiscalYear) === y ? primary : null)).filter(Boolean);
+  if (!rowData.length) return;
+
+  function yoyPct(curr, prior) {
+    if (!prior || prior === 0) return '—';
+    const pct = ((curr - prior) / Math.abs(prior) * 100);
+    if (Math.abs(pct) < 1) return '<span style="color:var(--text3);">→ 0%</span>';
+    if (pct > 0) return `<span class="pos">▲ +${pct.toFixed(1)}%</span>`;
+    return `<span class="neg">▼ ${pct.toFixed(1)}%</span>`;
+  }
+
+  const headerCells = rowData.map(r => `<th style="text-align:right">FY${r.fiscalYear}</th>`).join('');
+  const yoyCol = rowData.length === 2
+    ? `<th style="text-align:right">YoY Δ</th>`
+    : '';
+
+  const ebitdaOf = r => (r.opProfit || 0) + (r.depreciation || 0);
+  const rosOf    = r => r.netSales ? (r.opProfit / r.netSales * 100) : 0;
+
+  function row(label, valueFn, fmt, classFn, isPct) {
+    const vals = rowData.map(r => {
+      const v = valueFn(r);
+      const cls = classFn ? classFn(v, r) : '';
+      return `<td style="text-align:right" class="${cls}">${isPct ? fmtPct(v) : fmt(v)}</td>`;
+    }).join('');
+    let yoy = '';
+    if (rowData.length === 2) {
+      const curr = valueFn(rowData[0]);
+      const prior = valueFn(rowData[1]);
+      yoy = `<td style="text-align:right">${yoyPct(curr, prior)}</td>`;
+    }
+    return `<tr><td>${label}</td>${vals}${yoy}</tr>`;
+  }
+
+  // Income Statement
+  document.getElementById('finIncome').innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Line Item</th>${headerCells}${yoyCol}</tr></thead>
+      <tbody>
+        ${row('Net Sales',  r => r.netSales,  fmtSEK)}
+        ${row('EBIT (Operating Profit)', r => r.opProfit, fmtSEK, v => v>0?'pos':'neg')}
+        ${row('EBITDA', ebitdaOf, fmtSEK, v => v>0?'pos':'neg')}
+        ${row('Net Profit', r => r.netProfit, fmtSEK, v => v>0?'pos':'neg')}
+        ${row('ROS', rosOf, null, v => v>10?'pos':v>5?'amb':'neg', true)}
+        ${row('Dividends Paid', r => r.dividendsPaid || 0, fmtSEK, (v,r) => (r.dividendsPaid||0) > (r.netProfit||0) ? 'neg' : 'amb')}
+      </tbody>
+    </table>`;
+
+  // Balance Sheet
+  document.getElementById('finBalance').innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Item</th>${headerCells}${yoyCol}</tr></thead>
+      <tbody>
+        ${row('Fixed Assets',        r => r.totalFixedAssets || 0,   fmtSEK)}
+        ${row('Current Assets',      r => r.totalCurrentAssets || 0, fmtSEK)}
+        ${row('Total Assets',        r => r.totalAssets || 0,        fmtSEK)}
+        ${row('Equity',              r => r.equity || 0,             fmtSEK, () => 'pos')}
+        ${row('Long-term Debt',      r => r.longTermDebt || 0,       fmtSEK)}
+        ${row('Current Liabilities', r => r.currentLiabilities || 0, fmtSEK)}
+      </tbody>
+    </table>`;
+
+  // Key Ratios — when single year, keep the rich benchmark view; when multi, compact multi-col
+  if (rowData.length === 1) {
+    document.getElementById('finRatios').innerHTML = `
+      <table class="data-table">
+        <thead><tr><th>Ratio</th><th style="text-align:right">Value</th><th>Benchmark</th><th style="text-align:center">Status</th></tr></thead>
+        <tbody>${buildRatioRows(rowData[0])}</tbody>
+      </table>`;
+  } else {
+    const ratioRows = [
+      { name:'ROS',            fn: r => r.netSales ? r.opProfit/r.netSales*100 : null,   fmt: fmtPct },
+      { name:'ROE',            fn: r => r.equity   ? r.netProfit/r.equity*100 : null,    fmt: fmtPct },
+      { name:'Debt/Equity',    fn: r => r.equity   ? (r.longTermDebt+r.currentLiabilities)/r.equity : null, fmt: fmtRatio },
+      { name:'Current Ratio',  fn: r => r.currentLiabilities ? r.totalCurrentAssets/r.currentLiabilities : null, fmt: fmtRatio },
+      { name:'Payout Ratio',   fn: r => r.netProfit ? r.dividendsPaid/r.netProfit*100 : null, fmt: fmtPct },
+    ];
+    const header = `<tr><th>Ratio</th>${headerCells}</tr>`;
+    const body = ratioRows.map(rr => {
+      const cells = rowData.map(r => {
+        const v = rr.fn(r);
+        return `<td style="text-align:right">${v === null || v === undefined ? '—' : rr.fmt(v)}</td>`;
+      }).join('');
+      return `<tr><td>${rr.name}</td>${cells}</tr>`;
+    }).join('');
+    document.getElementById('finRatios').innerHTML = `
+      <table class="data-table">
+        <thead>${header}</thead>
+        <tbody>${body}</tbody>
+      </table>`;
+  }
+}
+
 // Show waterfall data diagnostic panel
 function showFinWfDiag() {
   const yr = finWfSelectedYear || (companyData ? companyData.fiscalYear : null);
@@ -4657,8 +5628,12 @@ let finWaterfallInst = null;
 let finWfSelectedYear = null;
 
 function renderFinWfYearBar() {
+  // Legacy per-chart year bar is now replaced by the shared FilterBar Years group.
+  // Keep this function as a no-op so call sites don't break.
   const bar = document.getElementById('finWfYearBar');
-  if (!bar) return;
+  if (bar) bar.style.display = 'none';
+  return;
+  // eslint-disable-next-line no-unreachable
   const years = Object.keys(historyData || {}).sort();
   if (years.length <= 1) { bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
@@ -4819,35 +5794,57 @@ function renderFinWaterfall(d) {
 
   // ── Build bars: only use fields allabolag reliably provides ──
   const bars = [];
+  const visibleSeries = financialsFilters.series; // Set<string>
+  const depreciation = d.depreciation || 0;
+  const ebitda = ebit + depreciation;
+  // Operating costs excluding D&A (so the Op Costs → EBITDA bridge adds up correctly)
+  const opCostsExDA = (netSales - ebitda);
 
   // 1. Net Sales (opening)
-  bars.push({ en: 'Net Sales', sv: 'Nettoomsättning', value: netSales, role: 'revenue' });
+  if (visibleSeries.has('revenue'))
+    bars.push({ en: 'Net Sales', sv: 'Nettoomsättning', value: netSales, role: 'revenue', key:'revenue' });
 
-  // 2. Operating Costs (derived: Net Sales - EBIT = total operating costs)
-  const opCosts = netSales - ebit;
-  if (netSales > 0 && opCosts > 0) {
-    bars.push({ en: 'Operating Costs', sv: 'Rörelsekostnader', value: -opCosts, role: 'step' });
+  // 2. Operating Costs (excluding D&A so the EBITDA subtotal balances)
+  if (visibleSeries.has('opcosts') && netSales > 0 && opCostsExDA > 0) {
+    bars.push({ en: 'Op. Costs (excl. D&A)', sv: 'Rörelsekostnader (exkl. avskr.)', value: -opCostsExDA, role: 'step', key:'opcosts' });
   }
 
-  // 3. EBIT (subtotal)
-  bars.push({ en: 'EBIT', sv: 'Rörelseresultat', value: ebit, role: 'subtotal' });
+  // 3. EBITDA (subtotal) — new
+  if (visibleSeries.has('ebitda')) {
+    bars.push({ en: 'EBITDA', sv: 'EBITDA', value: ebitda, role: 'subtotal', key:'ebitda' });
+  }
 
-  // 4. Below-the-line: derive the net adjustment from EBIT → Net Profit
-  //    This includes financial items, tax, group contributions, etc.
-  //    Showing them individually is unreliable for holding/group companies
-  //    where intercompany items can be larger than revenue.
+  // 4. Depreciation & Amortisation
+  if (visibleSeries.has('depreciation') && depreciation !== 0) {
+    bars.push({ en: 'Depreciation & Amort.', sv: 'Avskrivningar', value: -Math.abs(depreciation), role: 'step', key:'depreciation' });
+  }
+
+  // 5. EBIT (subtotal)
+  if (visibleSeries.has('ebit')) {
+    bars.push({ en: 'EBIT', sv: 'Rörelseresultat', value: ebit, role: 'subtotal', key:'ebit' });
+  }
+
+  // 6. Below-the-line: derive the net adjustment from EBIT → Net Profit
   const belowLine = netP - ebit;
-  if (Math.abs(belowLine) > 0) {
+  if (visibleSeries.has('taxfin') && Math.abs(belowLine) > 0) {
     if (belowLine < 0) {
-      bars.push({ en: 'Tax & Financials', sv: 'Skatt & finansnetto', value: belowLine, role: 'step' });
+      bars.push({ en: 'Tax & Financials', sv: 'Skatt & finansnetto', value: belowLine, role: 'step', key:'taxfin' });
     } else {
-      // Positive (unusual) — could be net financial income exceeding tax
-      bars.push({ en: 'Net Financial Items', sv: 'Finansnetto', value: belowLine, role: 'step' });
+      bars.push({ en: 'Net Financial Items', sv: 'Finansnetto', value: belowLine, role: 'step', key:'taxfin' });
     }
   }
 
-  // 5. Net Profit (closing)
-  bars.push({ en: 'Net Profit', sv: 'Årets resultat', value: netP, role: 'closing' });
+  // 7. Net Profit (closing)
+  if (visibleSeries.has('netprofit'))
+    bars.push({ en: 'Net Profit', sv: 'Årets resultat', value: netP, role: 'closing', key:'netprofit' });
+
+  if (bars.length === 0) {
+    if (finWaterfallInst) { finWaterfallInst.destroy(); finWaterfallInst = null; }
+    const c2d = canvas.getContext('2d'); c2d.clearRect(0, 0, canvas.width, canvas.height);
+    c2d.fillStyle = mutedColor; c2d.font = '12px DM Sans'; c2d.textAlign = 'center';
+    c2d.fillText('No series selected — use the Chart Series filter above to enable bars', canvas.width / 2, canvas.height / 2);
+    return;
+  }
 
   // ── Chart arrays ──
   const labels   = bars.map(b => b.en);
@@ -5611,6 +6608,312 @@ function renderCFOAIOutput(data) {
 }
 
 // ============================================================
+// AI PERFORMANCE SUMMARY — shared by Financials + Cash Flow
+// Reads financialsFilters / cashflowFilters (single source of truth)
+// ============================================================
+const _aiSummaryState = {
+  financials: { running:false, lastFiltersHash:null, chartInst:null },
+  cashflow:   { running:false, lastFiltersHash:null, chartInst:null },
+};
+
+function _aiSummaryConfig(tab) {
+  if (tab === 'financials') return {
+    filters: financialsFilters,
+    sections: FIN_SECTIONS,
+    series:   FIN_SERIES,
+    ids: { body:'finAIBody', ctx:'finAIContext', run:'finAIRunBtn', copy:'finAICopyBtn', stale:'finAIStale' },
+    accent: 'var(--blue)',
+  };
+  return {
+    filters: cashflowFilters,
+    sections: CF_SECTIONS,
+    series:   CF_SERIES,
+    ids: { body:'cfAIBody', ctx:'cfAIContext', run:'cfAIRunBtn', copy:'cfAICopyBtn', stale:'cfAIStale' },
+    accent: 'var(--green)',
+  };
+}
+
+function _filtersHash(filters) {
+  return [...filters.years].sort().join(',')
+       + '|' + [...filters.sections].sort().join(',')
+       + '|' + [...filters.series].sort().join(',');
+}
+
+function _labelFor(opts, value) {
+  const o = opts.find(x => x.value === value);
+  return o ? o.label : value;
+}
+
+function updateAISummaryContext(tab) {
+  const c = _aiSummaryConfig(tab);
+  const el = document.getElementById(c.ids.ctx);
+  if (!el) return;
+  const years = [...c.filters.years].sort().reverse();
+  const sectionCount = c.filters.sections.size;
+  const seriesLabels = [...c.filters.series].map(v => _labelFor(c.series, v));
+  const sLabel = seriesLabels.length === c.series.length
+    ? 'all bars'
+    : (seriesLabels.length ? seriesLabels.join(' · ') : 'no bars');
+  const yLabel = years.length ? years.map(y => 'FY'+y).join(', ') : 'no years';
+  el.textContent = `Based on: ${yLabel} · ${sectionCount} section${sectionCount===1?'':'s'} · ${sLabel}`;
+}
+
+function markAISummaryStale(tab) {
+  const c = _aiSummaryConfig(tab);
+  const st = _aiSummaryState[tab];
+  updateAISummaryContext(tab);
+  const stale = document.getElementById(c.ids.stale);
+  if (!stale) return;
+  const currentHash = _filtersHash(c.filters);
+  const hasRun = st.lastFiltersHash !== null;
+  stale.style.display = (hasRun && currentHash !== st.lastFiltersHash) ? 'inline-flex' : 'none';
+}
+
+function _buildSummaryPrompt(tab) {
+  const c = _aiSummaryConfig(tab);
+  const years = [...c.filters.years].sort().reverse();
+  const d = companyData;
+  if (!d || !years.length) return null;
+
+  const visibleSections = [...c.filters.sections].map(v => _labelFor(c.sections, v));
+  const visibleSeries   = [...c.filters.series].map(v => _labelFor(c.series, v));
+
+  const yearData = years.map(y => {
+    const r = historyData[y] || (String(d.fiscalYear) === y ? d : null);
+    if (!r) return null;
+    const ebit = r.opProfit || 0;
+    const ebitda = ebit + (r.depreciation || 0);
+    const ebitdaPct = r.netSales ? (ebitda / r.netSales * 100) : null;
+    const ebitPct   = r.netSales ? (ebit   / r.netSales * 100) : null;
+    const roe       = r.equity   ? (r.netProfit / r.equity * 100) : null;
+    const de        = r.equity   ? ((r.longTermDebt + r.currentLiabilities) / r.equity) : null;
+    const cr        = r.currentLiabilities ? (r.totalCurrentAssets / r.currentLiabilities) : null;
+    const payout    = r.netProfit ? (r.dividendsPaid / r.netProfit * 100) : null;
+    let line = `FY${y}: revenue=${fmtSEK(r.netSales)}, ebit=${fmtSEK(ebit)}, ebitda=${fmtSEK(ebitda)}, netProfit=${fmtSEK(r.netProfit)}, ebitdaPct=${ebitdaPct==null?'—':ebitdaPct.toFixed(1)+'%'}, ebitPct=${ebitPct==null?'—':ebitPct.toFixed(1)+'%'}, roe=${roe==null?'—':roe.toFixed(1)+'%'}, d/e=${de==null?'—':de.toFixed(2)+'x'}, currentRatio=${cr==null?'—':cr.toFixed(2)+'x'}, payout=${payout==null?'—':payout.toFixed(1)+'%'}, equity=${fmtSEK(r.equity)}, totalAssets=${fmtSEK(r.totalAssets)}`;
+    if (tab === 'cashflow') {
+      const cf = (typeof computeCashFlow === 'function') ? computeCashFlow(r) : null;
+      if (cf) {
+        const fcfMargin = r.netSales ? (cf.fcf / r.netSales * 100) : null;
+        const cashConv  = ebitda ? (cf.fcf / ebitda * 100) : null;
+        line += `, fcf=${fmtSEK(cf.fcf)}, depreciation=${fmtSEK(cf.depreciation||0)}, deltaWC=${cf.deltaWC==null?'—':fmtSEK(cf.deltaWC)}, capex=${cf.capex==null?'—':fmtSEK(cf.capex)}, fcfMargin=${fcfMargin==null?'—':fcfMargin.toFixed(1)+'%'}, cashConversion=${cashConv==null?'—':cashConv.toFixed(1)+'%'}`;
+      }
+    }
+    return line;
+  }).filter(Boolean).join('\n');
+
+  const topic = tab === 'financials'
+    ? 'revenue, margins, balance-sheet strength and returns'
+    : 'cash generation, working-capital discipline, capex intensity, and free cash flow';
+
+  return `You are a Swedish CFO analyst writing a brief for an operator.
+
+Company: ${d.name} (org. nr ${d.orgNr}), ${d.type || 'AB'} in ${d.industry || 'unknown sector'}.
+
+The user is looking at the ${tab === 'financials' ? 'Financials' : 'Cash Flow'} tab. They currently have these view filters applied:
+- Years selected: ${years.map(y=>'FY'+y).join(', ')}
+- Visible sections: ${visibleSections.join(', ') || 'none'}
+- Visible chart series: ${visibleSeries.join(', ') || 'none'}
+
+Your commentary MUST stay focused on the selected years and the ${topic} — don't reference hidden years or hidden sections.
+
+DATA:
+${yearData}
+
+Return ONLY a JSON object, no other text, in this exact shape:
+{
+  "narrative": "2–3 tight sentences (max 60 words) summarising performance across the selected years. Use specific numbers.",
+  "goingWell":  ["bullet (≤18 words)", "…"],
+  "concerns":   ["bullet (≤18 words)", "…"],
+  "watch":      ["bullet (≤18 words)", "…"]
+}
+Each array must contain 2–3 bullets. Use Swedish accounting conventions (ABL, ÅRL) where relevant.`;
+}
+
+async function runAIPerformanceSummary(tab) {
+  const c = _aiSummaryConfig(tab);
+  const st = _aiSummaryState[tab];
+  if (st.running) return;
+
+  if (!companyData) { showToast(t('toast_no_company')); return; }
+  if (!anthropicKey) { openSettings(); showToast(t('toast_no_api_key')); return; }
+  if (c.filters.years.size === 0) { showToast('Select at least one year in the filter bar'); return; }
+
+  const prompt = _buildSummaryPrompt(tab);
+  if (!prompt) { showToast('No data available for selected filters'); return; }
+
+  const runBtn  = document.getElementById(c.ids.run);
+  const copyBtn = document.getElementById(c.ids.copy);
+  const stale   = document.getElementById(c.ids.stale);
+  const body    = document.getElementById(c.ids.body);
+
+  st.running = true;
+  runBtn.disabled = true;
+  runBtn.innerHTML = `<span class="loading-dots"><span></span><span></span><span></span></span> Analysing`;
+  if (stale) stale.style.display = 'none';
+  body.innerHTML = `<div class="ai-summary-empty"><span class="loading-dots"><span></span><span></span><span></span></span> Generating summary from your current filters…</div>`;
+
+  try {
+    const data = await callAnthropic({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 800,
+      messages: [{ role:'user', content: prompt }]
+    }, anthropicKey);
+    const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    let parsed;
+    try { parsed = JSON.parse(clean); }
+    catch(e) {
+      // Last-ditch: extract the first {...} block
+      const m = clean.match(/\{[\s\S]*\}/);
+      parsed = m ? JSON.parse(m[0]) : null;
+    }
+    if (!parsed) throw new Error('Could not parse AI response');
+    renderAIPerformanceSummary(tab, parsed);
+    st.lastFiltersHash = _filtersHash(c.filters);
+    st.lastParsed = parsed;
+    st.lastContextText = document.getElementById(c.ids.ctx)?.textContent || '';
+    if (copyBtn) copyBtn.style.display = 'inline-flex';
+    const saveBtn = document.getElementById(tab === 'financials' ? 'finAISaveBtn' : 'cfAISaveBtn');
+    if (saveBtn) saveBtn.style.display = 'inline-flex';
+  } catch(e) {
+    body.innerHTML = `<div class="ai-summary-empty" style="color:var(--red);border-color:rgba(239,68,68,0.3);">⚠ ${escapeHtml(e.message || 'Summary failed')}<div style="font-size:10px;color:var(--text3);margin-top:6px;">Check your Anthropic API key in ⚙ Settings.</div></div>`;
+  } finally {
+    st.running = false;
+    runBtn.disabled = false;
+    runBtn.innerHTML = '🤖 Regenerate';
+    updateAISummaryContext(tab);
+  }
+}
+
+function renderAIPerformanceSummary(tab, parsed) {
+  const c = _aiSummaryConfig(tab);
+  const body = document.getElementById(c.ids.body);
+  if (!body) return;
+
+  const chartId = (tab === 'financials') ? 'finAISummaryChart' : 'cfAISummaryChart';
+  const chartTitle = (tab === 'financials') ? 'EBITDA Margin — All Available Years' : 'Free Cash Flow — All Available Years';
+
+  const list = (items, kind) => {
+    if (!items || !items.length) return '<li style="color:var(--text3);">—</li>';
+    return items.slice(0, 4).map(x => `<li>${escapeHtml(x)}</li>`).join('');
+  };
+
+  body.innerHTML = `
+    <div class="ai-summary-narrative">${escapeHtml(parsed.narrative || '')}</div>
+    <div class="ai-summary-chart-wrap">
+      <div class="ai-summary-chart-title">${chartTitle}</div>
+      <canvas id="${chartId}"></canvas>
+    </div>
+    <div class="ai-summary-grid">
+      <div class="ai-summary-col good">
+        <div class="ai-summary-col-title">✓ Going Well</div>
+        <ul class="ai-summary-col-list">${list(parsed.goingWell)}</ul>
+      </div>
+      <div class="ai-summary-col warn">
+        <div class="ai-summary-col-title">⚠ Concerning</div>
+        <ul class="ai-summary-col-list">${list(parsed.concerns)}</ul>
+      </div>
+      <div class="ai-summary-col watch">
+        <div class="ai-summary-col-title">👁 Watch Going Forward</div>
+        <ul class="ai-summary-col-list">${list(parsed.watch)}</ul>
+      </div>
+    </div>
+  `;
+
+  renderAISummaryMiniChart(tab, chartId);
+}
+
+// Save the last-generated summary for `tab` to the Journal.
+function saveAISummaryToJournal(tab) {
+  const c = _aiSummaryConfig(tab);
+  const st = _aiSummaryState[tab];
+  if (!st || !st.lastParsed) { showToast('Generate a summary first'); return; }
+  const p = st.lastParsed;
+  const tabLabel = tab === 'financials' ? 'Financials' : 'Cash Flow';
+  const titleBase = companyData ? `${companyData.name} — ${tabLabel}` : tabLabel;
+  const title = `AI ${tabLabel} Summary · ${titleBase}`;
+  const sections = [];
+  if (p.narrative) sections.push(p.narrative);
+  if (p.goingWell && p.goingWell.length) sections.push('Going well:\n' + p.goingWell.map(x => '• ' + x).join('\n'));
+  if (p.concerns  && p.concerns.length)  sections.push('Concerning:\n'  + p.concerns.map(x => '• ' + x).join('\n'));
+  if (p.watch     && p.watch.length)     sections.push('Watch going forward:\n' + p.watch.map(x => '• ' + x).join('\n'));
+  const body = sections.join('\n\n');
+
+  addJournalEntry({
+    title,
+    body,
+    companyOrgNr: companyData?.orgNr || null,
+    companyName:  companyData?.name  || null,
+    contextTab:   tab,
+    contextLabel: st.lastContextText || '',
+    source: 'ai-summary',
+  });
+  showToast('✓ Saved to Journal', { action: { label: 'Open', onClick: () => switchTab('journal') } });
+}
+
+function renderAISummaryMiniChart(tab, canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const st = _aiSummaryState[tab];
+  if (st.chartInst) { try { st.chartInst.destroy(); } catch(e){} st.chartInst = null; }
+
+  const years = Object.keys(historyData || {}).sort();
+  if (!years.length) return;
+  const data = years.map(y => {
+    const r = historyData[y];
+    if (!r) return null;
+    if (tab === 'financials') {
+      const ebitda = (r.opProfit || 0) + (r.depreciation || 0);
+      return r.netSales ? (ebitda / r.netSales * 100) : null;
+    }
+    const cf = (typeof computeCashFlow === 'function') ? computeCashFlow(r) : null;
+    return cf ? cf.fcf : null;
+  });
+
+  const isLight = document.body.classList.contains('light-mode');
+  const tickColor = isLight ? '#334155' : '#e2e8f0';
+  const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)';
+  const accent = tab === 'financials' ? '#3b82f6' : '#10b981';
+  const accentFill = tab === 'financials' ? 'rgba(59,130,246,0.18)' : 'rgba(16,185,129,0.18)';
+
+  const isPct = tab === 'financials';
+  const draw = () => {
+    st.chartInst = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: years.map(y => 'FY'+y),
+        datasets: [{
+          data, borderColor: accent, backgroundColor: accentFill, borderWidth: 2,
+          pointRadius: 3, pointBackgroundColor: accent, fill: true, tension: 0.25, spanGaps: true
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display:false },
+          tooltip: { ...chartTooltipStyle(isLight), callbacks: {
+            label: ctx => {
+              const v = ctx.raw;
+              if (v === null || v === undefined) return '—';
+              return isPct ? v.toFixed(1)+'%' : fmtSEK(v);
+            }
+          }}
+        },
+        scales: {
+          x: { ticks: { color: tickColor, font: { size: 9, family:'JetBrains Mono' } }, grid: { display:false } },
+          y: {
+            ticks: { color: tickColor, font: { size: 9, family:'JetBrains Mono' },
+              callback: v => isPct ? v.toFixed(0)+'%' : (Math.abs(v)>=1e6 ? (v/1e6).toFixed(0)+'M' : Math.abs(v)>=1e3 ? (v/1e3).toFixed(0)+'k' : v) },
+            grid: { color: gridColor }
+          }
+        }
+      }
+    });
+  };
+  if (typeof Chart === 'undefined') { loadChartJS(draw); } else { draw(); }
+}
+
+// ============================================================
 // AI M&A SCREENER — Anthropic API
 // ============================================================
 async function runMAScreen() {
@@ -5835,6 +7138,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setStatusBar(t('status_ready'), 'na');
     initChatMode();
     initCompareTab();
+    initSubTabs();
+    renderActiveContext();
     // Populate year picker dynamically
     (function() {
       const sel = document.getElementById('fetchYearSelect');
@@ -6134,6 +7439,8 @@ function renderSlots() {
       const dataTag    = d._isEstimated
         ? `<span style="font-size:8px;background:rgba(255,184,0,0.15);color:var(--amber);padding:1px 5px;border-radius:2px;">ESTIMATED</span>`
         : `<span style="font-size:8px;background:rgba(0,255,136,0.1);color:var(--green);padding:1px 5px;border-radius:2px;">FY${d.fiscalYear}</span>`;
+      const orgQ = JSON.stringify(d.orgNr);
+      const nameQ = JSON.stringify(d.name);
       html += `<div class="cmp-slot filled">
           <button class="cmp-slot-close" onclick="clearCompareSlot(${i})" title="Remove">✕</button>
           <div class="cmp-slot-num">Slot ${i+1} ${dataTag}</div>
@@ -6144,6 +7451,12 @@ function renderSlots() {
             <span style="font-size:9px;font-weight:700;color:${scoreColor};letter-spacing:0.1em;">${verdict}</span>
           </div>
           <div style="font-size:9px;color:var(--text3);">ROS ${m.ros !== null ? m.ros.toFixed(1)+'%' : '—'} · D/E ${m.de !== null ? m.de.toFixed(1)+'x' : '—'}</div>
+          <div class="cmp-slot-actions" title="Open this company in another tab">
+            <button class="cmp-slot-action" onclick="cmpSlotSendTo('company',${orgQ},${nameQ})" title="Open in Company">🏢</button>
+            <button class="cmp-slot-action" onclick="cmpSlotSendTo('financials',${orgQ},${nameQ})" title="Open in Financials">📋</button>
+            <button class="cmp-slot-action" onclick="cmpSlotSendTo('cashflow',${orgQ},${nameQ})" title="Open in Cash Flow">💧</button>
+            <button class="cmp-slot-action" onclick="cmpSlotSendTo('ma',${orgQ},${nameQ})" title="Open in M&A Screener">🎯</button>
+          </div>
         </div>`;
     } else {
       html += `<div class="cmp-slot empty" onclick="focusSlotInput(${i})" id="cmp-slot-empty-${i}" style="position:relative;">
@@ -6168,6 +7481,17 @@ function renderSlots() {
 
 function focusSlotInput(i) {
   setTimeout(() => document.getElementById('cmp-input-' + i)?.focus(), 50);
+}
+
+// Slot → send to another tab (Company/Financials/Cash Flow/M&A)
+function cmpSlotSendTo(target, orgNr, name) {
+  const labels = { company:'Company', financials:'Financials', cashflow:'Cash Flow', ma:'M&A Screener' };
+  sendTo(target, {
+    orgs: [{ orgNr, name }],
+    source: 'compare-slot',
+    toastMsg: `Loading ${name || orgNr} in ${labels[target] || target}…`,
+    toastLabel: 'View'
+  });
 }
 
 // Add the currently loaded main-terminal company to a slot
@@ -6780,7 +8104,7 @@ function renderCompareAIOutput(data) {
 function addToCompareFromMain() {
   if (!companyData) { showToast('⚠ No company loaded'); return; }
   if (compareSlots.some(s => s && s.orgNr === companyData.orgNr)) {
-    showToast(`⚠ ${companyData.name} already in Compare tab`);
+    showToast(`⚠ ${companyData.name} already in Compare`);
     switchTab('compare');
     return;
   }
@@ -7770,11 +9094,19 @@ function buildChatContext() {
   const tabName = tab.name;
   const tabDesc = tab.desc;
 
-  let ctx = `You are VCFO AI — the built-in assistant and guide for the VCFO Terminal, a Financial Health & Acquisition Screener for Swedish companies. You have two roles:
+  let ctx = `You are VCFO AI — the built-in assistant and guide for the VCFO Terminal, a Financial Health & Acquisition Screener for Swedish companies. You have three roles:
 
 ROLE 1 — APP GUIDE: You know every feature of this app in detail. When users ask how the app works, what a screen does, what a metric means, or what to do next, you explain it clearly and tell them exactly where to click.
 
 ROLE 2 — FINANCIAL ANALYST: You analyse the actual company data loaded in the terminal, referencing specific numbers, flags, and scores.
+
+ROLE 3 — BUSINESS LOOKUP: If the user is asking you to FIND, SEARCH, or LOOK UP Swedish companies (by name, industry keyword, or any filter), DO NOT answer from memory. Instead, respond with EXACTLY one line and nothing else:
+[[LOOKUP: <search query>]]
+The client will run the real search against the Swedish company registry and render a structured results table with action buttons. Only do this when the user's intent is clearly to find companies. If they are asking ABOUT a loaded company's financials, stay in Role 2 and answer normally. Examples that should trigger a lookup:
+• "find a construction company in Stockholm" → [[LOOKUP: construction company Stockholm]]
+• "search for Volvo" → [[LOOKUP: Volvo]]
+• "what companies are named Sturehof?" → [[LOOKUP: Sturehof]]
+• "look up 556000-1234" → [[LOOKUP: 556000-1234]]
 
 Today: ${today}
 Current screen: ${tabName}
@@ -7786,9 +9118,11 @@ APP STRUCTURE (tabs in order):
 - 💧 Cash Flow: Waterfall bridge from Net Profit → Free Cash Flow with year toggle and multi-year comparison.
 - 📊 CFO Audit: Rule-engine flags + AI analysis of 3 operational concerns (Revenue Quality, Efficiency Drift, Aggressive Payouts).
 - 🎯 M&A Screener: 0–100 acquisition fit score (BUY/HOLD/PASS) across 4 dimensions.
-- ⚔ Competitor Bench: Rank up to 20 competitors side-by-side across Revenue, EBITDA%, EBIT%, Rev/Employee, Pers. Cost/Emp, and Google ratings.
-- ⚖ Compare: Load up to 5 companies for radar chart, M&A score bar chart, and risk flag matrix.
+- ⚔ Competitors: Two sub-tabs.
+    · Ranking — rank up to 20 peers across Revenue, EBITDA%, EBIT%, Net Profit, ROE, and Google ratings.
+    · Compare — load up to 5 companies for radar chart, M&A score bar chart, and risk flag matrix.
 - ★ Watchlist: Pinned companies persist across sessions. Quick-load or compare.
+- 📔 Journal: Date-indexed notes. Capture observations from any tab via the 📔 Note button in the top bar, or save AI summaries from Financials and Cash Flow. Filter by active company, this week, this month, or AI-only.
 - 📡 Benchmarks: Fetch live SCB sector medians from Statistics Sweden.
 - 📖 Guide: Reference docs for formulas and methodology.
 
@@ -7797,8 +9131,8 @@ HOW TO USE THE APP (step by step):
 2. The Company tab populates with key financials. Click "Run CFO Audit" or "Screen for M&A".
 3. Switch to Financials tab to see the revenue-to-profit waterfall and key ratios.
 4. Use Cash Flow tab to visualise how Net Profit converts to Free Cash Flow.
-5. Use Competitor Bench tab to add competitors by name/org.nr, run a benchmark ranking, and compare workforce efficiency.
-6. To compare companies side-by-side, click "⚖ Add to Compare" on the Company tab, then switch to Compare tab.
+5. Use Competitors → Ranking sub-tab to add peers by name/org.nr and run a benchmark ranking.
+6. To compare companies side-by-side, click "⚖ Add to Compare" on the Company tab, then open Competitors → Compare sub-tab.
 7. To use real sector benchmarks, go to Benchmarks tab and click Fetch from SCB.
 8. The chatbot (that's me) is always aware of what's on screen — ask me anything.
 
@@ -7971,12 +9305,108 @@ function renderChatMessage(msg) {
 
   if (msg.typing) {
     bubble.innerHTML = `<div class="chat-typing"><span></span><span></span><span></span></div>`;
+  } else if (msg.type === 'lookup') {
+    bubble.innerHTML = renderLookupTableHTML(msg.query, msg.results);
   } else {
     bubble.innerHTML = chatRenderMarkdown(msg.content);
   }
 
   wrap.appendChild(bubble);
   return wrap;
+}
+
+// ── Lookup results: structured table with per-row action buttons ──
+function renderLookupTableHTML(query, results) {
+  if (!results || results.length === 0) {
+    return `<div style="padding:6px 0;">
+      <div style="font-size:11px;color:var(--text);margin-bottom:4px;">No matches for <strong>${escapeHtml(query)}</strong>.</div>
+      <div style="font-size:10px;color:var(--text3);">Try a different keyword, an org. number (556000-1234), or a shorter phrase.</div>
+    </div>`;
+  }
+  const rows = results.slice(0, 15).map(r => {
+    const orgQ  = JSON.stringify(r.orgNr);
+    const nameQ = JSON.stringify(r.name || '');
+    const ind = r.industry ? `<div style="font-size:8px;color:var(--text3);margin-top:1px;">${escapeHtml(r.industry)}</div>` : '';
+    return `<tr>
+      <td style="padding:5px 6px;">
+        <div style="font-size:11px;font-weight:600;color:var(--text);">${escapeHtml(r.name || '—')}</div>
+        ${ind}
+      </td>
+      <td style="padding:5px 6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);white-space:nowrap;">${escapeHtml(r.orgNr || '—')}</td>
+      <td style="padding:5px 6px;white-space:nowrap;">
+        <button class="lookup-action" onclick="lookupRowSendTo('company',${orgQ},${nameQ})" title="Open in Company">🏢</button>
+        <button class="lookup-action" onclick="lookupRowSendTo('financials',${orgQ},${nameQ})" title="Open in Financials">📋</button>
+        <button class="lookup-action" onclick="lookupRowSendTo('cashflow',${orgQ},${nameQ})" title="Open in Cash Flow">💧</button>
+        <button class="lookup-action" onclick="lookupRowSendTo('ma',${orgQ},${nameQ})" title="Open in M&A Screener">🎯</button>
+      </td>
+    </tr>`;
+  }).join('');
+  const more = results.length > 15 ? `<div style="font-size:10px;color:var(--text3);margin-top:6px;">Showing first 15 of ${results.length}. Refine your query for fewer matches.</div>` : '';
+  return `<div style="padding:2px 0;">
+    <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;">
+      🔍 Lookup: <span style="color:var(--text);">${escapeHtml(query)}</span> · ${results.length} match${results.length===1?'':'es'}
+    </div>
+    <div style="overflow-x:auto;border:1px solid var(--border);border-radius:6px;">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <thead><tr style="background:var(--bg3);color:var(--text3);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;">
+          <th style="text-align:left;padding:6px;">Name</th>
+          <th style="text-align:left;padding:6px;">Org. Nr.</th>
+          <th style="text-align:left;padding:6px;">Open in…</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    ${more}
+  </div>`;
+}
+function escapeHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Row-click handler for lookup tables (also used by the Business Lookup)
+function lookupRowSendTo(target, orgNr, name) {
+  const labels = { company:'Company', financials:'Financials', cashflow:'Cash Flow', ma:'M&A Screener' };
+  sendTo(target, {
+    orgs: [{ orgNr, name }],
+    source: 'chat-lookup',
+    toastMsg: `Loading ${name || orgNr} in ${labels[target] || target}…`,
+    toastLabel: 'View'
+  });
+}
+
+// Run a business lookup and append an assistant-style message with a structured table.
+// If the search fails, falls back to AI search prompt.
+async function chatRunLookup(query) {
+  const container = document.getElementById('chatMessages');
+  if (!container) return;
+  const typingId  = Date.now() + '-typing';
+  const typingMsg = { role: 'assistant', content: '', id: typingId, typing: true };
+  const typingEl  = renderChatMessage(typingMsg);
+  container.appendChild(typingEl);
+  chatScrollToLatest(container, true);
+
+  let results = null;
+  try {
+    results = await searchByNameServer(query);
+  } catch(e) { console.warn('lookup failed:', e); }
+
+  typingEl.remove();
+
+  const msg = {
+    role: 'assistant',
+    type: 'lookup',
+    query,
+    results: results || [],
+    id: Date.now() + '-lookup'
+  };
+  chatMessages.push(msg);
+  // History save (content-only) for session continuity
+  const contentSummary = (results && results.length)
+    ? `Lookup "${query}" — ${results.length} result${results.length===1?'':'s'}.`
+    : `Lookup "${query}" — no matches.`;
+  chatSaveHistory(chatMessages.map(m => m.type === 'lookup' ? { ...m, content: contentSummary } : m));
+  container.appendChild(renderChatMessage(msg));
+  chatScrollToLatest(container);
 }
 
 // ── Simple markdown renderer ──
@@ -8116,10 +9546,10 @@ function updateChatSuggestions() {
       suggestions = [
         `What are the biggest risks in ${companyData.name}?`,
         `Give me a quick summary of ${companyData.name}`,
-        'What should I do next?',
+        '/find construction companies in Stockholm',
       ];
     } else {
-      suggestions = ['How do I use this app?','Load me a demo company','What is an org. number?'];
+      suggestions = ['How do I use this app?','/find Sandvik','Load me a demo company'];
     }
   }
 
@@ -8136,13 +9566,29 @@ function useSuggestion(btn) {
 
 // ── Send message ──
 async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text  = input.value.trim();
+  if (!text) return;
+
+  // ── Slash command fast-path: /find, /lookup, /search don't need the LLM ──
+  const slashMatch = text.match(/^\/(?:find|lookup|search)\s+(.+)$/i);
+  if (slashMatch) {
+    input.value = '';
+    document.getElementById('chatSuggestions').style.display = 'none';
+    const userMsg = { role:'user', content:text, id: Date.now() + '-u' };
+    chatMessages.push(userMsg);
+    chatSaveHistory(chatMessages);
+    const cont = document.getElementById('chatMessages');
+    cont.appendChild(renderChatMessage(userMsg));
+    chatScrollToLatest(cont, true);
+    await chatRunLookup(slashMatch[1].trim());
+    return;
+  }
+
   if (chatLoading || !anthropicKey) {
     if (!anthropicKey) { showToast(t('toast_no_api_key')); openSettings(); }
     return;
   }
-  const input = document.getElementById('chatInput');
-  const text  = input.value.trim();
-  if (!text) return;
 
   input.value = '';
   document.getElementById('chatSuggestions').style.display = 'none';
@@ -8181,12 +9627,18 @@ async function sendChat() {
     const reply = data.content?.[0]?.text || 'Sorry, I could not generate a response.';
     typingEl.remove();
 
-    const assistantMsg = { role: 'assistant', content: reply, id: Date.now() + '-a' };
-    chatMessages.push(assistantMsg);
-    chatSaveHistory(chatMessages);
-    const assistantEl = renderChatMessage(assistantMsg);
-    container.appendChild(assistantEl);
-    chatScrollToLatest(container);
+    // LLM lookup directive: [[LOOKUP: <query>]]
+    const lookupDirective = reply.trim().match(/^\[\[LOOKUP:\s*(.+?)\]\]$/);
+    if (lookupDirective) {
+      await chatRunLookup(lookupDirective[1].trim());
+    } else {
+      const assistantMsg = { role: 'assistant', content: reply, id: Date.now() + '-a' };
+      chatMessages.push(assistantMsg);
+      chatSaveHistory(chatMessages);
+      const assistantEl = renderChatMessage(assistantMsg);
+      container.appendChild(assistantEl);
+      chatScrollToLatest(container);
+    }
 
     if (chatMinimised) {
       const msgCount = chatMessages.filter(m => m.role === 'user').length;
@@ -8398,8 +9850,11 @@ function getCfAvailableYears() {
 }
 
 function renderCfYearBar() {
+  // Legacy per-chart year bar is superseded by the shared FilterBar Years group.
   const bar = document.getElementById('cfYearBar');
-  if (!bar) return;
+  if (bar) bar.style.display = 'none';
+  return;
+  // eslint-disable-next-line no-unreachable
   const years = getCfAvailableYears();
   if (years.length <= 1) { bar.style.display = 'none'; return; }
 
@@ -8436,8 +9891,45 @@ function renderCashFlow() {
   wfCompareMode  = false;
   wfCompareYears = [];
   document.getElementById('cfCompareLegend').style.display = 'none';
+  renderCashflowFilterBar();
+  applySectionVisibility('cfContent', cashflowFilters.sections);
+  updateAISummaryContext('cashflow');
   renderCfYearBar();
-  renderCashFlowForYear(companyData);
+  // Choose primary year = most recent selected year (or companyData's year)
+  const years = Array.from(cashflowFilters.years).sort().reverse();
+  const primary = (years.length && historyData[years[0]]) || companyData;
+  renderCashFlowForYear(primary);
+}
+
+function renderCashflowFilterBar() {
+  const knownYears = Object.keys(historyData || {}).concat(companyData ? [String(companyData.fiscalYear)] : []);
+  const uniqueYears = Array.from(new Set(knownYears.filter(Boolean))).sort().reverse();
+  Array.from(cashflowFilters.years).forEach(y => { if (!uniqueYears.includes(y)) cashflowFilters.years.delete(y); });
+  if (cashflowFilters.years.size === 0 && uniqueYears.length) {
+    uniqueYears.forEach(y => cashflowFilters.years.add(y));
+  }
+
+  const config = {
+    groups: [
+      { id:'years', label:'Years', allowAll:true, hideWhenSingle:true,
+        options: () => uniqueYears.map(y => ({ value:y, label:'FY'+y })) },
+      { id:'sections', label:'Sections', allowAll:true,
+        options: CF_SECTIONS },
+      { id:'series', label:'Chart Series', allowAll:true,
+        options: CF_SERIES },
+    ]
+  };
+  renderFilterBar('cfFilterBar', config, cashflowFilters, onCashflowFilterChange);
+}
+
+function onCashflowFilterChange(state, changed) {
+  applySectionVisibility('cfContent', state.sections);
+  if (changed && (changed.groupId === 'series' || changed.groupId === 'years')) {
+    const years = Array.from(state.years).sort().reverse();
+    const primary = (years.length && historyData[years[0]]) || companyData;
+    if (primary) renderCashFlowForYear(primary);
+  }
+  markAISummaryStale('cashflow');
 }
 
 function renderCashFlowForYear(d) {
@@ -8508,16 +10000,29 @@ function renderWaterfallChart(cf) {
   const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
   const mutedColor = isLight ? '#94a3b8' : '#64748b';
 
-  // Build bars dynamically — only include components that are available
+  const vs = cashflowFilters.series; // Set<string>
+
+  // Build bars dynamically — filtered by visible-series set
   const bars = [];
-  bars.push({ label: 'Net Profit', value: cf.netProfit, anchor: true });
-  if (cf.hasDepr && cf.depreciation !== 0)
-    bars.push({ label: '+ Depreciation', value: cf.depreciation });
-  if (cf.deltaWC != null)
-    bars.push({ label: (cf.deltaWC >= 0 ? '− ' : '+ ') + 'Δ Working Cap.', value: -cf.deltaWC, est: cf.wcSource !== 'calculated' });
-  if (cf.capex != null && cf.capex !== 0)
-    bars.push({ label: '− CapEx' + (cf.capexSource === 'est.' ? ' (est.)' : ''), value: -cf.capex, est: true });
-  bars.push({ label: 'Free Cash Flow', value: cf.fcf, anchor: true });
+  if (vs.has('netprofit'))
+    bars.push({ label: 'Net Profit', value: cf.netProfit, anchor: true, key:'netprofit' });
+  if (vs.has('depreciation') && cf.hasDepr && cf.depreciation !== 0)
+    bars.push({ label: '+ Depreciation', value: cf.depreciation, key:'depreciation' });
+  if (vs.has('deltawc') && cf.deltaWC != null)
+    bars.push({ label: (cf.deltaWC >= 0 ? '− ' : '+ ') + 'Δ Working Cap.', value: -cf.deltaWC, est: cf.wcSource !== 'calculated', key:'deltawc' });
+  if (vs.has('capex') && cf.capex != null && cf.capex !== 0)
+    bars.push({ label: '− CapEx' + (cf.capexSource === 'est.' ? ' (est.)' : ''), value: -cf.capex, est: true, key:'capex' });
+  if (vs.has('fcf'))
+    bars.push({ label: 'Free Cash Flow', value: cf.fcf, anchor: true, key:'fcf' });
+
+  if (bars.length === 0) {
+    if (cfWaterfallChartInst) { cfWaterfallChartInst.destroy(); cfWaterfallChartInst = null; }
+    const c2d = canvas.getContext('2d');
+    c2d.clearRect(0, 0, canvas.width, canvas.height);
+    c2d.fillStyle = mutedColor; c2d.font = '12px DM Sans'; c2d.textAlign = 'center';
+    c2d.fillText('No series selected — use the Chart Series filter above to enable bars', canvas.width / 2, canvas.height / 2);
+    return;
+  }
 
   const labels  = bars.map(b => b.label);
   const values  = bars.map(b => b.value);
@@ -8928,6 +10433,297 @@ function exportWatchlistCSV() {
   URL.revokeObjectURL(url);
   showToast(t('toast_csv_exported'));
 }
+
+// ============================================================
+// JOURNAL — date-indexed notes (localStorage, company-attached optional)
+// ============================================================
+const JOURNAL_STORAGE_KEY = 'vcfo_journal';
+let journalEntries = _journalLoad();
+let journalFilter  = 'all';                // all | company | week | month | ai
+let journalSearch  = '';
+let _journalEditingId = null;              // null = create, else editing that id
+let _journalModalAttachment = null;        // { orgNr, name } | null
+
+function _journalLoad() {
+  try { const r = localStorage.getItem(JOURNAL_STORAGE_KEY); return r ? JSON.parse(r) : []; }
+  catch(e) { return []; }
+}
+function _journalSave() {
+  try { localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(journalEntries)); } catch(e) {}
+}
+function _journalId() { return 'j-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6); }
+
+// ── Modal control ──────────────────────────────────────────────
+function openJournalModal(idToEdit) {
+  _journalEditingId = idToEdit || null;
+  const modal = document.getElementById('journalModal');
+  const titleEl = document.getElementById('journalModalTitle');
+  const btnSave = document.getElementById('journalSaveBtn');
+
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const localIso = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  if (idToEdit) {
+    const e = journalEntries.find(x => x.id === idToEdit);
+    if (!e) return;
+    titleEl.textContent = '📔 Edit Journal Note';
+    btnSave.textContent = 'Save Changes';
+    document.getElementById('journalTitleInput').value = e.title || '';
+    document.getElementById('journalBodyInput').value  = e.body || '';
+    _journalModalAttachment = e.companyOrgNr ? { orgNr: e.companyOrgNr, name: e.companyName } : null;
+    const d = new Date(e.createdAt);
+    document.getElementById('journalDateInput').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } else {
+    titleEl.textContent = '📔 New Journal Note';
+    btnSave.textContent = 'Save Note';
+    document.getElementById('journalTitleInput').value = '';
+    document.getElementById('journalBodyInput').value  = '';
+    document.getElementById('journalDateInput').value  = localIso;
+    _journalModalAttachment = companyData ? { orgNr: companyData.orgNr, name: companyData.name } : null;
+  }
+  _renderJournalAttachmentPreview();
+  modal.classList.add('open');
+  setTimeout(() => document.getElementById('journalTitleInput').focus(), 50);
+}
+function closeJournalModal() {
+  document.getElementById('journalModal').classList.remove('open');
+  _journalEditingId = null;
+  _journalModalAttachment = null;
+}
+function _renderJournalAttachmentPreview() {
+  const el = document.getElementById('journalCompanyPreview');
+  if (!el) return;
+  if (_journalModalAttachment && _journalModalAttachment.orgNr) {
+    el.innerHTML = `<span style="color:var(--amber);font-weight:600;">${escapeHtml(_journalModalAttachment.name || _journalModalAttachment.orgNr)}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;">${escapeHtml(_journalModalAttachment.orgNr)}</span>`;
+  } else {
+    el.innerHTML = `<span style="color:var(--text3);">Not attached</span>`;
+  }
+}
+function journalAttachActive() {
+  if (!companyData) { showToast('No company loaded — use the search bar to load one first'); return; }
+  _journalModalAttachment = { orgNr: companyData.orgNr, name: companyData.name };
+  _renderJournalAttachmentPreview();
+}
+function journalClearAttachment() {
+  _journalModalAttachment = null;
+  _renderJournalAttachmentPreview();
+}
+
+function saveJournalEntry() {
+  const title = document.getElementById('journalTitleInput').value.trim();
+  const body  = document.getElementById('journalBodyInput').value.trim();
+  const rawDate = document.getElementById('journalDateInput').value;
+  if (!title && !body) { showToast('Add a title or body first'); return; }
+  const createdAt = rawDate ? new Date(rawDate).toISOString() : new Date().toISOString();
+  const now = new Date().toISOString();
+
+  if (_journalEditingId) {
+    const e = journalEntries.find(x => x.id === _journalEditingId);
+    if (!e) { closeJournalModal(); return; }
+    e.title = title || '(untitled)';
+    e.body  = body;
+    e.createdAt = createdAt;
+    e.updatedAt = now;
+    e.companyOrgNr = _journalModalAttachment?.orgNr || null;
+    e.companyName  = _journalModalAttachment?.name  || null;
+    _journalSave();
+    closeJournalModal();
+    renderJournalTab();
+    showToast('✓ Note updated');
+  } else {
+    journalEntries.push({
+      id: _journalId(),
+      createdAt, updatedAt: now,
+      title: title || '(untitled)',
+      body,
+      companyOrgNr: _journalModalAttachment?.orgNr || null,
+      companyName:  _journalModalAttachment?.name  || null,
+      contextTab:   activeTab || null,
+      source: 'manual',
+    });
+    _journalSave();
+    closeJournalModal();
+    showToast('✓ Note saved', { action: { label: 'Open', onClick: () => switchTab('journal') } });
+    if (activeTab === 'journal') renderJournalTab();
+  }
+}
+
+// ── Programmatic capture (used by AI summary) ────────────────
+function addJournalEntry(opts) {
+  // opts: { title, body, companyOrgNr?, companyName?, contextTab?, contextLabel?, source? }
+  const now = new Date().toISOString();
+  const e = {
+    id: _journalId(),
+    createdAt: now, updatedAt: now,
+    title: (opts.title || '(untitled)').slice(0, 200),
+    body:  opts.body  || '',
+    companyOrgNr: opts.companyOrgNr || null,
+    companyName:  opts.companyName  || null,
+    contextTab:   opts.contextTab   || activeTab || null,
+    contextLabel: opts.contextLabel || null,
+    source: opts.source || 'manual',
+  };
+  journalEntries.push(e);
+  _journalSave();
+  if (activeTab === 'journal') renderJournalTab();
+  return e.id;
+}
+
+// ── Delete + undo ────────────────────────────────────────────
+function deleteJournalEntry(id) {
+  const idx = journalEntries.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  const [removed] = journalEntries.splice(idx, 1);
+  _journalSave();
+  renderJournalTab();
+  showToast('Note deleted', { action: { label: 'Undo', onClick: () => {
+    journalEntries.splice(idx, 0, removed);
+    _journalSave();
+    renderJournalTab();
+  }}});
+}
+
+// ── Filtering ────────────────────────────────────────────────
+function journalSetFilter(name) {
+  journalFilter = name;
+  document.querySelectorAll('#journalFilterPills .filter-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === name);
+  });
+  renderJournalList();
+}
+function journalApplyFilters() {
+  journalSearch = document.getElementById('journalSearchInput').value.trim().toLowerCase();
+  renderJournalList();
+}
+
+function _journalFiltered() {
+  const now = Date.now();
+  const weekMs  = 7 * 86400000;
+  const monthMs = 30 * 86400000;
+  return journalEntries
+    .slice()
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .filter(e => {
+      if (journalFilter === 'company') {
+        if (!companyData || !e.companyOrgNr) return false;
+        if (e.companyOrgNr !== companyData.orgNr) return false;
+      } else if (journalFilter === 'week') {
+        if (now - new Date(e.createdAt).getTime() > weekMs) return false;
+      } else if (journalFilter === 'month') {
+        if (now - new Date(e.createdAt).getTime() > monthMs) return false;
+      } else if (journalFilter === 'ai') {
+        if (e.source !== 'ai-summary') return false;
+      }
+      if (journalSearch) {
+        const hay = ((e.title||'') + ' ' + (e.body||'') + ' ' + (e.companyName||'')).toLowerCase();
+        if (!hay.includes(journalSearch)) return false;
+      }
+      return true;
+    });
+}
+
+// ── Render ────────────────────────────────────────────────
+function renderJournalTab() {
+  // Re-sync filter pill states (e.g. if companyData cleared)
+  document.querySelectorAll('#journalFilterPills .filter-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === journalFilter);
+  });
+  renderJournalList();
+}
+
+function renderJournalList() {
+  const list = document.getElementById('journalList');
+  if (!list) return;
+  const entries = _journalFiltered();
+  if (entries.length === 0) {
+    const hint = journalEntries.length === 0
+      ? 'No notes yet. Click <strong>+ New Note</strong> above or the 📔 Note button in the top bar.'
+      : 'No notes match this filter.';
+    list.innerHTML = `<div class="journal-empty">
+      <div class="icon">📔</div>
+      <div style="font-size:12px;color:var(--text2);">${hint}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:6px;">Notes can be attached to a company so you can filter by it later. AI summaries can also be saved here from the Financials and Cash Flow tabs.</div>
+    </div>`;
+    return;
+  }
+
+  // Group by local calendar day
+  const groups = new Map();
+  for (const e of entries) {
+    const d = new Date(e.createdAt);
+    const key = d.toDateString();
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(e);
+  }
+
+  let html = '';
+  for (const [dayKey, dayEntries] of groups) {
+    const dateLabel = new Date(dayKey).toLocaleDateString(undefined, { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+    html += `<div class="journal-day-divider">${escapeHtml(dateLabel)}</div>`;
+    for (const e of dayEntries) html += _renderJournalEntry(e);
+  }
+  list.innerHTML = html;
+}
+
+function _renderJournalEntry(e) {
+  const d = new Date(e.createdAt);
+  const pad = n => String(n).padStart(2, '0');
+  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const isAi = e.source === 'ai-summary';
+  const tabLabels = {
+    financials:'Financials', cashflow:'Cash Flow', company:'Company',
+    cfo:'CFO Audit', ma:'M&A', 'competitor-bench':'Competitors',
+    compare:'Compare', watchlist:'Watchlist', benchmarks:'Benchmarks',
+    journal:'Journal', guide:'Guide'
+  };
+  const ctx = tabLabels[e.contextTab] || '';
+  const companyChip = e.companyOrgNr
+    ? `<span class="journal-entry-chip clickable" title="Open ${escapeHtml(e.companyName||e.companyOrgNr)} in Company" onclick="event.stopPropagation();sendTo('company',{orgs:[{orgNr:${JSON.stringify(e.companyOrgNr)},name:${JSON.stringify(e.companyName||'')}}],source:'journal'})">🏢 ${escapeHtml(e.companyName || e.companyOrgNr)}</span>`
+    : '';
+  const aiChip  = isAi ? `<span class="journal-entry-chip ai">AI</span>` : '';
+  const ctxChip = ctx   ? `<span class="journal-entry-chip">${escapeHtml(ctx)}${e.contextLabel ? ' · ' + escapeHtml(e.contextLabel) : ''}</span>` : '';
+
+  return `<div class="journal-entry${isAi?' source-ai-summary':''}" id="j-${escapeHtml(e.id)}" onclick="_toggleJournalEntry('${escapeHtml(e.id)}')">
+    <div class="journal-entry-meta">
+      <span class="journal-entry-time">${time}</span>
+      ${companyChip}
+      ${ctxChip}
+      ${aiChip}
+    </div>
+    <div class="journal-entry-title">${escapeHtml(e.title)}</div>
+    <div class="journal-entry-body">${escapeHtml(e.body || '')}</div>
+    <div class="journal-entry-actions">
+      <button class="journal-entry-action" onclick="event.stopPropagation();openJournalModal('${escapeHtml(e.id)}')">Edit</button>
+      <button class="journal-entry-action danger" onclick="event.stopPropagation();deleteJournalEntry('${escapeHtml(e.id)}')">Delete</button>
+    </div>
+  </div>`;
+}
+
+function _toggleJournalEntry(id) {
+  const el = document.getElementById('j-' + id);
+  if (el) el.classList.toggle('expanded');
+}
+
+function exportJournalJSON() {
+  if (journalEntries.length === 0) { showToast('Journal is empty'); return; }
+  const blob = new Blob([JSON.stringify(journalEntries, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `vcfo_journal_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('✓ Journal exported');
+}
+
+// Close modal on ESC / backdrop click
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const m = document.getElementById('journalModal');
+    if (m && m.classList.contains('open')) closeJournalModal();
+  }
+});
 
 // ============================================================
 // COMPETITOR BENCH — Your Company loader
@@ -9351,14 +11147,14 @@ function cbCheckRunBtn() {
 let cbRankData  = [];
 let cbSortKey   = 'ebitdaPct';
 let cbSortDir   = 'desc';
+const cbSelectedOrgs = new Set();
 
 const CB_SORT_OPTIONS = [
   { key:'ebitdaPct',  label:'EBITDA %' },
   { key:'ebitPct',    label:'EBIT %' },
   { key:'netSales',   label:'Revenue' },
+  { key:'netProfit',  label:'Net Profit' },
   { key:'roePct',     label:'ROE %' },
-  { key:'revPerEmp',  label:'Rev/Emp' },
-  { key:'persPerEmp', label:'Pers/Emp' },
 ];
 
 function cbComputeMetrics(d) {
@@ -9450,8 +11246,11 @@ function cbRenderRankTable() {
     return `<th onclick="cbSetSortKey('${key}')" class="${isSorted?'sorted':''}">${label}${isSorted ? ' <span class="sort-arrow">'+(cbSortDir==='desc'?'▼':'▲')+'</span>' : ''}</th>`;
   };
 
+  const allSelectable = sorted.map(r => r.orgNr);
+  const allSelected   = allSelectable.length > 0 && allSelectable.every(o => cbSelectedOrgs.has(o));
   let html = `<div class="cb-rank-table-wrap"><table class="cb-rank-table">
     <thead><tr>
+      <th style="width:30px;text-align:center;"><input type="checkbox" id="cbSelectAll" ${allSelected?'checked':''} onchange="cbToggleSelectAll(this.checked)" title="Select all"></th>
       <th style="width:44px;">Rank</th>
       <th>Company</th>
       ${thSort('netSales','Revenue')}
@@ -9460,8 +11259,8 @@ function cbRenderRankTable() {
       ${thSort('ebitdaPct','EBITDA %')}
       ${thSort('ebit','EBIT')}
       ${thSort('ebitPct','EBIT %')}
-      ${thSort('revPerEmp','Rev/Emp')}
-      ${thSort('persPerEmp','Pers/Emp')}
+      ${thSort('netProfit','Net Profit')}
+      ${thSort('roePct','ROE %')}
       <th style="text-align:center;">Action</th>
     </tr></thead>
     <tbody>`;
@@ -9489,7 +11288,9 @@ function cbRenderRankTable() {
       ? '<span class="cb-btn-ma is-mine">You</span>'
       : `<button class="cb-btn-ma" onclick="cbLoadIntoMATab('${row.orgNr}')" title="Load ${row.name} into M&A Screener">🎯 M&A Tab</button>`;
 
-    html += `<tr class="${isMe ? 'cb-is-mine' : ''}">
+    const isChecked = cbSelectedOrgs.has(row.orgNr);
+    html += `<tr class="${isMe ? 'cb-is-mine' : ''}${isChecked ? ' cb-row-selected' : ''}">
+      <td style="text-align:center;"><input type="checkbox" class="cb-row-check" data-org="${row.orgNr}" ${isChecked?'checked':''} onchange="cbToggleRow('${row.orgNr}', this.checked)"></td>
       <td><span class="cb-rank-badge ${badgeCls}">${rankNum}</span></td>
       <td>
         <div style="font-weight:600;color:var(--text);">${row.name}${!row.isLive?'<span style="font-size:8px;color:var(--amber);margin-left:4px;">EST.</span>':''}
@@ -9519,11 +11320,10 @@ function cbRenderRankTable() {
         <div class="cb-metric-val" style="color:${ebitColor};font-weight:600;">${fmtPct(row.ebitPct)}</div>
       </td>
       <td>
-        <div class="cb-metric-val">${row.revPerEmp !== null ? fmtSEK(Math.round(row.revPerEmp)) : '<span style="color:var(--text3);">—</span>'}</div>
-        ${row.employees ? '<div style="font-size:8px;color:var(--text3);">' + row.employees + ' emp.</div>' : ''}
+        <div class="cb-metric-val" style="color:${(row.netProfit||0) > 0 ? 'var(--green)' : (row.netProfit||0) < 0 ? 'var(--red)' : 'var(--text)'};">${fmtSEK(row.netProfit)}</div>
       </td>
       <td>
-        <div class="cb-metric-val">${row.persPerEmp !== null ? fmtSEK(Math.round(row.persPerEmp)) : '<span style="color:var(--text3);">—</span>'}</div>
+        <div class="cb-metric-val" style="color:${(row.roePct||0) > 12 ? 'var(--green)' : (row.roePct||0) > 6 ? 'var(--amber)' : 'var(--text3)'};">${row.roePct !== null ? fmtPct(row.roePct) : '<span style="color:var(--text3);">—</span>'}</div>
       </td>
       <td style="text-align:center;">${actionBtn}</td>
     </tr>`;
@@ -9533,6 +11333,65 @@ function cbRenderRankTable() {
   document.getElementById('cbRankTableWrap').innerHTML = html;
   document.getElementById('cbRankSubtitle').textContent =
     `${sorted.length} companies · Sorted by ${CB_SORT_OPTIONS.find(s=>s.key===cbSortKey)?.label || cbSortKey} · ${cbSortDir === 'desc' ? 'Highest first' : 'Lowest first'}`;
+
+  cbRenderSelectBar();
+}
+
+// ── Row selection state + bulk Send-to-Compare ───────────────────
+function cbToggleRow(orgNr, checked) {
+  if (checked) cbSelectedOrgs.add(orgNr); else cbSelectedOrgs.delete(orgNr);
+  cbRenderSelectBar();
+  // Update visual row highlight without full re-render
+  const cb = document.querySelector(`.cb-row-check[data-org="${orgNr}"]`);
+  if (cb) cb.closest('tr')?.classList.toggle('cb-row-selected', checked);
+  // Sync select-all
+  const all = document.getElementById('cbSelectAll');
+  if (all) {
+    const total   = cbRankData.length;
+    const picked  = cbSelectedOrgs.size;
+    all.checked = total > 0 && picked === total;
+    all.indeterminate = picked > 0 && picked < total;
+  }
+}
+function cbToggleSelectAll(checked) {
+  cbSelectedOrgs.clear();
+  if (checked) cbRankData.forEach(r => cbSelectedOrgs.add(r.orgNr));
+  cbRenderRankTable(); // full re-render to sync checkboxes
+}
+function cbClearSelection() {
+  cbSelectedOrgs.clear();
+  cbRenderRankTable();
+}
+function cbRenderSelectBar() {
+  const bar = document.getElementById('cbSelectBar');
+  if (!bar) return;
+  const n = cbSelectedOrgs.size;
+  if (n === 0) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  const label = document.getElementById('cbSelectCount');
+  if (label) label.textContent = `${n} selected`;
+}
+function cbSendSelectionToCompare() {
+  const orgs = Array.from(cbSelectedOrgs);
+  if (orgs.length === 0) { showToast('Select at least one company'); return; }
+  // MAX_SLOTS guard — Compare supports 5
+  const max  = (typeof MAX_SLOTS !== 'undefined') ? MAX_SLOTS : 5;
+  const take = orgs.slice(0, max);
+  const clipped = orgs.length > max;
+  // Attach names from cbRankData so receiver doesn't need to re-search
+  const named = take.map(org => {
+    const r = cbRankData.find(x => x.orgNr === org);
+    return { orgNr: org, name: r?.name };
+  });
+  sendTo('compare', {
+    orgs: named,
+    source: 'competitor-ranking',
+    toastMsg: clipped
+      ? `Loaded ${take.length} into Compare (max ${max}; ${orgs.length - max} skipped)`
+      : `Loaded ${take.length} into Compare`,
+    toastLabel: 'View'
+  });
+  // Keep selection in case user navigates back
 }
 
 function cbRenderSummaryChips() {
