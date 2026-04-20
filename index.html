@@ -14758,17 +14758,28 @@ const DealScopeKolada = (() => {
   }
 
   async function _kFetch(url) {
-    // Try direct first; Kolada API lacks CORS headers so browser requests are blocked.
-    // Fall back to corsproxy.io which adds the required Access-Control-Allow-Origin header.
+    // Kolada API blocks non-Swedish IPs and doesn't include CORS headers.
+    // Strategy: try direct (works if browser is in Sweden + Kolada adds CORS),
+    // then fall back through two public CORS proxies.
+    const enc = encodeURIComponent(url);
+    const targets = [
+      { url: url, parse: r => r.json() },
+      { url: `https://api.allorigins.win/raw?url=${enc}`, parse: r => r.json() },
+      { url: `https://corsproxy.io/?${enc}`, parse: r => r.json() },
+    ];
     let lastErr;
-    for (const target of [url, `https://corsproxy.io/?${encodeURIComponent(url)}`]) {
+    for (const t of targets) {
       try {
-        const r = await fetch(target);
-        if (!r.ok) throw new Error(`Kolada HTTP ${r.status}`);
-        return await r.json();
+        const r = await fetch(t.url);
+        if (!r.ok) throw new Error(`HTTP ${r.status} from ${t.url.slice(0,60)}`);
+        const json = await t.parse(r);
+        console.log('[Kolada] _kFetch OK via', t.url.slice(0,60), '→ values:', json.values?.length ?? 'none');
+        // allorigins wraps response in { contents, status } — unwrap if needed
+        if (json.contents && !json.values) return JSON.parse(json.contents);
+        return json;
       } catch(e) {
         lastErr = e;
-        console.warn('[Kolada] _kFetch failed for', target, e.message);
+        console.warn('[Kolada] _kFetch failed:', t.url.slice(0,60), '—', e.message);
       }
     }
     throw lastErr;
