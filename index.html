@@ -2549,12 +2549,12 @@ body.light-mode {
                 <button class="btn-secondary" onclick="saveCFOToVault()" id="btnCFOSaveVault" style="font-size:10px;display:none;">🗄 Save</button>
                 <button class="btn-secondary" onclick="askAboutAnalysis('cfo')" style="font-size:10px;" data-i18n="btn_ask_ai">💬 Ask AI</button>
                 <button class="btn-analyze" onclick="runCFOAudit()" id="btnCFOAI" data-i18n="btn_run_cfo_ai">
-                  Run AI Audit
+                  ↺ Re-run AI Audit
                 </button>
               </div>
             </div>
             <div class="ai-output-body" id="cfoAIOutput">
-              <div style="color:var(--text3);">Click "Run AI Audit" to generate a deep AI analysis of the 3 most critical operational concerns based on the company's annual report data.</div>
+              <div style="color:var(--text3);">AI analysis runs automatically when a company is loaded. Use "↺ Re-run AI Audit" to refresh.</div>
             </div>
             <div class="progress-bar" style="margin:0 16px 12px;"><div class="progress-fill" id="cfoProgress" style="width:0%"></div></div>
           </div>
@@ -2645,12 +2645,12 @@ body.light-mode {
             <button class="btn-secondary" onclick="saveMAToVault()" id="btnMASaveVault" style="font-size:10px;display:none;">🗄 Save</button>
             <button class="btn-secondary" onclick="askAboutAnalysis('ma')" style="font-size:10px;" data-i18n="btn_ask_ai">💬 Ask AI</button>
             <button class="btn-analyze" onclick="runMAScreen()" id="btnMAAI" data-i18n="btn_run_ma_ai">
-              Run AI Screen
+              ↺ Re-run AI Screen
             </button>
           </div>
         </div>
         <div class="ai-output-body" id="maAIOutput">
-          <div style="color:var(--text3);">Click "Run AI Screen" to generate an AI-powered M&A recommendation with detailed due diligence findings, scored across compliance, financials, assets, and strategic fit.</div>
+          <div style="color:var(--text3);">AI analysis runs automatically when a company is loaded. Use "↺ Re-run AI Screen" to refresh.</div>
         </div>
         <div class="progress-bar" style="margin:0 16px 12px;"><div class="progress-fill" id="maProgress" style="width:0%"></div></div>
       </div>
@@ -2708,7 +2708,7 @@ body.light-mode {
             <span id="finAIStale" class="ai-stale-badge" style="display:none;" title="Filters changed since the last summary was generated">● Filters changed</span>
             <button class="btn-copy" id="finAISaveBtn" onclick="saveAISummaryToVault('financials')" title="Save this summary to the Vault for future reference" style="display:none;">🗄 Save to Vault</button>
             <button class="btn-copy" id="finAICopyBtn" onclick="copyAIOutput('finAIBody', this)" title="Copy" style="display:none;">📋 Copy</button>
-            <button class="btn-analyze" id="finAIRunBtn" onclick="runAIPerformanceSummary('financials')" style="background:linear-gradient(135deg,rgba(0,200,255,0.12),rgba(0,200,255,0.06));border-color:rgba(0,200,255,0.4);color:var(--blue);">🤖 Generate Summary</button>
+            <button class="btn-analyze" id="finAIRunBtn" onclick="runAIPerformanceSummary('financials')" style="background:linear-gradient(135deg,rgba(0,200,255,0.12),rgba(0,200,255,0.06));border-color:rgba(0,200,255,0.4);color:var(--blue);">🤖 Regenerate</button>
           </div>
         </div>
         <div id="finAIBody" class="ai-summary-body">
@@ -2786,7 +2786,7 @@ body.light-mode {
             <span id="cfAIStale" class="ai-stale-badge" style="display:none;" title="Filters changed since the last summary was generated">● Filters changed</span>
             <button class="btn-copy" id="cfAISaveBtn" onclick="saveAISummaryToVault('cashflow')" title="Save this summary to the Vault for future reference" style="display:none;">🗄 Save to Vault</button>
             <button class="btn-copy" id="cfAICopyBtn" onclick="copyAIOutput('cfAIBody', this)" title="Copy" style="display:none;">📋 Copy</button>
-            <button class="btn-analyze" id="cfAIRunBtn" onclick="runAIPerformanceSummary('cashflow')" style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.06));border-color:rgba(16,185,129,0.4);color:var(--green);">🤖 Generate Summary</button>
+            <button class="btn-analyze" id="cfAIRunBtn" onclick="runAIPerformanceSummary('cashflow')" style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.06));border-color:rgba(16,185,129,0.4);color:var(--green);">🤖 Regenerate</button>
           </div>
         </div>
         <div id="cfAIBody" class="ai-summary-body">
@@ -3929,8 +3929,8 @@ const STRINGS = {
     btn_export:         '⬇ Export',
     btn_refresh_screen: '↺ Refresh Screen',
     btn_ask_ai:         '💬 Ask AI',
-    btn_run_cfo_ai:     'Run AI Audit',
-    btn_run_ma_ai:      'Run AI Screen',
+    btn_run_cfo_ai:     '↺ Re-run AI Audit',
+    btn_run_ma_ai:      '↺ Re-run AI Screen',
     btn_run_ai_compare: '🤖 AI Compare',
     btn_export_csv:     '⬇ Export CSV',
     btn_clear_all:      '✕ Clear All',
@@ -4206,8 +4206,8 @@ const STRINGS = {
     btn_export:         '⬇ Exportera',
     btn_refresh_screen: '↺ Uppdatera screening',
     btn_ask_ai:         '💬 Fråga AI',
-    btn_run_cfo_ai:     'Kör AI-analys',
-    btn_run_ma_ai:      'Kör AI-screening',
+    btn_run_cfo_ai:     '↺ Kör AI-analys',
+    btn_run_ma_ai:      '↺ Kör AI-screening',
     btn_run_ai_compare: '🤖 AI-jämförelse',
     btn_export_csv:     '⬇ Exportera CSV',
     btn_clear_all:      '✕ Rensa alla',
@@ -5740,6 +5740,19 @@ async function loadCompanyByOrg(raw, knownName) {
   if (availableYears.length >= 2) {
     loadAllYears();
   }
+
+  // Auto-run all AI analyses on company load (skip if no API key or no live data)
+  if (isLive && anthropicKey) {
+    setTimeout(autoRunAllAnalyses, 200);
+  }
+}
+
+function autoRunAllAnalyses() {
+  if (!companyData || !anthropicKey) return;
+  runCFOAudit();
+  runMAScreen();
+  runAIPerformanceSummary('financials');
+  runAIPerformanceSummary('cashflow');
 }
 
 // Keep old loadCompany for backward compat
