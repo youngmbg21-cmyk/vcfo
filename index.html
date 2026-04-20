@@ -14789,6 +14789,15 @@ const DealScopeKolada = (() => {
     }
 
     console.log('[Kolada] fetchCorePackage: starting fetch for muniCode=', muniCode);
+    // Diagnostic: test one KPI first so raw response is visible in console
+    try {
+      const testUrl = `${BASE}/data/kpi/N00999/municipality/${muniCode}`;
+      console.log('[Kolada] DIAGNOSTIC test fetch:', testUrl);
+      const testJson = await fetch(testUrl).then(r => r.json());
+      console.log('[Kolada] DIAGNOSTIC raw response:', JSON.stringify(testJson).slice(0, 800));
+    } catch(e) {
+      console.error('[Kolada] DIAGNOSTIC test fetch failed:', e);
+    }
     const pkg = { vitality:{}, fiscal:{}, population:{}, liveability:{}, _fetchedAt: new Date().toISOString() };
     const log = logFn || (msg => console.log('[Kolada]', msg));
 
@@ -15017,7 +15026,10 @@ async function renderKoladaCard() {
   const grid   = document.getElementById('koladaScoreGrid');
 
   const cached = DealScopeStore.get(`kolada.pkg.${muni.code}`);
-  if (cached?.data) {
+  const cacheHasData = cached?.data && Object.values(cached.data).some(b =>
+    b && typeof b === 'object' && Object.values(b).some(k => k?.series?.length > 0)
+  );
+  if (cacheHasData) {
     console.log('[Kolada] renderKoladaCard: using cached data for', muni.code, 'cached at', new Date(cached._ts).toISOString());
     _koladaCardPkg = cached.data;
     if (loadEl) loadEl.style.display = 'none';
@@ -15028,6 +15040,10 @@ async function renderKoladaCard() {
       _fetchAndUpdateKoladaCard(muni);
     }
     return;
+  }
+  if (cached && !cacheHasData) {
+    console.warn('[Kolada] renderKoladaCard: found empty/broken cache for', muni.code, '— clearing and re-fetching');
+    DealScopeStore.set(`kolada.pkg.${muni.code}`, null);
   }
 
   console.log('[Kolada] renderKoladaCard: no cache, fetching for muni', muni);
