@@ -2267,6 +2267,7 @@ body.light-mode {
   <div class="tab" id="tab-pipeline-btn"          onclick="switchTab('pipeline')" data-i18n="tab_pipeline" style="display:none;">🗂 Pipeline</div>
   <div class="tab" id="tab-saved-searches-btn"    onclick="switchTab('saved-searches')" data-i18n="tab_saved_searches" style="display:none;">🔔 Saved Searches</div>
   <div class="tab" id="tab-succession-radar-btn"  onclick="switchTab('succession-radar')" data-i18n="tab_succession_radar" style="display:none;">📡 Succession Radar</div>
+  <div class="tab" id="tab-workspace-btn"         onclick="switchTab('workspace')" data-i18n="tab_workspace" style="display:none;">👥 Workspace</div>
   <div class="tab" id="tab-guide-btn"             onclick="switchTab('guide')" style="margin-left:auto;" data-i18n="tab_guide">📖 Guide</div>
 </div>
 
@@ -3539,6 +3540,63 @@ body.light-mode {
     </div>
 
   </div><!-- /tab-succession-radar -->
+
+  <!-- ===== WORKSPACE TAB ===== -->
+  <div id="tab-workspace" style="display:none;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <!-- Firm settings -->
+      <div class="card">
+        <div class="card-title">⚙ <span data-i18n="ws_firm_settings">Firm Settings</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div>
+            <label class="field-label" data-i18n="ws_firm_name">Firm / Fund name</label>
+            <input id="wsFirmName" class="input-field" type="text" style="width:100%;box-sizing:border-box;" onblur="DealScopeStore.set('ws_firm_name',this.value)" />
+          </div>
+          <div>
+            <label class="field-label" data-i18n="ws_acquirer_type">Acquirer type</label>
+            <select id="wsAcquirerType" class="input-field" style="width:100%;box-sizing:border-box;" onchange="DealScopeStore.set('ws_acquirer_type',this.value)">
+              <option value="search_fund" data-i18n="ws_type_sf">Search Fund</option>
+              <option value="micro_pe" data-i18n="ws_type_pe">Micro-PE</option>
+              <option value="family_office" data-i18n="ws_type_fo">Family Office</option>
+              <option value="strategic" data-i18n="ws_type_str">Strategic Acquirer</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" data-i18n="ws_criteria">Target criteria</label>
+            <textarea id="wsTargetCriteria" class="input-field" style="width:100%;box-sizing:border-box;min-height:60px;resize:vertical;" onblur="DealScopeStore.set('ws_target_criteria',this.value)" data-i18n-placeholder="ws_criteria_ph"></textarea>
+          </div>
+        </div>
+      </div>
+      <!-- Deal digest -->
+      <div class="card">
+        <div class="card-title">📊 <span data-i18n="ws_digest">Deal Digest</span></div>
+        <div id="wsDigestContent" style="font-size:11px;color:var(--text3);">—</div>
+      </div>
+    </div>
+    <!-- IC Memo generator -->
+    <div class="card">
+      <div class="card-title">📄 <span data-i18n="ws_ic_memo">IC Memo Generator</span></div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:10px;align-items:end;">
+        <div>
+          <label class="field-label" data-i18n="ws_pick_deal">Select deal from pipeline</label>
+          <select id="wsPickDeal" class="input-field" style="width:100%;box-sizing:border-box;">
+            <option value="">— select —</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn-primary" id="wsGenerateBtn" onclick="wsGenerateICMemo()" data-i18n="ws_generate_btn">📄 Generate Memo</button>
+          <span id="wsStatus" style="font-size:10px;color:var(--text3);"></span>
+        </div>
+      </div>
+      <div id="wsOutput" style="display:none;">
+        <div style="position:relative;">
+          <textarea id="wsMemoText" style="width:100%;box-sizing:border-box;min-height:320px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;line-height:1.6;padding:12px 52px 12px 12px;font-family:inherit;resize:vertical;" readonly></textarea>
+          <button class="btn-secondary" style="position:absolute;top:6px;right:6px;font-size:10px;" onclick="wsCopyMemo()" data-i18n="outreach_copy">Copy</button>
+        </div>
+      </div>
+    </div>
+  </div><!-- /tab-workspace -->
+
   <!-- County tooltip -->
   <div class="sr-county-tooltip" id="srCountyTooltip"></div>
 
@@ -3615,7 +3673,7 @@ window.DEALSCOPE_FLAGS = {
   savedSearches:     true,
   pipelineCrm:       true,
   outreachGenerator: true,
-  teamWorkspace:     false,
+  teamWorkspace:     true,
 };
 
 // ============================================================
@@ -3947,6 +4005,25 @@ const STRINGS = {
     chat_welcome:           "Hi! I'm **DealScope AI** — your deal-sourcing copilot for Nordic acquisitions.\n\nI know every feature of this platform and I always know which screen you're on. You can ask me:\n- **About the app** — \"How do I use the Pipeline tab?\" or \"What does the M&A score mean?\"\n- **About the data** — \"Explain the CFO flags\" or \"Is this company a good acquisition target?\"\n- **Deal sourcing** — \"Find succession candidates in Stockholm\" or \"What signals should I look for?\"\n- **What to do next** — I'll guide you step by step.\n\nLoad a company to get started, or ask me anything.",
 
     // Saved Searches
+    // Workspace
+    tab_workspace:         '👥 Workspace',
+    ws_firm_settings:      'Firm Settings',
+    ws_firm_name:          'Firm / Fund name',
+    ws_acquirer_type:      'Acquirer type',
+    ws_type_sf:            'Search Fund',
+    ws_type_pe:            'Micro-PE',
+    ws_type_fo:            'Family Office',
+    ws_type_str:           'Strategic Acquirer',
+    ws_criteria:           'Target criteria',
+    ws_criteria_ph:        'e.g. Swedish manufacturing SMEs, EBIT ≥10M, owner aged 55+',
+    ws_digest:             'Deal Digest',
+    ws_ic_memo:            'IC Memo Generator',
+    ws_pick_deal:          'Select deal from pipeline',
+    ws_generate_btn:       '📄 Generate Memo',
+    ws_memo_ready:         '✓ Memo ready',
+    ws_select_deal:        'Select a deal first',
+    ws_memo_copied:        '✓ IC Memo copied',
+
     // Outreach Generator
     outreach_title:        'Outreach Generator',
     outreach_your_name:    'Your name',
@@ -4199,6 +4276,25 @@ const STRINGS = {
     chat_welcome:           "Hej! Jag är **DealScope AI** — din deal-sourcing-copilot för nordiska förvärv.\n\nJag känner till varje funktion i den här plattformen och vet alltid vilken skärm du befinner dig på. Du kan fråga mig:\n- **Om appen** — \"Hur använder jag Pipeline-fliken?\" eller \"Vad betyder förvärvspoängen?\"\n- **Om datan** — \"Förklara CFO-flaggorna\" eller \"Är det här ett bra förvärvsmål?\"\n- **Deal sourcing** — \"Hitta successionsbolag i Stockholm\" eller \"Vilka signaler ska jag leta efter?\"\n- **Vad du ska göra härnäst** — Jag guidar dig steg för steg.\n\nLadda ett företag för att komma igång, eller fråga mig vad som helst.",
 
     // Saved Searches
+    // Workspace
+    tab_workspace:         '👥 Arbetsyta',
+    ws_firm_settings:      'Firmainställningar',
+    ws_firm_name:          'Firma / Fond',
+    ws_acquirer_type:      'Förvärvartyp',
+    ws_type_sf:            'Sökfond',
+    ws_type_pe:            'Micro-PE',
+    ws_type_fo:            'Family Office',
+    ws_type_str:           'Strategisk förvärvare',
+    ws_criteria:           'Målkriterier',
+    ws_criteria_ph:        't.ex. Svenska tillverkningsbolag, EBIT ≥10M, ägare 55+',
+    ws_digest:             'Deal-sammanfattning',
+    ws_ic_memo:            'IC-memo-generator',
+    ws_pick_deal:          'Välj affär från pipeline',
+    ws_generate_btn:       '📄 Generera memo',
+    ws_memo_ready:         '✓ Memo klart',
+    ws_select_deal:        'Välj en affär först',
+    ws_memo_copied:        '✓ IC-memo kopierat',
+
     // Outreach Generator
     outreach_title:        'Outreach-generator',
     outreach_your_name:    'Ditt namn',
@@ -4409,6 +4505,7 @@ function switchTab(name) {
   if (name === 'vault')              renderVaultList();
   if (name === 'succession-radar')   initSuccessionRadar();
   if (name === 'pipeline')           initPipelineCRM();
+  if (name === 'workspace')          initWorkspace();
   if (name === 'saved-searches')     initSavedSearches();
   if (name === 'competitor-bench')  {
     // Default to ranking unless user already picked a sub
@@ -4422,7 +4519,7 @@ function switchTab(name) {
 
 function _switchTopTab(name) {
   ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','journal','vault','benchmarks',
-   'pipeline','saved-searches','succession-radar','guide'].forEach(t => {
+   'pipeline','saved-searches','succession-radar','workspace','guide'].forEach(t => {
     const panel = document.getElementById('tab-' + t);
     if (panel) panel.style.display = (t === name) ? 'block' : 'none';
     const btn = document.getElementById('tab-' + t + '-btn');
@@ -8565,6 +8662,135 @@ function srAddCurrentToRadar() {
 }
 
 // ============================================================
+// WORKSPACE
+// ============================================================
+function wsInit() {
+  const firmEl = document.getElementById('wsFirmName');
+  const typeEl = document.getElementById('wsAcquirerType');
+  const critEl = document.getElementById('wsTargetCriteria');
+  if (firmEl) firmEl.value = DealScopeStore.get('ws_firm_name') || DealScopeStore.get('og_your_firm') || '';
+  if (typeEl) { const v = DealScopeStore.get('ws_acquirer_type'); if (v) typeEl.value = v; }
+  if (critEl) critEl.value = DealScopeStore.get('ws_target_criteria') || '';
+  wsPopulateDealPicker();
+  wsRenderDigest();
+  const outputEl = document.getElementById('wsOutput');
+  const statusEl = document.getElementById('wsStatus');
+  if (outputEl) outputEl.style.display = 'none';
+  if (statusEl) statusEl.textContent = '';
+}
+
+function wsPopulateDealPicker() {
+  const sel = document.getElementById('wsPickDeal');
+  if (!sel) return;
+  const list = plLoad();
+  sel.innerHTML = `<option value="">— ${t('ws_pick_deal')} —</option>` +
+    list.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} (${c.stage})</option>`).join('');
+}
+
+function wsRenderDigest() {
+  const el = document.getElementById('wsDigestContent');
+  if (!el) return;
+  const list = plLoad();
+  if (list.length === 0) {
+    el.innerHTML = `<div style="color:var(--text3);font-size:11px;">${t('pl_empty_title')}</div>`;
+    return;
+  }
+  const byStage = {};
+  PL_STAGES.forEach(s => { byStage[s.id] = 0; });
+  list.forEach(c => { if (byStage[c.stage] !== undefined) byStage[c.stage]++; });
+  const rows = PL_STAGES.filter(s => byStage[s.id] > 0).map(s =>
+    `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);">
+       <span style="font-size:11px;color:var(--text2);">${s.label}</span>
+       <span style="font-size:11px;font-weight:700;color:var(--text);">${byStage[s.id]}</span>
+     </div>`
+  ).join('');
+  el.innerHTML = `<div style="margin-bottom:8px;">${rows}</div>
+    <div style="font-size:10px;color:var(--text3);">Total: ${list.length} deal${list.length !== 1 ? 's' : ''}</div>`;
+}
+
+async function wsGenerateICMemo() {
+  const dealId = document.getElementById('wsPickDeal')?.value;
+  if (!dealId) { showToast(t('ws_select_deal')); return; }
+  const deal = plLoad().find(c => c.id === dealId);
+  if (!deal) return;
+
+  const btn = document.getElementById('wsGenerateBtn');
+  const statusEl = document.getElementById('wsStatus');
+  const outputEl = document.getElementById('wsOutput');
+  const textEl = document.getElementById('wsMemoText');
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
+  if (statusEl) statusEl.textContent = '';
+  if (outputEl) outputEl.style.display = 'none';
+
+  const firmName   = (document.getElementById('wsFirmName')?.value || '').trim() || DealScopeStore.get('og_your_firm') || 'the acquirer';
+  const acqType    = document.getElementById('wsAcquirerType')?.value || 'search_fund';
+  const criteria   = (document.getElementById('wsTargetCriteria')?.value || '').trim();
+  const yourName   = DealScopeStore.get('og_your_name') || '';
+  const cached     = DealScopeStore.get('company_cache_' + deal.orgNr.replace(/[^0-9]/g, ''));
+  const owData     = DealScopeStore.get('ownership_' + deal.orgNr.replace(/[^0-9]/g, ''));
+
+  const revenue  = cached?.netSales ? Math.round(cached.netSales  / 1e6) : (deal.revenue ?? '—');
+  const ebit     = cached?.opProfit ? Math.round(cached.opProfit  / 1e6) : '—';
+  const equity   = cached?.equity   ? Math.round(cached.equity    / 1e6) : '—';
+  const ros      = (cached?.netSales && cached?.opProfit)
+    ? ((cached.opProfit / cached.netSales) * 100).toFixed(1) + '%' : '—';
+
+  const prompt = `You are a senior analyst at a Nordic ${acqType.replace('_', ' ')} called "${firmName}". Write a professional 1-page Investment Committee memo for this potential acquisition target. Use clear M&A language with the following sections:
+
+1. EXECUTIVE SUMMARY
+2. COMPANY OVERVIEW
+3. FINANCIAL HIGHLIGHTS
+4. SUCCESSION & OWNERSHIP ANALYSIS
+5. DEAL THESIS (3 bullets)
+6. KEY RISKS (3 bullets)
+7. PROPOSED NEXT STEPS
+
+Company data:
+- Name: ${deal.name}
+- Org nr: ${deal.orgNr || '—'}
+- Industry: ${cached?.industry || '—'}
+- Pipeline stage: ${deal.stage}
+- Revenue: ${revenue} MSEK | EBIT: ${ebit} MSEK | EBIT margin: ${ros} | Equity: ${equity} MSEK
+- Primary owner: ${owData?.primaryOwner?.name || '—'}
+- Succession score: ${deal.score != null ? deal.score + '/100' : '—'}
+- Deal notes: ${deal.note || 'None'}${criteria ? '\n- Acquirer criteria: ' + criteria : ''}${yourName ? '\nPrepared by: ' + yourName : ''}
+Date: ${new Date().toLocaleDateString('en-SE')}
+
+Keep the full memo under 520 words.`;
+
+  try {
+    if (!anthropicKey) { openSettings(); throw new Error(t('toast_no_api_key')); }
+    const result = await callAnthropic({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }],
+    }, anthropicKey);
+    const text = result?.content?.[0]?.text || '';
+    if (!text) throw new Error('Empty response');
+    if (textEl) textEl.value = text;
+    if (outputEl) outputEl.style.display = '';
+    if (statusEl) statusEl.textContent = t('ws_memo_ready');
+  } catch(e) {
+    if (statusEl) statusEl.textContent = `⚠ ${e.message}`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = t('ws_generate_btn'); }
+  }
+}
+
+function wsCopyMemo() {
+  const textEl = document.getElementById('wsMemoText');
+  if (!textEl || !textEl.value) return;
+  navigator.clipboard.writeText(textEl.value)
+    .then(() => showToast(t('ws_memo_copied')))
+    .catch(() => { textEl.select(); document.execCommand('copy'); showToast(t('ws_memo_copied')); });
+}
+
+function initWorkspace() {
+  wsInit();
+}
+
+// ============================================================
 // OUTREACH GENERATOR
 // ============================================================
 const OG_TEMPLATES = {
@@ -8948,7 +9174,7 @@ function setStatusBar(msg, state='ok') {
 // Build tracer — lets you confirm the deployed JS is up to date
 // (open DevTools console and look for this line). Cache-busting
 // aside, if you don't see VCFO_BUILD, you're on a stale copy.
-window.DEALSCOPE_BUILD = 'phase-4-outreach-generator-v1';
+window.DEALSCOPE_BUILD = 'phase-5-team-workspace-v1';
 try { console.log('DealScope build:', window.DEALSCOPE_BUILD); } catch(e){}
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -8995,6 +9221,7 @@ document.addEventListener('DOMContentLoaded', () => {
       pipelineCrm:       'tab-pipeline-btn',
       savedSearches:     'tab-saved-searches-btn',
       successionRadar:   'tab-succession-radar-btn',
+      teamWorkspace:     'tab-workspace-btn',
     };
     Object.entries(flagTabMap).forEach(([flag, btnId]) => {
       if (window.DEALSCOPE_FLAGS[flag]) {
