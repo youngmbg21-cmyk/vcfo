@@ -2320,6 +2320,7 @@ body.light-mode {
   <div class="tab" id="tab-journal-btn"          onclick="switchTab('journal')">📔 Journal</div>
   <div class="tab" id="tab-vault-btn"            onclick="switchTab('vault')">🗄 Vault</div>
   <div class="tab" id="tab-benchmarks-btn"       onclick="switchTab('benchmarks')" data-i18n="tab_benchmarks">📡 Benchmarks</div>
+  <div class="tab" id="tab-kolada-btn"           onclick="switchTab('kolada')" data-i18n="tab_kolada" style="display:none;">🗺 Kolada</div>
   <div class="tab" id="tab-pipeline-btn"          onclick="switchTab('pipeline')" data-i18n="tab_pipeline" style="display:none;">🗂 Pipeline</div>
   <div class="tab" id="tab-saved-searches-btn"    onclick="switchTab('saved-searches')" data-i18n="tab_saved_searches" style="display:none;">🔔 Saved Searches</div>
   <div class="tab" id="tab-succession-radar-btn"  onclick="switchTab('succession-radar')" data-i18n="tab_succession_radar" style="display:none;">📡 Succession Radar</div>
@@ -2443,6 +2444,20 @@ body.light-mode {
               <div class="kpi-label" data-i18n="kpi_succession">Succession</div>
               <div class="kpi-value" id="kpiSuccession">—</div>
               <div class="kpi-sub" data-i18n="kpi_succession_sub">Exit likelihood 0–100</div>
+            </div>
+          </div>
+
+          <!-- KOLADA REGIONAL CONTEXT CARD -->
+          <div id="koladaRegionalCard" style="display:none;margin-top:14px;">
+            <div class="card" style="border-color:rgba(16,185,129,0.25);">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                <div class="card-title" id="koladaMuniTitle" data-i18n="cardregional">🗺 Regional Context</div>
+                <div style="font-size:9px;color:var(--text3);" data-i18n="koladasource">Source: Kolada (SKR + RKA), CC0</div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;" id="koladaScoreGrid"></div>
+              <div id="koladaLoadingState" style="text-align:center;padding:20px;color:var(--text3);font-size:11px;">
+                <span class="loading-dots"><span></span><span></span><span></span></span> Fetching municipal data from Kolada…
+              </div>
             </div>
           </div>
 
@@ -3514,6 +3529,13 @@ body.light-mode {
       <!-- Sweden heatmap -->
       <div class="card sr-map-card">
         <div class="sr-map-title">SWEDEN · SUCCESSION HEATMAP</div>
+        <!-- Kolada color-by toggle (shown when koladaContext flag is on) -->
+        <div id="srColorByRow" style="display:none;gap:5px;margin-bottom:8px;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:9px;color:var(--text3);">Color by:</span>
+          <button class="sni-btn active" id="srColorSuccession" onclick="setSRColorMode('succession')">Succession</button>
+          <button class="sni-btn" id="srColorVitality" onclick="setSRColorMode('vitality')">Vitality</button>
+          <button class="sni-btn" id="srColorBlended" onclick="setSRColorMode('blended')">Blended</button>
+        </div>
         <svg id="srMap" viewBox="0 0 200 470" style="width:100%;height:auto;display:block;">
           <!-- Mainland silhouette -->
           <polygon id="srMapOutline"
@@ -3702,6 +3724,96 @@ body.light-mode {
   <!-- County tooltip -->
   <div class="sr-county-tooltip" id="srCountyTooltip"></div>
 
+  <!-- ===== KOLADA TAB ===== -->
+  <div id="tab-kolada" style="display:none;">
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:800;color:var(--green);">🗺 Kolada — Municipal KPI Database</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">Sweden's official municipal &amp; regional statistics · 6,100+ KPIs · CC0 licence · No auth required</div>
+      </div>
+      <span style="font-size:9px;color:var(--text3);padding:4px 10px;border:1px solid var(--border);border-radius:3px;" data-i18n="koladasource">Source: Kolada (SKR + RKA), CC0</span>
+    </div>
+
+    <!-- Explainer -->
+    <div class="card" style="margin-bottom:16px;border-color:rgba(16,185,129,0.2);">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:6px;">What this tab does</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.7;">Connects to Kolada's open REST API and downloads municipal KPIs for each company's home municipality. Scores are computed across Business Vitality, Fiscal Health, and Liveability dimensions.</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:6px;">When to refresh</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.7;">Kolada data is updated annually (typically Q1). Click <strong>Prime Cache</strong> to pre-fetch all major municipalities. Individual municipalities are cached automatically when you load a company.</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:6px;">Data licence</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.7;">CC0 — Creative Commons Zero. Published by SKR (Swedish Association of Local Authorities and Regions) and RKA. Free to use commercially, no attribution required.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start;">
+
+      <!-- Controls -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="card">
+          <div class="card-title">KPI Buckets (12 core KPIs)</div>
+          <div style="font-size:11px;color:var(--text2);line-height:2;">
+            <div>📈 Regional Vitality (4 KPIs)</div>
+            <div>🏛 Municipal Fiscal Health (3 KPIs)</div>
+            <div>👥 Population &amp; Labour Pool (3 KPIs)</div>
+            <div>🌱 Liveability (2 KPIs)</div>
+          </div>
+        </div>
+        <button class="btn-analyze" id="btnKoladaPrime" onclick="primeKoladaCache()"
+          style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.06));border-color:rgba(16,185,129,0.4);color:var(--green);">
+          ⬇ Prime Cache
+        </button>
+        <div style="font-size:9px;color:var(--text3);line-height:1.7;padding:8px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;">
+          <strong style="color:var(--text2);">Rate limit:</strong> 200ms pause between batches of 4 KPIs. Major municipalities (~10) take about 20 seconds total. Data is cached locally for 12 months.
+        </div>
+      </div>
+
+      <!-- Log + KPI table -->
+      <div style="display:flex;flex-direction:column;gap:14px;">
+
+        <div class="card">
+          <div class="card-title">Fetch Log</div>
+          <div id="koladaLog" style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:10px;color:var(--text3);line-height:1.8;max-height:130px;overflow-y:auto;font-family:'JetBrains Mono',monospace;">
+            <div>Ready — click Prime Cache to pre-fetch municipal data for major Swedish cities.</div>
+          </div>
+          <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" id="koladaProgress" style="width:0%;background:linear-gradient(90deg,var(--green),var(--blue));"></div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">12 Core KPIs</div>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>ID</th><th>Description</th><th>Bucket</th><th>Direction</th></tr></thead>
+              <tbody>
+                <tr><td><span class="reg-pill">N00926</span></td><td style="color:var(--text2);">Business bankruptcies per 1,000 inhab (16–64)</td><td style="color:var(--amber);">Vitality</td><td style="color:var(--green);">↓ Lower = better</td></tr>
+                <tr><td><span class="reg-pill">N00999</span></td><td style="color:var(--text2);">Newly started businesses per 1,000 inhab</td><td style="color:var(--amber);">Vitality</td><td style="color:var(--green);">↑ Higher = better</td></tr>
+                <tr><td><span class="reg-pill">N01005</span></td><td style="color:var(--text2);">Newly started workplaces (number)</td><td style="color:var(--amber);">Vitality</td><td style="color:var(--green);">↑ Higher = better</td></tr>
+                <tr><td><span class="reg-pill">N01006</span></td><td style="color:var(--text2);">Bankruptcy employees per 1,000 inhab</td><td style="color:var(--amber);">Vitality</td><td style="color:var(--green);">↓ Lower = better</td></tr>
+                <tr><td><span class="reg-pill">N00003</span></td><td style="color:var(--text2);">Personnel costs SEK/capita</td><td style="color:var(--blue);">Fiscal</td><td style="color:var(--green);">↓ Lower = efficient</td></tr>
+                <tr><td><span class="reg-pill">N00009</span></td><td style="color:var(--text2);">Municipal total revenues SEK/capita</td><td style="color:var(--blue);">Fiscal</td><td style="color:var(--green);">↑ Higher = better</td></tr>
+                <tr><td><span class="reg-pill">N03166</span></td><td style="color:var(--text2);">Investment in business &amp; housing SEK/capita</td><td style="color:var(--blue);">Fiscal</td><td style="color:var(--green);">↑ Higher = better</td></tr>
+                <tr><td><span class="reg-pill">N01951</span></td><td style="color:var(--text2);">Total population</td><td style="color:var(--text2);">Population</td><td style="color:var(--text3);">— Context</td></tr>
+                <tr><td><span class="reg-pill">N01800</span></td><td style="color:var(--text2);">Population aged 20–64 share (%)</td><td style="color:var(--text2);">Population</td><td style="color:var(--green);">↑ Higher = better</td></tr>
+                <tr><td><span class="reg-pill">N01804</span></td><td style="color:var(--text2);">Population 65+ share (%)</td><td style="color:var(--text2);">Population</td><td style="color:var(--green);">↓ Lower = better</td></tr>
+                <tr><td><span class="reg-pill">N17408</span></td><td style="color:var(--text2);">School merit score year 9 (meritvärde)</td><td style="color:var(--green);">Liveability</td><td style="color:var(--green);">↑ Higher = better</td></tr>
+                <tr><td><span class="reg-pill">N31813</span></td><td style="color:var(--text2);">Resident satisfaction with municipal services</td><td style="color:var(--green);">Liveability</td><td style="color:var(--green);">↑ Higher = better</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /tab-kolada -->
+
 </div><!-- /content -->
 
 </div><!-- /app-body -->
@@ -3779,6 +3891,7 @@ window.DEALSCOPE_FLAGS = {
   outreachGenerator: true,
   teamWorkspace:     true,
   nordicExpansion:   true,
+  koladaContext:     true,
 };
 
 // ============================================================
@@ -3940,6 +4053,31 @@ const STRINGS = {
     tab_pipeline:          '🗂 Pipeline',
     tab_saved_searches:    '🔔 Saved Searches',
     tab_succession_radar:  '📡 Succession Radar',
+    tab_kolada:            '🗺 Kolada',
+
+    // Kolada Regional Context
+    cardregional:          'Regional Context',
+    scorevitality:         'Regional Vitality',
+    scorefiscal:           'Fiscal Health',
+    scoreliveability:      'Liveability',
+    koladasource:          'Source: Kolada (SKR + RKA), CC0',
+    kolada_fetching:       'Fetching municipal data from Kolada…',
+    kolada_unavailable:    'Municipal data temporarily unavailable',
+    kolada_no_data:        'No Kolada data yet — load a company to fetch automatically',
+    kolada_sig_strong_biz: 'Strong business formation',
+    kolada_sig_weak_biz:   'Weak business formation',
+    kolada_sig_low_bk:     'Low bankruptcy rate',
+    kolada_sig_high_bk:    'High bankruptcy rate',
+    kolada_sig_hi_invest:  'High business investment',
+    kolada_sig_lo_invest:  'Low infrastructure investment',
+    kolada_sig_strong_rev: 'Strong municipal revenues',
+    kolada_sig_lo_rev:     'Low municipal revenue base',
+    kolada_sig_school:     'Strong school outcomes',
+    kolada_sig_aging:      'Ageing population',
+    kolada_sig_young:      'Young, working-age population',
+    kolada_pill_vitality:  'Is this municipality good for an acquisition?',
+    kolada_pill_explain:   'Explain the regional context',
+    kolada_pill_compare:   'Compare regional context across my pipeline',
 
     // Succession Radar
     kpi_succession:        'Succession',
@@ -4217,6 +4355,31 @@ const STRINGS = {
     tab_pipeline:          '🗂 Pipeline',
     tab_saved_searches:    '🔔 Sparade sökningar',
     tab_succession_radar:  '📡 Successionsradar',
+    tab_kolada:            '🗺 Kolada',
+
+    // Kolada Regional Context (SV)
+    cardregional:          'Regional kontext',
+    scorevitality:         'Regional vitalitet',
+    scorefiscal:           'Kommunal finansiell hälsa',
+    scoreliveability:      'Livskvalitet',
+    koladasource:          'Källa: Kolada (SKR + RKA), CC0',
+    kolada_fetching:       'Hämtar kommundata från Kolada…',
+    kolada_unavailable:    'Kommundata tillfälligt otillgängligt',
+    kolada_no_data:        'Ingen Kolada-data ännu — ladda ett företag för att hämta automatiskt',
+    kolada_sig_strong_biz: 'Stark nyföretagsamhet',
+    kolada_sig_weak_biz:   'Svag nyföretagsamhet',
+    kolada_sig_low_bk:     'Låg konkursnivå',
+    kolada_sig_high_bk:    'Hög konkursnivå',
+    kolada_sig_hi_invest:  'Hög företagsinvestering',
+    kolada_sig_lo_invest:  'Låg infrastrukturinvestering',
+    kolada_sig_strong_rev: 'Starka kommunala intäkter',
+    kolada_sig_lo_rev:     'Svag kommunal intäktsbas',
+    kolada_sig_school:     'Starka skolresultat',
+    kolada_sig_aging:      'Åldrande befolkning',
+    kolada_sig_young:      'Ung befolkning i arbetsför ålder',
+    kolada_pill_vitality:  'Är denna kommun bra för ett förvärv?',
+    kolada_pill_explain:   'Förklara den regionala kontexten',
+    kolada_pill_compare:   'Jämför regional kontext i min pipeline',
 
     // Succession Radar
     kpi_succession:        'Succession',
@@ -4626,6 +4789,7 @@ function switchTab(name) {
   if (name === 'pipeline')           initPipelineCRM();
   if (name === 'workspace')          initWorkspace();
   if (name === 'saved-searches')     initSavedSearches();
+  if (name === 'kolada')             initKoladaTab();
   if (name === 'competitor-bench')  {
     // Default to ranking unless user already picked a sub
     const sub = _activeSubTab['competitor-bench'] || 'ranking';
@@ -4638,7 +4802,7 @@ function switchTab(name) {
 
 function _switchTopTab(name) {
   ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','journal','vault','benchmarks',
-   'pipeline','saved-searches','succession-radar','workspace','guide'].forEach(t => {
+   'pipeline','saved-searches','succession-radar','workspace','kolada','guide'].forEach(t => {
     const panel = document.getElementById('tab-' + t);
     if (panel) panel.style.display = (t === name) ? 'block' : 'none';
     const btn = document.getElementById('tab-' + t + '-btn');
@@ -5795,6 +5959,17 @@ async function loadCompanyByOrg(raw, knownName) {
   // Auto-run all AI analyses on company load (skip if no API key or no live data)
   if (isLive && anthropicKey) {
     setTimeout(autoRunAllAnalyses, 200);
+  }
+
+  // Auto-fetch Kolada regional context
+  if (window.DEALSCOPE_FLAGS?.koladaContext) {
+    // Show Kolada tab in sidebar
+    const koladaBtn = document.getElementById('tab-kolada-btn');
+    if (koladaBtn) koladaBtn.style.display = '';
+    // Show color-by row in SR map
+    const srColorRow = document.getElementById('srColorByRow');
+    if (srColorRow) srColorRow.style.display = 'flex';
+    setTimeout(renderKoladaCard, 400);
   }
 }
 
@@ -8549,8 +8724,20 @@ function renderSRMap(rows) {
     }
     const avg = d.scoreSum / d.count;
     const r = Math.max(6, Math.min(16, 6 + (d.count / maxCount) * 10));
-    const fill = avg >= 60 ? 'var(--red)' : avg >= 30 ? 'var(--amber)' : 'var(--blue)';
-    const opacity = 0.5 + (avg / 100) * 0.5;
+    // Kolada color-by support
+    let displayScore = avg;
+    if (window.DEALSCOPE_FLAGS?.koladaContext && typeof _srColorMode !== 'undefined' && _srColorMode !== 'succession') {
+      const muniCode = _koladaSRCountyMuni(c.code);
+      const cached = DealScopeStore.get(`kolada.pkg.${muniCode}`);
+      if (cached?.data) {
+        const vitScore = computeRegionalVitality(cached.data).score;
+        if (vitScore !== null) {
+          displayScore = _srColorMode === 'vitality' ? vitScore : avg * 0.6 + vitScore * 0.4;
+        }
+      }
+    }
+    const fill = displayScore >= 60 ? 'var(--red)' : displayScore >= 30 ? 'var(--amber)' : 'var(--blue)';
+    const opacity = 0.5 + (displayScore / 100) * 0.5;
     return `<circle cx="${c.x}" cy="${c.y}" r="${r.toFixed(1)}" fill="${fill}" stroke="var(--bg)" stroke-width="1" opacity="${opacity.toFixed(2)}"
       data-county="${c.name}" data-count="${d.count}" data-avg="${avg.toFixed(0)}" class="sr-county-dot" style="cursor:pointer;"/>
             <text x="${c.x}" y="${c.y+3}" text-anchor="middle" font-size="5.5" font-weight="600" fill="var(--bg)" pointer-events="none">${c.code}</text>`;
@@ -9445,6 +9632,7 @@ document.addEventListener('DOMContentLoaded', () => {
       savedSearches:     'tab-saved-searches-btn',
       successionRadar:   'tab-succession-radar-btn',
       teamWorkspace:     'tab-workspace-btn',
+      koladaContext:     'tab-kolada-btn',
     };
     Object.entries(flagTabMap).forEach(([flag, btnId]) => {
       if (window.DEALSCOPE_FLAGS[flag]) {
@@ -10031,6 +10219,33 @@ function renderCompareMetricsTable() {
     return `<td style="text-align:right;" class="${cls}">${fmtSEK(d.netProfit)}</td>`;
   }).join('');
   rows.push(`<tr><td class="cmp-metric-row">Net Profit</td>${profitCells}<td style="text-align:right;" class="muted">—</td></tr>`);
+
+  // Regional Context section (Kolada)
+  if (window.DEALSCOPE_FLAGS?.koladaContext) {
+    const rcBuckets = [
+      { key:'vitality', label:'Regional Vitality (/100)',  fn: d => { const p = DealScopeStore.get(`kolada.pkg.${DealScopeKolada.resolveMuniForCompany(d).code}`); return p?.data ? computeRegionalVitality(p.data).score : null; } },
+      { key:'fiscal',   label:'Fiscal Health (/100)',      fn: d => { const p = DealScopeStore.get(`kolada.pkg.${DealScopeKolada.resolveMuniForCompany(d).code}`); return p?.data ? computeMunicipalFiscalHealth(p.data).score : null; } },
+      { key:'live',     label:'Liveability (/100)',        fn: d => { const p = DealScopeStore.get(`kolada.pkg.${DealScopeKolada.resolveMuniForCompany(d).code}`); return p?.data ? computeLiveabilityScore(p.data).score : null; } },
+    ];
+    const hasAny = filled.some(({d}) => DealScopeStore.get(`kolada.pkg.${DealScopeKolada.resolveMuniForCompany(d).code}`));
+    if (hasAny) {
+      rows.push(`<tr style="border-top:2px solid var(--border);"><td colspan="${filled.length + 2}" style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--green);background:var(--bg2);">🗺 Regional Context (Kolada)</td></tr>`);
+      for (const rb of rcBuckets) {
+        const vals = filled.map(({d}) => rb.fn(d));
+        const numeric = vals.filter(v => v !== null);
+        const best  = numeric.length > 1 ? Math.max(...numeric) : null;
+        const worst = numeric.length > 1 ? Math.min(...numeric) : null;
+        const cells = vals.map(v => {
+          if (v === null) return `<td style="text-align:right;" class="muted">—</td>`;
+          const col = v >= 70 ? 'var(--green)' : v >= 40 ? 'var(--amber)' : 'var(--red)';
+          const isBest  = v === best;
+          const isWorst = v === worst;
+          return `<td style="text-align:right;font-weight:700;color:${col};">${v}${isBest ? ' ▲' : isWorst ? ' ▼' : ''}</td>`;
+        }).join('');
+        rows.push(`<tr><td class="cmp-metric-row" style="padding-left:20px;">${rb.label}</td>${cells}<td style="text-align:right;" class="muted">—</td></tr>`);
+      }
+    }
+  }
 
   table.querySelector('tbody').innerHTML = rows.join('');
 }
@@ -11557,6 +11772,27 @@ FLAGS:
   // ── Benchmark tab status ──
   ctx += `\nBENCHMARK STATUS: ${benchmarkSource === 'live' ? `Live SCB data loaded · FY${bchLastFetch?.year} · ${Object.keys(bchLastFetch?.data||{}).length} sectors` : benchmarkSource === 'cached' ? `Cached SCB data · FY${bchLastFetch?.year}` : 'Using built-in estimates (go to Benchmarks tab to fetch live SCB data)'}`;
 
+  // ── Kolada Regional Context ──
+  if (window.DEALSCOPE_FLAGS?.koladaContext && companyData && typeof DealScopeKolada !== 'undefined') {
+    try {
+      const muni = DealScopeKolada.resolveMuniForCompany(companyData);
+      const pkgCached = DealScopeStore.get(`kolada.pkg.${muni.code}`);
+      if (pkgCached?.data) {
+        const vit = computeRegionalVitality(pkgCached.data);
+        const fis = computeMunicipalFiscalHealth(pkgCached.data);
+        const liv = computeLiveabilityScore(pkgCached.data);
+        ctx += `\n\nREGIONAL CONTEXT (Kolada — CC0): Municipality: ${muni.name} (code ${muni.code})`;
+        ctx += `\n  Regional Vitality: ${vit.score !== null ? vit.score+'/100' : 'N/A'} — ${vit.signals.join('; ') || 'No signals'}`;
+        ctx += `\n  Fiscal Health: ${fis.score !== null ? fis.score+'/100' : 'N/A'} — ${fis.signals.join('; ') || 'No signals'}`;
+        ctx += `\n  Liveability: ${liv.score !== null ? liv.score+'/100' : 'N/A'} — ${liv.signals.join('; ') || 'No signals'}`;
+        ctx += `\n  Scoring: ≥70 = strong (green), 40–69 = moderate (amber), <40 = weak (red). Scores are normalized against Swedish municipal reference ranges.`;
+        ctx += `\n  Interpretation: Regional Vitality reflects new-business formation and bankruptcy rates. Fiscal Health reflects municipal revenue capacity and investment. Liveability reflects school quality and population demographics.`;
+      } else {
+        ctx += `\n\nREGIONAL CONTEXT (Kolada): Municipality resolved as ${muni.name} (${muni.code}) but data not yet fetched. Will auto-fetch when company loads next time.`;
+      }
+    } catch(e) { /* non-blocking */ }
+  }
+
   // ── Screen-specific guidance ──
   ctx += `\n\nCURRENT SCREEN GUIDANCE for "${tabName}":`;
   if (activeTab === 'company') {
@@ -11814,6 +12050,18 @@ function updateChatPills() {
   if (benchmarkSource === 'live')   pills.push(`● Live SCB FY${bchLastFetch?.year||''}`);
   else if (benchmarkSource === 'cached') pills.push(`● Cached benchmarks`);
 
+  // Kolada regional context
+  if (window.DEALSCOPE_FLAGS?.koladaContext && companyData && typeof DealScopeKolada !== 'undefined') {
+    try {
+      const muni = DealScopeKolada.resolveMuniForCompany(companyData);
+      const cached = DealScopeStore.get(`kolada.pkg.${muni.code}`);
+      if (cached?.data) {
+        const vit = computeRegionalVitality(cached.data);
+        if (vit.score !== null) pills.push(`🗺 ${muni.name} · Vitality ${vit.score}/100`);
+      }
+    } catch(e) { /* non-blocking */ }
+  }
+
   pillsEl.innerHTML = pills.map(p => `<span class="chat-pill">${p}</span>`).join('');
 }
 
@@ -11864,10 +12112,14 @@ function updateChatSuggestions() {
   } else {
     // company tab
     if (companyData) {
+      const hasKolada = window.DEALSCOPE_FLAGS?.koladaContext && typeof DealScopeKolada !== 'undefined' &&
+        DealScopeStore.get(`kolada.pkg.${DealScopeKolada.resolveMuniForCompany(companyData).code}`);
       suggestions = [
         `What are the biggest risks in ${companyData.name}?`,
         `Give me a quick summary of ${companyData.name}`,
-        '/find construction companies in Stockholm',
+        hasKolada
+          ? `Is ${companyData.name}'s municipality healthy for an acquisition?`
+          : '/find construction companies in Stockholm',
       ];
     } else {
       suggestions = ['How do I use this app?','/find Sandvik','Load me a demo company'];
@@ -14432,6 +14684,414 @@ function cbClearAll() {
   cbCheckRunBtn();
   cbRenderSortBtns();
 }
+
+// ============================================================
+// KOLADA — Municipal & Regional KPI Integration
+// Sweden's official municipal data API · CC0 licence
+// Free, no auth, 6,100+ KPIs · https://api.kolada.se/v2/
+// ============================================================
+
+const DealScopeKolada = (() => {
+  const BASE = 'https://api.kolada.se/v2';
+  const CACHE_TTL = 365 * 24 * 60 * 60 * 1000; // 12 months
+
+  const CORE_KPIS = [
+    { id:'N00926', bucket:'vitality',    label:'Business bankruptcies/1k inhab', goodHigh:false },
+    { id:'N00999', bucket:'vitality',    label:'New businesses/1k inhab',        goodHigh:true  },
+    { id:'N01005', bucket:'vitality',    label:'New workplaces',                  goodHigh:true  },
+    { id:'N01006', bucket:'vitality',    label:'Bankruptcy employees/1k inhab',   goodHigh:false },
+    { id:'N00003', bucket:'fiscal',      label:'Personnel costs SEK/capita',      goodHigh:false },
+    { id:'N00009', bucket:'fiscal',      label:'Municipal revenues SEK/capita',   goodHigh:true  },
+    { id:'N03166', bucket:'fiscal',      label:'Business & housing invest SEK/cap', goodHigh:true },
+    { id:'N01951', bucket:'population',  label:'Total population',                goodHigh:false },
+    { id:'N01800', bucket:'population',  label:'Working-age share 20–64 (%)',     goodHigh:true  },
+    { id:'N01804', bucket:'population',  label:'Population 65+ share (%)',        goodHigh:false },
+    { id:'N17408', bucket:'liveability', label:'School merit score yr 9',         goodHigh:true  },
+    { id:'N31813', bucket:'liveability', label:'Resident satisfaction score',     goodHigh:true  },
+  ];
+
+  // County name (from ownership data) → main municipality code
+  const COUNTY_MUNI = {
+    'stockholms':'0180', 'stockholm':'0180',
+    'uppsalas':'0380',   'uppsala':'0380',
+    'södermanlands':'0480', 'södermanland':'0480',
+    'östergötlands':'0580', 'östergötland':'0580',
+    'jönköpings':'0680',  'jönköping':'0680',
+    'kronobergs':'0780',  'kronoberg':'0780',
+    'kalmars':'0880',     'kalmar':'0880',
+    'gotlands':'0980',    'gotland':'0980',
+    'blekinges':'1080',   'blekinge':'1080',
+    'skånes':'1280',      'skåne':'1280',
+    'hallands':'1380',    'halland':'1380',
+    'västra götalands':'1480', 'västra götaland':'1480', 'göteborg':'1480',
+    'värmlands':'1780',   'värmland':'1780',
+    'örebros':'1880',     'örebro':'1880',
+    'västmanlands':'1980','västmanland':'1980',
+    'dalarnas':'2080',    'dalarna':'2080',
+    'gävleborgs':'2180',  'gävleborg':'2180',
+    'västernorrlands':'2280', 'västernorrland':'2280',
+    'jämtlands':'2380',   'jämtland':'2380',
+    'västerbottens':'2480','västerbotten':'2480',
+    'norrbottens':'2580', 'norrbotten':'2580',
+  };
+
+  const MUNI_NAMES = {
+    '0180':'Stockholm',  '0380':'Uppsala',     '0480':'Nyköping',
+    '0580':'Linköping',  '0680':'Jönköping',   '0780':'Växjö',
+    '0880':'Kalmar',     '0980':'Gotland',     '1080':'Karlskrona',
+    '1280':'Malmö',      '1380':'Halmstad',    '1480':'Göteborg',
+    '1780':'Karlstad',   '1880':'Örebro',      '1980':'Västerås',
+    '2080':'Falun',      '2180':'Gävle',       '2280':'Härnösand',
+    '2380':'Östersund',  '2480':'Umeå',        '2580':'Luleå',
+  };
+
+  function _isFresh(cached) {
+    return !!(cached && cached._ts && (Date.now() - cached._ts) < CACHE_TTL);
+  }
+
+  async function _kFetch(url) {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`Kolada HTTP ${r.status}`);
+    return r.json();
+  }
+
+  function resolveMuniForCompany(cd) {
+    const ownership = cd?.orgNr ? DealScopeStore.get('ownership_' + cd.orgNr) : null;
+    const county = (ownership?.county || '').toLowerCase().trim();
+    for (const [key, code] of Object.entries(COUNTY_MUNI)) {
+      if (county.includes(key)) return { code, name: MUNI_NAMES[code] || key };
+    }
+    return { code: '0180', name: 'Stockholm' }; // default fallback
+  }
+
+  async function fetchCorePackage(muniCode, logFn) {
+    const pkgKey = `kolada.pkg.${muniCode}`;
+    const cached = DealScopeStore.get(pkgKey);
+    if (_isFresh(cached)) return cached.data;
+
+    const pkg = { vitality:{}, fiscal:{}, population:{}, liveability:{}, _fetchedAt: new Date().toISOString() };
+    const log = logFn || (() => {});
+
+    // Batch KPIs in groups of 4 with 200ms pacing (polite rate limit)
+    for (let i = 0; i < CORE_KPIS.length; i += 4) {
+      const batch = CORE_KPIS.slice(i, i + 4);
+      const ids   = batch.map(k => k.id).join(',');
+      try {
+        log(`Fetching ${ids}…`);
+        const json = await _kFetch(`${BASE}/data/kpi/${ids}/municipality/${muniCode}`);
+        for (const row of (json.values || [])) {
+          const meta = CORE_KPIS.find(k => k.id === row.kpi);
+          if (!meta) continue;
+          const tot = (row.values || []).find(v => v.gender === 'T');
+          if (!tot || tot.value === null || tot.value === undefined) continue;
+          const yr = parseInt(row.period);
+          if (!pkg[meta.bucket][meta.id]) {
+            pkg[meta.bucket][meta.id] = { series:[], label:meta.label, goodHigh:meta.goodHigh };
+          }
+          pkg[meta.bucket][meta.id].series.push({ year: yr, value: tot.value });
+        }
+      } catch(e) {
+        log(`⚠ ${ids}: ${e.message} — skipping`);
+        for (const kpi of batch) {
+          if (!pkg[kpi.bucket][kpi.id]) {
+            pkg[kpi.bucket][kpi.id] = { series:[], label:kpi.label, goodHigh:kpi.goodHigh, _error:e.message };
+          }
+        }
+      }
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    // Sort each series by year ascending
+    for (const bucket of Object.values(pkg)) {
+      if (typeof bucket !== 'object' || !bucket || typeof bucket === 'string') continue;
+      for (const kpi of Object.values(bucket)) {
+        if (kpi?.series) kpi.series.sort((a, b) => a.year - b.year);
+      }
+    }
+
+    DealScopeStore.set(pkgKey, { data: pkg, _ts: Date.now() });
+    return pkg;
+  }
+
+  async function listMunicipalities() {
+    const key = 'kolada.municipalities';
+    const cached = DealScopeStore.get(key);
+    if (_isFresh(cached)) return cached.data;
+    const json = await _kFetch(`${BASE}/municipality`);
+    const data = (json.values || []).map(m => ({ code: m.id, name: m.title, type: m.type }));
+    DealScopeStore.set(key, { data, _ts: Date.now() });
+    return data;
+  }
+
+  return { resolveMuniForCompany, fetchCorePackage, listMunicipalities, CORE_KPIS, MUNI_NAMES };
+})();
+
+// ── Kolada KPI reference ranges (approximate Swedish municipal distributions) ──
+const KOLADA_KPI_REFS = {
+  'N00926': { min:0.2,   max:5.5,    goodHigh:false }, // bankruptcies/1k
+  'N00999': { min:3.0,   max:13.0,   goodHigh:true  }, // new businesses/1k
+  'N01005': { min:50,    max:800,    goodHigh:true  }, // new workplaces
+  'N01006': { min:0.5,   max:20.0,   goodHigh:false }, // bankruptcy employees/1k
+  'N00003': { min:8000,  max:40000,  goodHigh:false }, // personnel costs SEK/cap
+  'N00009': { min:30000, max:100000, goodHigh:true  }, // revenues SEK/cap
+  'N03166': { min:500,   max:20000,  goodHigh:true  }, // investment SEK/cap
+  'N01800': { min:51.0,  max:64.0,   goodHigh:true  }, // working age %
+  'N01804': { min:10.0,  max:28.0,   goodHigh:false }, // 65+ %
+  'N17408': { min:160,   max:280,    goodHigh:true  }, // school merit yr9
+  'N31813': { min:5.0,   max:9.0,    goodHigh:true  }, // satisfaction score
+};
+
+function _kpiLastVal(kpiObj) {
+  if (!kpiObj?.series?.length) return null;
+  const last = [...kpiObj.series].reverse().find(p => p.value !== null && p.value !== undefined);
+  return last ? last.value : null;
+}
+
+function _kpiScore(kpiId, val) {
+  if (val === null || val === undefined) return null;
+  const ref = KOLADA_KPI_REFS[kpiId];
+  if (!ref) return null;
+  const range = ref.max - ref.min;
+  if (range <= 0) return 50;
+  const score = ref.goodHigh
+    ? ((val - ref.min) / range) * 100
+    : ((ref.max - val) / range) * 100;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function _kpiTrend(kpiObj) {
+  if (!kpiObj?.series?.length) return 0;
+  const pts = kpiObj.series.filter(p => p.value !== null).slice(-5);
+  if (pts.length < 2) return 0;
+  const delta = pts[pts.length - 1].value - pts[0].value;
+  return delta > 0 ? 1 : delta < 0 ? -1 : 0;
+}
+
+function _weightedScore(pairs) {
+  const valid = pairs.filter(([s]) => s !== null);
+  if (!valid.length) return null;
+  const wSum  = valid.reduce((a, [,w]) => a + w, 0);
+  const total = valid.reduce((a, [s,w]) => a + s * w, 0);
+  return Math.round(total / wSum);
+}
+
+function computeRegionalVitality(pkg) {
+  const v = pkg?.vitality || {};
+  const signals = [];
+  const s999  = _kpiScore('N00999', _kpiLastVal(v['N00999']));
+  const s1005 = _kpiScore('N01005', _kpiLastVal(v['N01005']));
+  const s926  = _kpiScore('N00926', _kpiLastVal(v['N00926']));
+  const s1006 = _kpiScore('N01006', _kpiLastVal(v['N01006']));
+
+  if (s999  !== null) { if (s999  >= 70) signals.push('Strong business formation'); else if (s999  < 40) signals.push('Weak business formation'); }
+  if (s926  !== null) { if (s926  >= 70) signals.push('Low bankruptcy rate');        else if (s926  < 40) signals.push('High bankruptcy rate'); }
+  if (s1005 !== null && s1005 >= 70) signals.push('Strong workplace growth');
+  if (s1006 !== null && s1006 < 40)  signals.push('High job losses from failures');
+  const trend = _kpiTrend(v['N00999']);
+  if (trend > 0) signals.push('Business formation improving');
+  else if (trend < 0) signals.push('Business formation declining');
+
+  return { score: _weightedScore([[s999,0.35],[s1005,0.20],[s926,0.25],[s1006,0.20]]), signals: signals.slice(0,2) };
+}
+
+function computeMunicipalFiscalHealth(pkg) {
+  const f = pkg?.fiscal || {};
+  const signals = [];
+  const revVal  = _kpiLastVal(f['N00009']);
+  const persVal = _kpiLastVal(f['N00003']);
+  const invVal  = _kpiLastVal(f['N03166']);
+
+  const sRev = _kpiScore('N00009', revVal);
+  const sInv = _kpiScore('N03166', invVal);
+  // Personnel cost efficiency: ratio vs revenue (lower = better)
+  let sPers = _kpiScore('N00003', persVal);
+  if (revVal && persVal && revVal > 0) {
+    const ratio = persVal / revVal;
+    sPers = Math.max(0, Math.min(100, Math.round((1 - ratio / 0.8) * 100)));
+  }
+
+  if (sRev !== null) { if (sRev >= 70) signals.push('Strong municipal revenues'); else if (sRev < 40) signals.push('Low municipal revenue base'); }
+  if (sInv !== null) { if (sInv >= 70) signals.push('High business investment');   else if (sInv < 40) signals.push('Low infrastructure investment'); }
+  if (sPers !== null && sPers < 40) signals.push('High personnel cost ratio');
+
+  return { score: _weightedScore([[sRev,0.40],[sPers,0.30],[sInv,0.30]]), signals: signals.slice(0,2) };
+}
+
+function computeLiveabilityScore(pkg) {
+  const l = pkg?.liveability || {};
+  const p = pkg?.population  || {};
+  const signals = [];
+  const sSchool = _kpiScore('N17408', _kpiLastVal(l['N17408']));
+  const sSatis  = _kpiScore('N31813', _kpiLastVal(l['N31813']));
+  const sWork   = _kpiScore('N01800', _kpiLastVal(p['N01800']));
+
+  if (sSchool !== null) { if (sSchool >= 70) signals.push('Strong school outcomes'); else if (sSchool < 40) signals.push('Below-avg school results'); }
+  if (sSatis  !== null && sSatis  >= 70) signals.push('High resident satisfaction');
+  if (sWork   !== null) { if (sWork >= 70) signals.push('Young, working-age population'); else if (sWork < 40) signals.push('Ageing population'); }
+
+  return { score: _weightedScore([[sSchool,0.50],[sSatis,0.25],[sWork,0.25]]), signals: signals.slice(0,2) };
+}
+
+// ── SR county code → Kolada municipality code ──
+const SR_COUNTY_TO_MUNI = {
+  'AB':'0180','C':'0380','D':'0480','E':'0580','F':'0680','G':'0780',
+  'H':'0880','I':'0980','K':'1080','M':'1280','N':'1380','O':'1480',
+  'S':'1780','T':'1880','U':'1980','W':'2080','X':'2180','Y':'2280',
+  'Z':'2380','AC':'2480','BD':'2580',
+};
+function _koladaSRCountyMuni(code) { return SR_COUNTY_TO_MUNI[code] || '0180'; }
+
+let _srColorMode = 'succession'; // 'succession' | 'vitality' | 'blended'
+
+function setSRColorMode(mode) {
+  _srColorMode = mode;
+  ['Succession','Vitality','Blended'].forEach(m => {
+    const btn = document.getElementById(`srColor${m}`);
+    if (btn) btn.classList.toggle('active', m.toLowerCase() === mode);
+  });
+  if (typeof _srRows !== 'undefined') renderSRMap(_srRows.filter(r => !r.loading));
+}
+
+// ── Regional Context card render ──
+let _koladaCardPkg  = null;
+let _koladaCardMuni = null;
+
+async function renderKoladaCard() {
+  if (!window.DEALSCOPE_FLAGS?.koladaContext) return;
+  const card = document.getElementById('koladaRegionalCard');
+  if (!card) return;
+  if (!companyData) { card.style.display = 'none'; return; }
+
+  card.style.display = 'block';
+  const muni = DealScopeKolada.resolveMuniForCompany(companyData);
+  _koladaCardMuni = muni;
+  const titleEl = document.getElementById('koladaMuniTitle');
+  if (titleEl) titleEl.textContent = `🗺 ${t('cardregional') || 'Regional Context'} — ${muni.name}`;
+
+  const loadEl = document.getElementById('koladaLoadingState');
+  const grid   = document.getElementById('koladaScoreGrid');
+
+  const cached = DealScopeStore.get(`kolada.pkg.${muni.code}`);
+  if (cached?.data) {
+    _koladaCardPkg = cached.data;
+    if (loadEl) loadEl.style.display = 'none';
+    _renderKoladaScoreGrid(cached.data, muni);
+    // Stale-while-revalidate: background refresh if older than 30 days
+    if (Date.now() - (cached._ts || 0) > 30 * 24 * 60 * 60 * 1000) {
+      _fetchAndUpdateKoladaCard(muni);
+    }
+    return;
+  }
+
+  if (loadEl) loadEl.style.display = 'block';
+  if (grid)   grid.innerHTML = '';
+  _fetchAndUpdateKoladaCard(muni);
+}
+
+async function _fetchAndUpdateKoladaCard(muni) {
+  try {
+    const pkg = await DealScopeKolada.fetchCorePackage(muni.code);
+    _koladaCardPkg = pkg;
+    const loadEl = document.getElementById('koladaLoadingState');
+    if (loadEl) loadEl.style.display = 'none';
+    _renderKoladaScoreGrid(pkg, muni);
+    updateChatPills();
+  } catch(e) {
+    const loadEl = document.getElementById('koladaLoadingState');
+    if (loadEl) loadEl.innerHTML = `<div style="color:var(--amber);font-size:11px;">⚠ ${escapeHtml(t('kolada_unavailable') || 'Municipal data temporarily unavailable')} — ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function _renderKoladaScoreGrid(pkg, muni) {
+  const grid = document.getElementById('koladaScoreGrid');
+  if (!grid) return;
+
+  const vit = computeRegionalVitality(pkg);
+  const fis = computeMunicipalFiscalHealth(pkg);
+  const liv = computeLiveabilityScore(pkg);
+
+  const scoreColor = s => s === null ? 'var(--text3)' : s >= 70 ? 'var(--green)' : s >= 40 ? 'var(--amber)' : 'var(--red)';
+
+  const miniCard = (labelKey, fallback, icon, result, kpiData) => {
+    const sc  = result.score;
+    const col = scoreColor(sc);
+    const spark = _koladaSparkline((kpiData?.series || []).filter(p => p.value !== null), col);
+    const sigs  = result.signals.length ? result.signals.join(' · ') : 'Insufficient data';
+    return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;border-left:3px solid ${col};">
+      <div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:5px;">${icon} ${t(labelKey) || fallback}</div>
+      <div style="font-size:22px;font-weight:800;color:${col};margin-bottom:5px;font-family:'DM Sans',sans-serif;">${sc !== null ? sc : '—'}<span style="font-size:10px;font-weight:400;color:var(--text3);"> /100</span></div>
+      <div style="margin-bottom:7px;">${spark}</div>
+      <div style="font-size:9px;color:var(--text3);line-height:1.5;">${escapeHtml(sigs)}</div>
+    </div>`;
+  };
+
+  grid.innerHTML =
+    miniCard('scorevitality', 'Regional Vitality', '📈', vit, pkg.vitality?.['N00999']) +
+    miniCard('scorefiscal',   'Fiscal Health',     '🏛', fis, pkg.fiscal?.['N00009'])   +
+    miniCard('scoreliveability','Liveability',      '🌱', liv, pkg.liveability?.['N17408']);
+}
+
+function _koladaSparkline(series, color) {
+  const pts = series.slice(-5);
+  if (pts.length < 2) return `<div style="height:20px;"></div>`;
+  const vals = pts.map(p => p.value);
+  const minV = Math.min(...vals), maxV = Math.max(...vals);
+  const rng  = maxV - minV || 1;
+  const W = 80, H = 20;
+  const points = pts.map((p, i) => {
+    const x = (i / (pts.length - 1)) * W;
+    const y = H - ((p.value - minV) / rng) * (H - 3) - 1;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  return `<svg width="${W}" height="${H}" style="display:block;overflow:visible;"><polyline points="${points}" stroke="${color}" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg>`;
+}
+
+// ── Kolada admin tab ──
+let _koladaAdminFetching = false;
+
+function koladaLog(msg, type) {
+  const el = document.getElementById('koladaLog');
+  if (!el) return;
+  const col = { ok:'var(--green)', warn:'var(--amber)', err:'var(--red)', info:'var(--text3)' }[type] || 'var(--text3)';
+  el.innerHTML += `<div style="color:${col};">${escapeHtml(msg)}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+async function primeKoladaCache() {
+  if (_koladaAdminFetching) return;
+  _koladaAdminFetching = true;
+  const btn  = document.getElementById('btnKoladaPrime');
+  const prog = document.getElementById('koladaProgress');
+  if (btn)  { btn.disabled = true; btn.innerHTML = '<span class="loading-dots"><span></span><span></span><span></span></span> Fetching…'; }
+  const logEl = document.getElementById('koladaLog');
+  if (logEl) logEl.innerHTML = '';
+
+  const MAJOR_MUNIS = ['0180','1280','1480','0380','0580','0680','1880','2580','2480','1780','2180','0880'];
+  koladaLog(`Priming cache for ${MAJOR_MUNIS.length} major municipalities…`, 'info');
+  let done = 0;
+
+  for (const code of MAJOR_MUNIS) {
+    const name = DealScopeKolada.MUNI_NAMES[code] || code;
+    koladaLog(`${name} (${code})…`, 'info');
+    try {
+      await DealScopeKolada.fetchCorePackage(code, msg => koladaLog('  ' + msg, 'info'));
+      koladaLog(`✓ ${name}`, 'ok');
+    } catch(e) {
+      koladaLog(`⚠ ${name}: ${e.message}`, 'warn');
+    }
+    done++;
+    if (prog) prog.style.width = Math.round(done / MAJOR_MUNIS.length * 100) + '%';
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  koladaLog(`Complete — ${done} municipalities cached.`, 'ok');
+  showToast(`✓ Kolada cache updated (${done} municipalities)`);
+  if (btn)  { btn.disabled = false; btn.innerHTML = '⬇ Prime Cache'; }
+  if (prog) setTimeout(() => { prog.style.width = '0%'; }, 1500);
+  _koladaAdminFetching = false;
+}
+
+function initKoladaTab() { /* self-contained — no init needed */ }
 
 // Initialize presets on first tab visit
 (function() {
