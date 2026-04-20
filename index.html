@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VCFO Terminal — Financial Health & Acquisition Screener</title>
+<title>DealScope — The deal-sourcing OS for Nordic acquirers</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -55,17 +55,24 @@ body {
 .logo { display:flex; align-items:center; gap: 12px; }
 .logo-mark {
   width: 28px; height: 28px;
-  background: var(--green);
+  background: var(--blue);
   border-radius: 6px;
   display:flex; align-items:center; justify-content:center;
-  font-size:11px; font-weight:700; color: var(--bg);
+  font-size:11px; font-weight:700; color: #fff;
 }
+.logo-text-block { display:flex; flex-direction:column; gap:1px; }
 .logo-text {
   font-family: 'DM Sans', sans-serif;
   font-weight: 700; font-size: 16px;
   letter-spacing: 0.02em; color: var(--text);
+  line-height: 1;
 }
-.logo-text span { color: var(--amber); }
+.logo-text span { color: var(--blue); }
+.logo-tagline {
+  font-size: 8px; color: var(--text3);
+  letter-spacing: 0.04em; font-weight: 400;
+  white-space: nowrap; line-height: 1;
+}
 .topbar-center { display:flex; align-items:center; gap: 8px; }
 .search-bar {
   display:flex; align-items:center;
@@ -2068,8 +2075,11 @@ body.light-mode {
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="logo">
-    <div class="logo-mark">V</div>
-    <div class="logo-text">VCFO <span>Terminal</span></div>
+    <div class="logo-mark">D</div>
+    <div class="logo-text-block">
+      <div class="logo-text">Deal<span>Scope</span></div>
+      <div class="logo-tagline">The deal-sourcing OS for Nordic acquirers.</div>
+    </div>
   </div>
   <div class="topbar-center">
     <div class="search-bar" style="position:relative;">
@@ -2128,17 +2138,15 @@ body.light-mode {
 
 <!-- INFO STRIP -->
 <div class="ticker-strip">
-  <span class="ticker-label">VCFO</span>
+  <span class="ticker-label">DS</span>
   <span class="ticker-sep">·</span>
-  <span class="ticker-info">Financial Health & Acquisition Screener</span>
+  <span class="ticker-info">Deal-Sourcing OS for Nordic Acquirers</span>
   <span class="ticker-sep">·</span>
-  <span class="ticker-info">Feature A: CFO Operational Audit</span>
+  <span class="ticker-info">Succession Radar · Saved Searches · Deal Pipeline</span>
   <span class="ticker-sep">·</span>
-  <span class="ticker-info">Feature B: M&A Acquisition Fit Screener</span>
+  <span class="ticker-info">Data Source: UC AB via allabolag.se + Bolagsverket</span>
   <span class="ticker-sep">·</span>
-  <span class="ticker-info">Data Source: UC AB via allabolag.se</span>
-  <span class="ticker-sep">·</span>
-  <span class="ticker-info">AI: Claude Sonnet — Anthropic</span>
+  <span class="ticker-info">AI: DealScope AI — Powered by Claude · Anthropic</span>
 </div>
 
 <!-- TABS -->
@@ -2153,7 +2161,10 @@ body.light-mode {
   <div class="tab" id="tab-journal-btn"          onclick="switchTab('journal')">📔 Journal</div>
   <div class="tab" id="tab-vault-btn"            onclick="switchTab('vault')">🗄 Vault</div>
   <div class="tab" id="tab-benchmarks-btn"       onclick="switchTab('benchmarks')" data-i18n="tab_benchmarks">📡 Benchmarks</div>
-  <div class="tab" id="tab-guide-btn"            onclick="switchTab('guide')" style="margin-left:auto;" data-i18n="tab_guide">📖 Guide</div>
+  <div class="tab" id="tab-pipeline-btn"          onclick="switchTab('pipeline')" data-i18n="tab_pipeline" style="display:none;">🗂 Pipeline</div>
+  <div class="tab" id="tab-saved-searches-btn"    onclick="switchTab('saved-searches')" data-i18n="tab_saved_searches" style="display:none;">🔔 Saved Searches</div>
+  <div class="tab" id="tab-succession-radar-btn"  onclick="switchTab('succession-radar')" data-i18n="tab_succession_radar" style="display:none;">📡 Succession Radar</div>
+  <div class="tab" id="tab-guide-btn"             onclick="switchTab('guide')" style="margin-left:auto;" data-i18n="tab_guide">📖 Guide</div>
 </div>
 
 <!-- CONTENT -->
@@ -2888,8 +2899,8 @@ body.light-mode {
   <!-- ===== GUIDE TAB ===== -->
   <div id="tab-guide" style="display:none;">
     <div style="max-width:760px;">
-      <div style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:800;color:var(--amber);margin-bottom:4px;">VCFO Terminal — User Guide</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:24px;">Financial Health & Acquisition Screener · Data: UC AB via allabolag.se + Claude AI</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:800;color:var(--amber);margin-bottom:4px;">DealScope — User Guide</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:24px;">Deal-Sourcing OS for Nordic Acquirers · Data: UC AB via allabolag.se + Claude AI</div>
 
       <div class="guide-section">
         <div class="guide-title">🏢 Feature A — CFO Operational Audit</div>
@@ -3142,14 +3153,44 @@ body.light-mode {
     </div>
   </div><!-- /tab-benchmarks -->
 
+  <!-- ===== PIPELINE TAB (Phase 3) ===== -->
+  <div id="tab-pipeline" style="display:none;">
+    <div class="empty-state">
+      <div class="icon">🗂</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);">Pipeline CRM</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:6px;">Coming in Phase 3 — Kanban deal pipeline with IC memo export.</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px;">Columns: Universe → Sourced → Outreach → Met → LOI → DD → Closed → Passed</div>
+    </div>
+  </div><!-- /tab-pipeline -->
+
+  <!-- ===== SAVED SEARCHES TAB (Phase 2) ===== -->
+  <div id="tab-saved-searches" style="display:none;">
+    <div class="empty-state">
+      <div class="icon">🔔</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);">Saved Searches</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:6px;">Coming in Phase 2 — Save search criteria and get nightly alerts for new matches.</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px;">Filters: SNI sector · Region · Revenue band · ROS min · Succession score · Owner age</div>
+    </div>
+  </div><!-- /tab-saved-searches -->
+
+  <!-- ===== SUCCESSION RADAR TAB (Phase 1) ===== -->
+  <div id="tab-succession-radar" style="display:none;">
+    <div class="empty-state">
+      <div class="icon">📡</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);">Succession Radar</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:6px;">Coming in Phase 1 — Find owner-operators aged 60+ who are likely approaching exit.</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px;">Scores companies 0–100 on succession likelihood · Heatmap by region · Sortable table</div>
+    </div>
+  </div><!-- /tab-succession-radar -->
+
 </div><!-- /content -->
 
 <!-- ============================================================
-     VCFO CHATBOT
+     DEALSCOPE AI CHATBOT
      ============================================================ -->
 
 <!-- Floating trigger button (visible when chat is closed) -->
-<button class="chat-trigger" id="chatTrigger" onclick="openChat()" title="VCFO AI Assistant" style="display:flex;">
+<button class="chat-trigger" id="chatTrigger" onclick="openChat()" title="DealScope AI" style="display:flex;">
   <span>💬</span>
   <span class="chat-trigger-badge" id="chatBadge" style="display:none;"></span>
 </button>
@@ -3158,7 +3199,7 @@ body.light-mode {
 <div class="chat-minimised" id="chatMinimised" style="display:none;" onclick="unminimiseChat()">
   <span style="font-size:16px;">💬</span>
   <div>
-    <div class="chat-min-title">VCFO AI</div>
+    <div class="chat-min-title">DealScope AI</div>
     <div class="chat-min-sub" id="chatMinSub">Click to expand</div>
   </div>
   <span style="font-size:11px;color:rgba(255,255,255,0.8);">▲</span>
@@ -3171,7 +3212,7 @@ body.light-mode {
     <div class="chat-header-row">
       <div class="chat-avatar">🤖</div>
       <div>
-        <div class="chat-title">VCFO AI Assistant</div>
+        <div class="chat-title">DealScope AI</div>
         <div class="chat-sub" id="chatSubtitle">Aware of your company & analysis context</div>
       </div>
       <div class="chat-header-btns">
@@ -3207,11 +3248,88 @@ body.light-mode {
 
 <script>
 // ============================================================
+// DEALSCOPE FEATURE FLAGS
+// All default false — flip to true to enable in-progress features.
+// ============================================================
+window.DEALSCOPE_FLAGS = {
+  successionRadar:   false,
+  savedSearches:     false,
+  pipelineCrm:       false,
+  outreachGenerator: false,
+  teamWorkspace:     false,
+};
+
+// ============================================================
+// DEALSCOPE STORE — single source of truth for persistent state.
+// Backed by localStorage today; swap backend without touching UI.
+// ============================================================
+const DealScopeStore = (() => {
+  const PREFIX = 'dealscope_';
+  const _listeners = {};
+
+  function get(key) {
+    try {
+      const v = localStorage.getItem(PREFIX + key);
+      if (v === null) return null;
+      try { return JSON.parse(v); } catch(e) { return v; }
+    } catch(e) { return null; }
+  }
+
+  function set(key, value) {
+    try {
+      localStorage.setItem(PREFIX + key, JSON.stringify(value));
+      (_listeners[key] || []).forEach(fn => { try { fn(value); } catch(e) {} });
+    } catch(e) {}
+  }
+
+  function subscribe(key, fn) {
+    if (!_listeners[key]) _listeners[key] = [];
+    _listeners[key].push(fn);
+    return () => { _listeners[key] = _listeners[key].filter(f => f !== fn); };
+  }
+
+  function migrate() {
+    try {
+      if (localStorage.getItem(PREFIX + 'migrated')) return;
+      const keyMap = {
+        'vcfo_anthropic':    'anthropic',
+        'vcfo_proxy_url':    'proxy_url',
+        'vcfo_serp':         'serp',
+        'vcfo_lang':         'lang',
+        'vcfo_theme':        'theme',
+        'vcfo_chat_mode':    'chat_mode',
+        'vcfo_bch_cache':    'bch_cache',
+        'vcfo_chat_history': 'chat_history',
+        'vcfo_watchlist':    'watchlist',
+        'vcfo_journal':      'journal',
+        'vcfo_vault':        'vault',
+        'vcfo_cb_saved':     'cb_saved',
+      };
+      let migrated = false;
+      Object.entries(keyMap).forEach(([oldKey, newKey]) => {
+        const val = localStorage.getItem(oldKey);
+        if (val !== null && localStorage.getItem(PREFIX + newKey) === null) {
+          localStorage.setItem(PREFIX + newKey, val);
+          migrated = true;
+        }
+      });
+      localStorage.setItem(PREFIX + 'migrated', '1');
+      if (migrated) console.log('[DealScope] Migrated localStorage keys from vcfo_* to dealscope_*');
+    } catch(e) {}
+  }
+
+  return { get, set, subscribe, migrate };
+})();
+
+// Run migration immediately so all subsequent reads see dealscope_* keys
+DealScopeStore.migrate();
+
+// ============================================================
 // GLOBALS
 // ============================================================
-let anthropicKey = ''; try { anthropicKey = localStorage.getItem('vcfo_anthropic') || ''; } catch(e) {}
-let ANTHROPIC_PROXY_URL = ''; try { ANTHROPIC_PROXY_URL = localStorage.getItem('vcfo_proxy_url') || ''; } catch(e) {}
-let serpApiKey = ''; try { serpApiKey = localStorage.getItem('vcfo_serp') || ''; } catch(e) {}
+let anthropicKey = ''; try { anthropicKey = DealScopeStore.get('anthropic') || ''; } catch(e) {}
+let ANTHROPIC_PROXY_URL = ''; try { ANTHROPIC_PROXY_URL = DealScopeStore.get('proxy_url') || ''; } catch(e) {}
+let serpApiKey = ''; try { serpApiKey = DealScopeStore.get('serp') || ''; } catch(e) {}
 let companyData  = null;
 
 // ============================================================
@@ -3272,7 +3390,7 @@ let maRunning    = false;
 // ============================================================
 // INTERNATIONALISATION — EN / SV
 // ============================================================
-let appLang = 'en'; try { appLang = localStorage.getItem('vcfo_lang') || 'en'; } catch(e) {}
+let appLang = 'en'; try { appLang = DealScopeStore.get('lang') || 'en'; } catch(e) {}
 
 const STRINGS = {
   en: {
@@ -3286,15 +3404,18 @@ const STRINGS = {
     api_hint:           'SE Registry · UC AB via allabolag.se',
 
     // Tabs
-    tab_company:        '🏢 Company',
-    tab_cfo:            '📊 CFO Audit',
-    tab_ma:             '🎯 M&A Screener',
-    tab_financials:     '📋 Financials',
-    tab_cashflow:       '💧 Cash Flow',
-    tab_compare:        '⚖ Compare',
-    tab_benchmarks:     '📡 Benchmarks',
-    tab_watchlist:      '★ Watchlist',
-    tab_guide:          '📖 Guide',
+    tab_company:           '🏢 Company',
+    tab_cfo:               '📊 CFO Audit',
+    tab_ma:                '🎯 M&A Screener',
+    tab_financials:        '📋 Financials',
+    tab_cashflow:          '💧 Cash Flow',
+    tab_compare:           '⚖ Compare',
+    tab_benchmarks:        '📡 Benchmarks',
+    tab_watchlist:         '★ Watchlist',
+    tab_guide:             '📖 Guide',
+    tab_pipeline:          '🗂 Pipeline',
+    tab_saved_searches:    '🔔 Saved Searches',
+    tab_succession_radar:  '📡 Succession Radar',
 
     // Company empty state
     search_heading:     'Search for any Swedish company',
@@ -3446,14 +3567,14 @@ const STRINGS = {
     verdict_pass:           'PASS',
 
     // Chatbot
-    chat_title:             'VCFO AI Assistant',
-    chat_subtitle_simple:   'Plain English mode · Aware of your company context',
-    chat_subtitle_expert:   'Expert CFO/M&A mode · Aware of your company context',
+    chat_title:             'DealScope AI',
+    chat_subtitle_simple:   'Plain English mode · Your deal-sourcing copilot',
+    chat_subtitle_expert:   'Expert CFO/M&A mode · Your deal-sourcing copilot',
     chat_mode_simple:       'SIMPLE',
     chat_mode_expert:       'EXPERT',
-    chat_placeholder:       'Ask about the loaded company, CFO findings, M&A score…',
-    chat_label:             'VCFO AI',
-    chat_welcome:           "Hi! I'm your VCFO AI — both your **financial analyst** and your **app guide**.\n\nI know every feature of this terminal and I always know which screen you're on. You can ask me:\n- **About the app** — \"How do I use the Compare tab?\" or \"What does the M&A score mean?\"\n- **About the data** — \"Explain the CFO flags\" or \"Should I acquire this company?\"\n- **What to do next** — I'll guide you step by step.\n\nLoad a company to get started, or ask me anything.",
+    chat_placeholder:       'Ask about the loaded company, deal pipeline, succession signals…',
+    chat_label:             'DealScope AI',
+    chat_welcome:           "Hi! I'm **DealScope AI** — your deal-sourcing copilot for Nordic acquisitions.\n\nI know every feature of this platform and I always know which screen you're on. You can ask me:\n- **About the app** — \"How do I use the Pipeline tab?\" or \"What does the M&A score mean?\"\n- **About the data** — \"Explain the CFO flags\" or \"Is this company a good acquisition target?\"\n- **Deal sourcing** — \"Find succession candidates in Stockholm\" or \"What signals should I look for?\"\n- **What to do next** — I'll guide you step by step.\n\nLoad a company to get started, or ask me anything.",
   },
 
   sv: {
@@ -3467,15 +3588,18 @@ const STRINGS = {
     api_hint:           'SE Register · UC AB via allabolag.se',
 
     // Tabs
-    tab_company:        '🏢 Företag',
-    tab_cfo:            '📊 CFO-analys',
-    tab_ma:             '🎯 Förvärvsscreening',
-    tab_financials:     '📋 Finanser',
-    tab_cashflow:       '💧 Kassaflöde',
-    tab_compare:        '⚖ Jämför',
-    tab_benchmarks:     '📡 Nyckeltal',
-    tab_watchlist:      '★ Bevakningslista',
-    tab_guide:          '📖 Guide',
+    tab_company:           '🏢 Företag',
+    tab_cfo:               '📊 CFO-analys',
+    tab_ma:                '🎯 Förvärvsscreening',
+    tab_financials:        '📋 Finanser',
+    tab_cashflow:          '💧 Kassaflöde',
+    tab_compare:           '⚖ Jämför',
+    tab_benchmarks:        '📡 Nyckeltal',
+    tab_watchlist:         '★ Bevakningslista',
+    tab_guide:             '📖 Guide',
+    tab_pipeline:          '🗂 Pipeline',
+    tab_saved_searches:    '🔔 Sparade sökningar',
+    tab_succession_radar:  '📡 Successionsradar',
 
     // Company empty state
     search_heading:     'Sök efter vilket svenskt företag som helst',
@@ -3627,14 +3751,14 @@ const STRINGS = {
     verdict_pass:           'PASS',
 
     // Chatbot
-    chat_title:             'VCFO AI-assistent',
-    chat_subtitle_simple:   'Enkelt läge · Känner till ditt företagssammanhang',
-    chat_subtitle_expert:   'Expertläge CFO/M&A · Känner till ditt sammanhang',
+    chat_title:             'DealScope AI',
+    chat_subtitle_simple:   'Enkelt läge · Din deal-sourcing-copilot',
+    chat_subtitle_expert:   'Expertläge CFO/M&A · Din deal-sourcing-copilot',
     chat_mode_simple:       'ENKELT',
     chat_mode_expert:       'EXPERT',
-    chat_placeholder:       'Fråga om det laddade företaget, CFO-flaggor, förvärvspoäng…',
-    chat_label:             'VCFO AI',
-    chat_welcome:           "Hej! Jag är din VCFO AI — både din **finansiella analytiker** och din **appguide**.\n\nJag känner till varje funktion i det här verktyget och vet alltid vilken skärm du befinner dig på. Du kan fråga mig:\n- **Om appen** — \"Hur använder jag jämförelsefliken?\" eller \"Vad betyder förvärvspoängen?\"\n- **Om datan** — \"Förklara CFO-flaggorna\" eller \"Bör jag förvärva det här företaget?\"\n- **Vad du ska göra härnäst** — Jag guidar dig steg för steg.\n\nLadda ett företag för att komma igång, eller fråga mig vad som helst.",
+    chat_placeholder:       'Fråga om det laddade företaget, pipeline, successionsignaler…',
+    chat_label:             'DealScope AI',
+    chat_welcome:           "Hej! Jag är **DealScope AI** — din deal-sourcing-copilot för nordiska förvärv.\n\nJag känner till varje funktion i den här plattformen och vet alltid vilken skärm du befinner dig på. Du kan fråga mig:\n- **Om appen** — \"Hur använder jag Pipeline-fliken?\" eller \"Vad betyder förvärvspoängen?\"\n- **Om datan** — \"Förklara CFO-flaggorna\" eller \"Är det här ett bra förvärvsmål?\"\n- **Deal sourcing** — \"Hitta successionsbolag i Stockholm\" eller \"Vilka signaler ska jag leta efter?\"\n- **Vad du ska göra härnäst** — Jag guidar dig steg för steg.\n\nLadda ett företag för att komma igång, eller fråga mig vad som helst.",
   }
 };
 
@@ -3646,13 +3770,13 @@ function t(key) {
 // Toggle between EN and SV
 function toggleLanguage() {
   appLang = appLang === 'en' ? 'sv' : 'en';
-  try { localStorage.setItem('vcfo_lang', appLang); } catch(e) {}
+  DealScopeStore.set('lang', appLang);
   applyLanguage();
 }
 
 function toggleTheme() {
   const isLight = document.body.classList.toggle('light-mode');
-  try { localStorage.setItem('vcfo_theme', isLight ? 'light' : 'dark'); } catch(e) {}
+  DealScopeStore.set('theme', isLight ? 'light' : 'dark');
   const btn = document.getElementById('themeToggleBtn');
   if (btn) btn.textContent = isLight ? '☽' : '☀';
   // Re-render any live charts so their hardcoded colours update
@@ -3664,7 +3788,7 @@ function toggleTheme() {
 
 function applyTheme() {
   let theme = 'dark';
-  try { theme = localStorage.getItem('vcfo_theme') || 'dark'; } catch(e) {}
+  try { theme = DealScopeStore.get('theme') || 'dark'; } catch(e) {}
   if (theme === 'light') {
     document.body.classList.add('light-mode');
   } else {
@@ -3799,7 +3923,8 @@ function switchTab(name) {
 }
 
 function _switchTopTab(name) {
-  ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','journal','vault','benchmarks','guide'].forEach(t => {
+  ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','journal','vault','benchmarks',
+   'pipeline','saved-searches','succession-radar','guide'].forEach(t => {
     const panel = document.getElementById('tab-' + t);
     if (panel) panel.style.display = (t === name) ? 'block' : 'none';
     const btn = document.getElementById('tab-' + t + '-btn');
@@ -3837,9 +3962,9 @@ function saveSettings() {
   anthropicKey        = document.getElementById('anthropicKeyInput').value.trim();
   ANTHROPIC_PROXY_URL = document.getElementById('proxyUrlInput').value.trim();
   serpApiKey           = document.getElementById('serpKeyInput').value.trim();
-  try { localStorage.setItem('vcfo_anthropic', anthropicKey); } catch(e) {}
-  try { localStorage.setItem('vcfo_proxy_url', ANTHROPIC_PROXY_URL); } catch(e) {}
-  try { localStorage.setItem('vcfo_serp', serpApiKey); } catch(e) {}
+  DealScopeStore.set('anthropic', anthropicKey);
+  DealScopeStore.set('proxy_url', ANTHROPIC_PROXY_URL);
+  DealScopeStore.set('serp', serpApiKey);
   closeSettings();
   showToast(t('toast_settings_saved'));
   updateAIStatus();
@@ -7444,8 +7569,8 @@ function setStatusBar(msg, state='ok') {
 // Build tracer — lets you confirm the deployed JS is up to date
 // (open DevTools console and look for this line). Cache-busting
 // aside, if you don't see VCFO_BUILD, you're on a stale copy.
-window.VCFO_BUILD = 'ranking-stay-on-page-v4';
-try { console.log('VCFO Terminal build:', window.VCFO_BUILD); } catch(e){}
+window.DEALSCOPE_BUILD = 'phase-0-rebrand-v1';
+try { console.log('DealScope build:', window.DEALSCOPE_BUILD); } catch(e){}
 
 document.addEventListener('DOMContentLoaded', () => {
   try {
@@ -7473,9 +7598,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     })();
     try {
-      const cached = localStorage.getItem('vcfo_bch_cache');
-      if (cached) {
-        const data = JSON.parse(cached);
+      const data = DealScopeStore.get('bch_cache');
+      if (data) {
         applyBenchmarkData(data.data || {}, 'cached');
         bchLastFetch    = data;
         benchmarkSource = 'cached';
@@ -7486,8 +7610,21 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(e) {
       updateBenchmarkStatusBadge('err', 'Built-in estimates');
     }
+
+    // Show feature-flagged tabs
+    const flagTabMap = {
+      pipelineCrm:       'tab-pipeline-btn',
+      savedSearches:     'tab-saved-searches-btn',
+      successionRadar:   'tab-succession-radar-btn',
+    };
+    Object.entries(flagTabMap).forEach(([flag, btnId]) => {
+      if (window.DEALSCOPE_FLAGS[flag]) {
+        const btn = document.getElementById(btnId);
+        if (btn) btn.style.display = '';
+      }
+    });
   } catch(e) {
-    console.warn('VCFO init error:', e);
+    console.warn('DealScope init error:', e);
   }
 });
 
@@ -8491,7 +8628,7 @@ function exportCompareCSV() {
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = `vcfo_comparison_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `dealscope_comparison_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
   showToast(t('toast_csv_exported'));
@@ -8552,12 +8689,12 @@ function initBenchmarksTab() {
   buildBchSectorList();
   renderBchSourceBadge();
 
-  // Restore cached fetch from localStorage
+  // Restore cached fetch from store
   let hasCached = false;
   try {
-    const cached = localStorage.getItem('vcfo_bch_cache');
+    const cached = DealScopeStore.get('bch_cache');
     if (cached) {
-      bchLastFetch = JSON.parse(cached);
+      bchLastFetch = cached;
       applyBenchmarkData(bchLastFetch.data, 'cached');
       renderBchTable(bchLastFetch.data);
       bchLog(`Restored cached data: ${Object.keys(bchLastFetch.data).length} sectors · FY${bchLastFetch.year}`, 'ok');
@@ -8730,7 +8867,7 @@ async function fetchBenchmarks() {
   const sourceType = liveCount > 0 ? 'live' : 'built-in';
 
   bchLastFetch = { data: results, year: bchYear, size: bchSize, fetchedAt: new Date().toISOString(), liveCount, estCount };
-  try { localStorage.setItem('vcfo_bch_cache', JSON.stringify(bchLastFetch)); } catch(e) {}
+  DealScopeStore.set('bch_cache', bchLastFetch);
 
   applyBenchmarkData(results, sourceType);
   renderBchTable(results);
@@ -9029,7 +9166,7 @@ function exportBenchmarkJSON() {
   const blob = new Blob([JSON.stringify(bchLastFetch, null, 2)], { type:'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href = url; a.download = `vcfo_benchmarks_${bchYear}_${bchSize}.json`; a.click();
+  a.href = url; a.download = `dealscope_benchmarks_${bchYear}_${bchSize}.json`; a.click();
   URL.revokeObjectURL(url);
   showToast(t('toast_benchmark_saved'));
 }
@@ -9376,18 +9513,11 @@ let chatOpen          = false;
 let chatExpanded      = false;
 let chatMinimised     = false;
 let chatLoading       = false;
-let chatMode          = 'simple'; try { chatMode = localStorage.getItem('vcfo_chat_mode') || 'simple'; } catch(e) {}
+let chatMode          = 'simple'; try { chatMode = DealScopeStore.get('chat_mode') || 'simple'; } catch(e) {}
 let chatUserScrolledUp = false;
 
-const CHAT_STORAGE_KEY = 'vcfo_chat_history';
-
-function chatLoadHistory() {
-  try { const r = localStorage.getItem(CHAT_STORAGE_KEY); return r ? JSON.parse(r) : null; }
-  catch(e) { return null; }
-}
-function chatSaveHistory(msgs) {
-  try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(msgs)); } catch(e) {}
-}
+function chatLoadHistory() { return DealScopeStore.get('chat_history'); }
+function chatSaveHistory(msgs) { DealScopeStore.set('chat_history', msgs); }
 
 let chatMessages = chatLoadHistory() || [{
   role: 'assistant',
@@ -9398,7 +9528,7 @@ let chatMessages = chatLoadHistory() || [{
 // ── Mode controls ──
 function setChatMode(mode) {
   chatMode = mode;
-  try { localStorage.setItem('vcfo_chat_mode', mode); } catch(e) {}
+  DealScopeStore.set('chat_mode', mode);
   document.getElementById('chatModeSimple').classList.toggle('active', mode === 'simple');
   document.getElementById('chatModeExpert').classList.toggle('active', mode === 'expert');
   const sub = document.getElementById('chatSubtitle');
@@ -9441,11 +9571,11 @@ function buildChatContext() {
   const tabName = tab.name;
   const tabDesc = tab.desc;
 
-  let ctx = `You are VCFO AI — the built-in assistant and guide for the VCFO Terminal, a Financial Health & Acquisition Screener for Swedish companies. You have three roles:
+  let ctx = `You are DealScope AI — the built-in deal-sourcing copilot for DealScope, the deal-sourcing OS for Nordic search funds and micro-PE firms. You help users find, evaluate, and pursue acquisition targets in the Nordic market. You have three roles:
 
-ROLE 1 — APP GUIDE: You know every feature of this app in detail. When users ask how the app works, what a screen does, what a metric means, or what to do next, you explain it clearly and tell them exactly where to click.
+ROLE 1 — APP GUIDE: You know every feature of DealScope in detail. When users ask how the app works, what a screen does, what a metric means, or what to do next, you explain it clearly and tell them exactly where to click.
 
-ROLE 2 — FINANCIAL ANALYST: You analyse the actual company data loaded in the terminal, referencing specific numbers, flags, and scores.
+ROLE 2 — DEAL ANALYST: You analyse the actual company data loaded in the platform, referencing specific numbers, flags, scores, and succession signals. You think like a search fund investor evaluating a Nordic SME for acquisition.
 
 ROLE 3 — BUSINESS LOOKUP: If the user is asking you to FIND, SEARCH, or LOOK UP Swedish companies (by name, industry keyword, or any filter), DO NOT answer from memory. Instead, respond with EXACTLY one line and nothing else:
 [[LOOKUP: <search query>]]
@@ -9470,11 +9600,14 @@ APP STRUCTURE (tabs in order):
     · Compare — load up to 5 companies for radar chart, M&A score bar chart, and risk flag matrix.
 - ★ Watchlist: Pinned companies persist across sessions. Quick-load or compare.
 - 📔 Journal: Date-indexed manual notes captured from any tab via the 📔 Note button in the top bar. Filter by active company, week, month, or AI-only.
-- 🗄 Vault: Persistent archive of saved AI outputs (Financials and Cash Flow summaries). Reopen past analyses without regenerating; each entry preserves the company context, filters, language, and timestamp it was saved with.
+- 🗄 Vault: Persistent archive of saved AI outputs. Reopen past analyses without regenerating.
 - 📡 Benchmarks: Fetch live SCB sector medians from Statistics Sweden.
+- 🗂 Pipeline (coming soon): Kanban deal pipeline — Universe → Sourced → Outreach → Met → LOI → DD → Closed → Passed.
+- 🔔 Saved Searches (coming soon): Saved search criteria with nightly alerts for new matches.
+- 📡 Succession Radar (coming soon): Find owner-operator companies where the founder is likely approaching exit age.
 - 📖 Guide: Reference docs for formulas and methodology.
 
-HOW TO USE THE APP (step by step):
+HOW TO USE DEALSCOPE (step by step):
 1. Enter a Swedish org. number or company name in the top search bar. A live dropdown appears as you type.
 2. The Company tab populates with key financials. Click "Run CFO Audit" or "Screen for M&A".
 3. Switch to Financials tab to see the revenue-to-profit waterfall and key ratios.
@@ -9482,7 +9615,7 @@ HOW TO USE THE APP (step by step):
 5. Use Competitors → Ranking sub-tab to add peers by name/org.nr and run a benchmark ranking.
 6. To compare companies side-by-side, click "⚖ Add to Compare" on the Company tab, then open Competitors → Compare sub-tab.
 7. To use real sector benchmarks, go to Benchmarks tab and click Fetch from SCB.
-8. The chatbot (that's me) is always aware of what's on screen — ask me anything.
+8. The chatbot (that's me) is always aware of what's on screen — ask me anything about deal sourcing or the data.
 
 KEY CONCEPTS & FORMULAS:
 - Org. number: Swedish company ID (format 556000-1234). Required to load any company.
@@ -10678,18 +10811,8 @@ function renderCashFlowSidebar(d) {
 // ============================================================
 // WATCHLIST — PERSISTENT PORTFOLIO
 // ============================================================
-const WL_STORAGE_KEY = 'vcfo_watchlist';
-
-function wlLoad() {
-  try {
-    const raw = localStorage.getItem(WL_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch(e) { return []; }
-}
-
-function wlSave(list) {
-  try { localStorage.setItem(WL_STORAGE_KEY, JSON.stringify(list)); } catch(e) {}
-}
+function wlLoad() { return DealScopeStore.get('watchlist') || []; }
+function wlSave(list) { DealScopeStore.set('watchlist', list); }
 
 function isCompanyPinned(orgNr) {
   if (!orgNr) return false;
@@ -10871,7 +10994,7 @@ function exportWatchlistCSV() {
   const blob = new Blob([csv], { type: 'text/csv' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href = url; a.download = 'vcfo_watchlist.csv'; a.click();
+  a.href = url; a.download = 'dealscope_watchlist.csv'; a.click();
   URL.revokeObjectURL(url);
   showToast(t('toast_csv_exported'));
 }
@@ -10879,20 +11002,14 @@ function exportWatchlistCSV() {
 // ============================================================
 // JOURNAL — date-indexed notes (localStorage, company-attached optional)
 // ============================================================
-const JOURNAL_STORAGE_KEY = 'vcfo_journal';
 let journalEntries = _journalLoad();
 let journalFilter  = 'all';                // all | company | week | month | ai
 let journalSearch  = '';
 let _journalEditingId = null;              // null = create, else editing that id
 let _journalModalAttachment = null;        // { orgNr, name } | null
 
-function _journalLoad() {
-  try { const r = localStorage.getItem(JOURNAL_STORAGE_KEY); return r ? JSON.parse(r) : []; }
-  catch(e) { return []; }
-}
-function _journalSave() {
-  try { localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(journalEntries)); } catch(e) {}
-}
+function _journalLoad() { return DealScopeStore.get('journal') || []; }
+function _journalSave() { DealScopeStore.set('journal', journalEntries); }
 function _journalId() { return 'j-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6); }
 
 // ── Modal control ──────────────────────────────────────────────
@@ -11153,7 +11270,7 @@ function exportJournalJSON() {
   const blob = new Blob([JSON.stringify(journalEntries, null, 2)], { type:'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `vcfo_journal_${new Date().toISOString().slice(0,10)}.json`;
+  a.download = `dealscope_journal_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
   showToast('✓ Journal exported');
@@ -11178,18 +11295,12 @@ document.addEventListener('keydown', e => {
 // the AI. The shape is module-namespaced so future modules can
 // register their own renderers via VAULT_RENDERERS.
 // ============================================================
-const VAULT_STORAGE_KEY = 'vcfo_vault';
 let vaultEntries = _vaultLoad();
 let vaultFilter  = 'all';     // all | financials | cashflow | company
 let vaultSearch  = '';
 
-function _vaultLoad() {
-  try { const r = localStorage.getItem(VAULT_STORAGE_KEY); return r ? JSON.parse(r) : []; }
-  catch(e) { return []; }
-}
-function _vaultSave() {
-  try { localStorage.setItem(VAULT_STORAGE_KEY, JSON.stringify(vaultEntries)); } catch(e) {}
-}
+function _vaultLoad() { return DealScopeStore.get('vault') || []; }
+function _vaultSave() { DealScopeStore.set('vault', vaultEntries); }
 function _vaultId() { return 'v-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6); }
 
 // Module → display label
@@ -11392,7 +11503,7 @@ function exportVaultJSON() {
   const blob = new Blob([JSON.stringify(vaultEntries, null, 2)], { type:'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `vcfo_vault_${new Date().toISOString().slice(0,10)}.json`;
+  a.download = `dealscope_vault_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
   showToast('✓ Vault exported');
@@ -11510,15 +11621,9 @@ const CB_MAX_COMPETITORS = 20;
 let cbCompetitors = [];
 let cbActiveSNI   = 'all';
 
-// ── Saved competitors — localStorage-backed, auto-classified by SNI ──
-const CB_SAVED_KEY = 'vcfo_cb_saved';
-
-function cbLoadSaved() {
-  try { return JSON.parse(localStorage.getItem(CB_SAVED_KEY)) || []; } catch(e) { return []; }
-}
-function cbPersistSaved(list) {
-  try { localStorage.setItem(CB_SAVED_KEY, JSON.stringify(list)); } catch(e) {}
-}
+// ── Saved competitors — store-backed, auto-classified by SNI ──
+function cbLoadSaved() { return DealScopeStore.get('cb_saved') || []; }
+function cbPersistSaved(list) { DealScopeStore.set('cb_saved', list); }
 
 // Map SNI 2-digit prefix to a human-readable label
 function cbSniToLabel(sni) {
@@ -12338,7 +12443,7 @@ function cbExportCSV() {
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'vcfo_competitor_bench.csv';
+  a.download = 'dealscope_competitor_bench.csv';
   a.click();
   URL.revokeObjectURL(a.href);
   showToast('✓ CSV exported');
