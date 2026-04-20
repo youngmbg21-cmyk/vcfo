@@ -77,4 +77,4 @@ vcfo/
                               ## Notes
 
                               - Keep `index_backup.html` in sync with major changes to `index.html`
-                              - Serverless functions live in `/functions` — each file is its own endpoint 
+                              - Serverless functions live in `/functions` — each file is its own endpoint  
