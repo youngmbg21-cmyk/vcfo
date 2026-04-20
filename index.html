@@ -2209,43 +2209,6 @@ body.light-mode {
   </div>
 </div>
 
-<!-- JOURNAL MODAL (create / edit) -->
-<div class="modal-overlay" id="journalModal">
-  <div class="modal" style="width:480px;max-width:96vw;">
-    <div class="modal-title" id="journalModalTitle">📔 New Journal Note</div>
-    <div class="modal-sub">Notes are stored locally in your browser. Attaching a company lets you filter by it later.</div>
-
-    <div class="modal-field">
-      <label class="modal-label">Title</label>
-      <input class="modal-input" id="journalTitleInput" type="text" maxlength="120" placeholder="Short summary (e.g. Growth stalled YoY)">
-    </div>
-
-    <div class="modal-field">
-      <label class="modal-label">Body</label>
-      <textarea class="modal-input" id="journalBodyInput" rows="6" style="resize:vertical;min-height:120px;font-family:'DM Sans',sans-serif;line-height:1.5;" placeholder="Observations, numbers, next steps…"></textarea>
-    </div>
-
-    <div class="modal-field" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div>
-        <label class="modal-label">About (optional)</label>
-        <div id="journalCompanyPreview" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:8px 10px;font-size:11px;color:var(--text2);min-height:34px;display:flex;align-items:center;gap:6px;"></div>
-        <div style="display:flex;gap:4px;margin-top:4px;">
-          <button type="button" class="btn-secondary" style="font-size:9px;padding:3px 8px;" onclick="journalAttachActive()">Attach active</button>
-          <button type="button" class="btn-secondary" style="font-size:9px;padding:3px 8px;" onclick="journalClearAttachment()">Clear</button>
-        </div>
-      </div>
-      <div>
-        <label class="modal-label">Date</label>
-        <input class="modal-input" id="journalDateInput" type="datetime-local" style="margin:0;">
-      </div>
-    </div>
-
-    <div class="modal-btns">
-      <button class="btn-modal-cancel" onclick="closeJournalModal()">Cancel</button>
-      <button class="btn-modal-save"   onclick="saveJournalEntry()" id="journalSaveBtn">Save Note</button>
-    </div>
-  </div>
-</div>
 
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settingsModal">
@@ -2337,7 +2300,6 @@ body.light-mode {
     <span id="clockDisplay">--:--:-- CET</span>
     <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle light/dark mode">☀</button>
     <button class="settings-btn" id="langToggleBtn" onclick="toggleLanguage()" title="Switch language / Byt språk" style="letter-spacing:0.05em;">🇸🇪 Svenska</button>
-    <button class="settings-btn" onclick="openJournalModal()" title="Capture a note — works from any tab">📔 Note</button>
     <button class="settings-btn" onclick="openSettings()">⚙ API Keys</button>
   </div>
 </div>
@@ -2385,12 +2347,10 @@ body.light-mode {
   <div class="tab" id="tab-ma-btn"               onclick="switchTab('ma')" data-i18n="tab_ma">🎯 M&A Screener</div>
   <div class="tab" id="tab-competitor-bench-btn" onclick="switchTab('competitor-bench')">⚔ Competitors</div>
   <div class="tab" id="tab-watchlist-btn"        onclick="switchTab('watchlist')" data-i18n="tab_watchlist">★ Watchlist</div>
-  <div class="tab" id="tab-journal-btn"          onclick="switchTab('journal')">📔 Journal</div>
   <div class="tab" id="tab-vault-btn"            onclick="switchTab('vault')">🗄 Vault</div>
   <div class="tab" id="tab-controltower-btn"     onclick="switchTab('controltower')">🏛 Control Tower</div>
   <div class="tab" id="tab-benchmarks-btn"       onclick="switchTab('benchmarks')" data-i18n="tab_benchmarks">📡 Benchmarks</div>
   <div class="tab" id="tab-kolada-btn"           onclick="switchTab('kolada')" data-i18n="tab_kolada" style="display:none;">🗺 Kolada</div>
-  <div class="tab" id="tab-pipeline-btn"          onclick="switchTab('pipeline')" data-i18n="tab_pipeline" style="display:none;">🗂 Pipeline</div>
   <div class="tab" id="tab-saved-searches-btn"    onclick="switchTab('saved-searches')" data-i18n="tab_saved_searches" style="display:none;">🔔 Saved Searches</div>
   <div class="tab" id="tab-succession-radar-btn"  onclick="switchTab('succession-radar')" data-i18n="tab_succession_radar" style="display:none;">📡 Succession Radar</div>
   <div class="tab" id="tab-workspace-btn"         onclick="switchTab('workspace')" data-i18n="tab_workspace" style="display:none;">👥 Workspace</div>
@@ -2477,7 +2437,6 @@ body.light-mode {
             <button class="btn-secondary" onclick="addToCompareFromMain()" title="Add this company to the Compare tab" data-i18n="btn_add_compare">⚖ Add to Compare</button>
             <button class="btn-pin" id="btnPinCompany" onclick="togglePinCompany()" title="Pin to Watchlist">★ Pin</button>
             <button class="btn-secondary" id="btnAddToRadar" onclick="srAddCurrentToRadar()" style="display:none;" data-i18n="btn_add_to_radar">📡 Add to Radar</button>
-            <button class="btn-secondary" id="btnAddToPipeline" onclick="plAddCurrentToPipeline()" style="display:none;" data-i18n="btn_add_pipeline">🗂 Pipeline</button>
           </div>
         </div>
 
@@ -2953,40 +2912,6 @@ body.light-mode {
     </div>
   </div>
 
-  <!-- ===== JOURNAL TAB (manual notes only — Vault is its own tab) ===== -->
-  <div id="tab-journal" style="display:none;">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:12px;">
-      <div>
-        <div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:800;color:var(--amber);">📔 Journal</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px;">Capture manual notes and observations · For saved AI outputs, see the 🗄 Vault tab.</div>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center;">
-        <button class="btn-secondary" onclick="exportJournalJSON()" title="Export notes as JSON">⬇ Export JSON</button>
-        <button class="btn-analyze" onclick="openJournalModal()" style="background:var(--amber-dim);border-color:rgba(245,158,11,0.4);color:var(--amber);">+ New Note</button>
-      </div>
-    </div>
-
-    <div class="filter-bar" id="journalFilterBar" style="margin-bottom:12px;">
-      <div class="filter-group">
-        <span class="filter-label">Search</span>
-        <input type="text" id="journalSearchInput" placeholder="Search titles, body, or company…"
-          oninput="journalApplyFilters()"
-          style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
-      </div>
-      <div class="filter-group" id="journalFilterPills">
-        <span class="filter-label">Filter</span>
-        <button class="filter-pill active" data-filter="all" onclick="journalSetFilter('all')">All</button>
-        <button class="filter-pill" data-filter="company" onclick="journalSetFilter('company')">Active Company</button>
-        <button class="filter-pill" data-filter="week" onclick="journalSetFilter('week')">This Week</button>
-        <button class="filter-pill" data-filter="month" onclick="journalSetFilter('month')">This Month</button>
-        <button class="filter-pill" data-filter="ai" onclick="journalSetFilter('ai')">AI Summaries</button>
-      </div>
-    </div>
-
-    <div id="journalList">
-      <!-- rendered by JS -->
-    </div>
-  </div>
 
   <!-- ===== VAULT TAB (persistent archive of AI outputs) ===== -->
   <div id="tab-vault" style="display:none;">
@@ -3442,53 +3367,6 @@ body.light-mode {
     </div>
   </div><!-- /tab-benchmarks -->
 
-  <!-- ===== PIPELINE TAB ===== -->
-  <div id="tab-pipeline" style="display:none;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <div style="font-size:13px;font-weight:700;color:var(--text);">🗂 <span data-i18n="tab_pipeline">Pipeline</span></div>
-      <button class="btn-primary" onclick="plOpenAddForm()" data-i18n="pl_add_btn">+ Add Deal</button>
-    </div>
-    <!-- Inline add-deal form -->
-    <div id="plAddForm" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;" data-i18n="pl_add_title">Add Deal</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end;">
-        <div>
-          <label class="field-label" data-i18n="pl_name_label">Company name</label>
-          <input id="plFieldName" class="input-field" type="text" style="width:100%;box-sizing:border-box;" />
-        </div>
-        <div>
-          <label class="field-label" data-i18n="pl_orgnr_label">Org nr (optional)</label>
-          <input id="plFieldOrgNr" class="input-field" type="text" style="width:100%;box-sizing:border-box;" />
-        </div>
-        <div>
-          <label class="field-label" data-i18n="pl_stage_label">Stage</label>
-          <select id="plFieldStage" class="input-field" style="width:100%;box-sizing:border-box;">
-            <option value="universe">Universe</option>
-            <option value="sourced" selected>Sourced</option>
-            <option value="outreach">Outreach</option>
-            <option value="met">Met</option>
-            <option value="loi">LOI</option>
-            <option value="dd">DD</option>
-            <option value="closed">Closed</option>
-            <option value="passed">Passed</option>
-          </select>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end;">
-        <button class="btn-secondary" onclick="plCloseAddForm()" data-i18n="cancel">Cancel</button>
-        <button class="btn-primary" onclick="plSaveAddForm()" data-i18n="pl_add_save">Add</button>
-      </div>
-    </div>
-    <!-- Kanban board -->
-    <div class="pl-board" id="plBoard" style="display:none;"></div>
-    <div id="plEmpty">
-      <div class="empty-state">
-        <div class="icon">🗂</div>
-        <div style="font-size:13px;font-weight:600;color:var(--text);" data-i18n="pl_empty_title">No deals in pipeline</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:6px;" data-i18n="pl_empty_sub">Add a company or push one from the Succession Radar.</div>
-      </div>
-    </div>
-  </div><!-- /tab-pipeline -->
 
   <!-- ===== SAVED SEARCHES TAB ===== -->
   <div id="tab-saved-searches" style="display:none;">
@@ -4868,10 +4746,8 @@ function switchTab(name) {
   if (name === 'benchmarks')         initBenchmarksTab();
   if (name === 'cashflow')           renderCashFlow();
   if (name === 'watchlist')          renderWatchlistTab();
-  if (name === 'journal')            renderJournalTab();
   if (name === 'vault')              renderVaultList();
   if (name === 'succession-radar')   initSuccessionRadar();
-  if (name === 'pipeline')           initPipelineCRM();
   if (name === 'workspace')          initWorkspace();
   if (name === 'saved-searches')     initSavedSearches();
   if (name === 'kolada')             initKoladaTab();
@@ -4887,8 +4763,8 @@ function switchTab(name) {
 }
 
 function _switchTopTab(name) {
-  ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','journal','vault','benchmarks',
-   'pipeline','saved-searches','succession-radar','workspace','kolada','controltower','guide'].forEach(t => {
+  ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','vault','benchmarks',
+   'saved-searches','succession-radar','workspace','kolada','controltower','guide'].forEach(t => {
     const panel = document.getElementById('tab-' + t);
     if (panel) panel.style.display = (t === name) ? 'block' : 'none';
     const btn = document.getElementById('tab-' + t + '-btn');
@@ -6575,9 +6451,6 @@ function renderCompanyTab(d) {
   setKPI('kpiDE',  fmtRatio(de), de < 1.5 ? 'green' : de < 3 ? 'amber' : 'red');
   setKPI('kpiCR',  fmtRatio(cr), cr > 1.5 ? 'green' : cr > 1 ? 'amber' : 'red');
 
-  // Pipeline button
-  const pipelineBtn = document.getElementById('btnAddToPipeline');
-  if (pipelineBtn) pipelineBtn.style.display = window.DEALSCOPE_FLAGS?.pipelineCrm ? '' : 'none';
 
   // Succession Radar KPI card + cache + button (only when flag is on)
   if (window.DEALSCOPE_FLAGS?.successionRadar) {
@@ -9711,7 +9584,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Show feature-flagged tabs
     const flagTabMap = {
-      pipelineCrm:       'tab-pipeline-btn',
       savedSearches:     'tab-saved-searches-btn',
       successionRadar:   'tab-succession-radar-btn',
       teamWorkspace:     'tab-workspace-btn',
