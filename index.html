@@ -2047,6 +2047,22 @@ body.light-mode {
   padding: 2px 6px; color: var(--text3); font-size: 9px; cursor: pointer;
 }
 .sr-remove-btn:hover { border-color: var(--red); color: var(--red); }
+/* Pipeline CRM */
+.pl-board { display:flex; gap:10px; overflow-x:auto; padding-bottom:8px; min-height:280px; }
+.pl-col { flex:0 0 190px; background:var(--bg2); border:1px solid var(--border); border-radius:6px; display:flex; flex-direction:column; }
+.pl-col-header { padding:7px 10px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:4px; flex-shrink:0; }
+.pl-col-title { font-size:11px; font-weight:700; color:var(--text); }
+.pl-col-count { background:var(--bg3); border-radius:10px; padding:1px 6px; font-size:9px; color:var(--text2); flex-shrink:0; }
+.pl-col-body { flex:1; padding:6px; display:flex; flex-direction:column; gap:6px; overflow-y:auto; }
+.pl-card { background:var(--bg3); border:1px solid var(--border); border-radius:4px; padding:8px; }
+.pl-card-name { font-size:11px; font-weight:700; color:var(--text); margin-bottom:4px; line-height:1.3; word-break:break-word; }
+.pl-card-chips { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:5px; }
+.pl-chip { background:var(--bg); border:1px solid var(--border); border-radius:3px; padding:1px 4px; font-size:9px; color:var(--text2); }
+.pl-stage-sel { width:100%; box-sizing:border-box; background:var(--bg); border:1px solid var(--border); border-radius:3px; padding:2px 4px; font-size:9px; color:var(--text); cursor:pointer; }
+.pl-card-note { width:100%; box-sizing:border-box; background:var(--bg); border:1px solid var(--border); border-radius:3px; color:var(--text); font-size:9px; font-family:inherit; resize:vertical; min-height:28px; padding:3px 5px; margin-top:4px; }
+.pl-card-note:focus { outline:none; border-color:var(--blue); }
+.pl-del-btn { background:none; border:1px solid var(--border); border-radius:3px; padding:2px 6px; font-size:9px; color:var(--text3); cursor:pointer; margin-top:4px; }
+.pl-del-btn:hover { border-color:var(--red); color:var(--red); }
 .sr-add-pipeline-btn {
   background: var(--blue-dim); border: 1px solid var(--blue); border-radius: 4px;
   padding: 3px 8px; color: var(--blue); font-size: 9px; cursor: pointer; white-space: nowrap;
@@ -2321,6 +2337,7 @@ body.light-mode {
             <button class="btn-secondary" onclick="addToCompareFromMain()" title="Add this company to the Compare tab" data-i18n="btn_add_compare">⚖ Add to Compare</button>
             <button class="btn-pin" id="btnPinCompany" onclick="togglePinCompany()" title="Pin to Watchlist">★ Pin</button>
             <button class="btn-secondary" id="btnAddToRadar" onclick="srAddCurrentToRadar()" style="display:none;" data-i18n="btn_add_to_radar">📡 Add to Radar</button>
+            <button class="btn-secondary" id="btnAddToPipeline" onclick="plAddCurrentToPipeline()" style="display:none;" data-i18n="btn_add_pipeline">🗂 Pipeline</button>
           </div>
         </div>
 
@@ -3246,13 +3263,51 @@ body.light-mode {
     </div>
   </div><!-- /tab-benchmarks -->
 
-  <!-- ===== PIPELINE TAB (Phase 3) ===== -->
+  <!-- ===== PIPELINE TAB ===== -->
   <div id="tab-pipeline" style="display:none;">
-    <div class="empty-state">
-      <div class="icon">🗂</div>
-      <div style="font-size:14px;font-weight:600;color:var(--text);">Pipeline CRM</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:6px;">Coming in Phase 3 — Kanban deal pipeline with IC memo export.</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:4px;">Columns: Universe → Sourced → Outreach → Met → LOI → DD → Closed → Passed</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);">🗂 <span data-i18n="tab_pipeline">Pipeline</span></div>
+      <button class="btn-primary" onclick="plOpenAddForm()" data-i18n="pl_add_btn">+ Add Deal</button>
+    </div>
+    <!-- Inline add-deal form -->
+    <div id="plAddForm" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;" data-i18n="pl_add_title">Add Deal</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end;">
+        <div>
+          <label class="field-label" data-i18n="pl_name_label">Company name</label>
+          <input id="plFieldName" class="input-field" type="text" style="width:100%;box-sizing:border-box;" />
+        </div>
+        <div>
+          <label class="field-label" data-i18n="pl_orgnr_label">Org nr (optional)</label>
+          <input id="plFieldOrgNr" class="input-field" type="text" style="width:100%;box-sizing:border-box;" />
+        </div>
+        <div>
+          <label class="field-label" data-i18n="pl_stage_label">Stage</label>
+          <select id="plFieldStage" class="input-field" style="width:100%;box-sizing:border-box;">
+            <option value="universe">Universe</option>
+            <option value="sourced" selected>Sourced</option>
+            <option value="outreach">Outreach</option>
+            <option value="met">Met</option>
+            <option value="loi">LOI</option>
+            <option value="dd">DD</option>
+            <option value="closed">Closed</option>
+            <option value="passed">Passed</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end;">
+        <button class="btn-secondary" onclick="plCloseAddForm()" data-i18n="cancel">Cancel</button>
+        <button class="btn-primary" onclick="plSaveAddForm()" data-i18n="pl_add_save">Add</button>
+      </div>
+    </div>
+    <!-- Kanban board -->
+    <div class="pl-board" id="plBoard" style="display:none;"></div>
+    <div id="plEmpty">
+      <div class="empty-state">
+        <div class="icon">🗂</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);" data-i18n="pl_empty_title">No deals in pipeline</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:6px;" data-i18n="pl_empty_sub">Add a company or push one from the Succession Radar.</div>
+      </div>
     </div>
   </div><!-- /tab-pipeline -->
 
@@ -3522,7 +3577,7 @@ body.light-mode {
 window.DEALSCOPE_FLAGS = {
   successionRadar:   true,
   savedSearches:     true,
-  pipelineCrm:       false,
+  pipelineCrm:       true,
   outreachGenerator: false,
   teamWorkspace:     false,
 };
@@ -3856,6 +3911,21 @@ const STRINGS = {
     chat_welcome:           "Hi! I'm **DealScope AI** — your deal-sourcing copilot for Nordic acquisitions.\n\nI know every feature of this platform and I always know which screen you're on. You can ask me:\n- **About the app** — \"How do I use the Pipeline tab?\" or \"What does the M&A score mean?\"\n- **About the data** — \"Explain the CFO flags\" or \"Is this company a good acquisition target?\"\n- **Deal sourcing** — \"Find succession candidates in Stockholm\" or \"What signals should I look for?\"\n- **What to do next** — I'll guide you step by step.\n\nLoad a company to get started, or ask me anything.",
 
     // Saved Searches
+    // Pipeline CRM
+    btn_add_pipeline:  '🗂 Pipeline',
+    pl_add_btn:        '+ Add Deal',
+    pl_add_title:      'Add Deal',
+    pl_name_label:     'Company name',
+    pl_orgnr_label:    'Org nr (optional)',
+    pl_stage_label:    'Stage',
+    pl_add_save:       'Add',
+    pl_note_ph:        'Notes…',
+    pl_delete_btn:     'Remove',
+    pl_name_required:  'Please enter a company name.',
+    pl_empty_title:    'No deals in pipeline',
+    pl_empty_sub:      'Add a company or push one from the Succession Radar.',
+
+    // Saved Searches
     ss_new_btn:        '+ New Search',
     ss_new_title:      'New Saved Search',
     ss_edit_title:     'Edit Saved Search',
@@ -4078,6 +4148,21 @@ const STRINGS = {
     chat_welcome:           "Hej! Jag är **DealScope AI** — din deal-sourcing-copilot för nordiska förvärv.\n\nJag känner till varje funktion i den här plattformen och vet alltid vilken skärm du befinner dig på. Du kan fråga mig:\n- **Om appen** — \"Hur använder jag Pipeline-fliken?\" eller \"Vad betyder förvärvspoängen?\"\n- **Om datan** — \"Förklara CFO-flaggorna\" eller \"Är det här ett bra förvärvsmål?\"\n- **Deal sourcing** — \"Hitta successionsbolag i Stockholm\" eller \"Vilka signaler ska jag leta efter?\"\n- **Vad du ska göra härnäst** — Jag guidar dig steg för steg.\n\nLadda ett företag för att komma igång, eller fråga mig vad som helst.",
 
     // Saved Searches
+    // Pipeline CRM
+    btn_add_pipeline:  '🗂 Pipeline',
+    pl_add_btn:        '+ Lägg till affär',
+    pl_add_title:      'Lägg till affär',
+    pl_name_label:     'Företagsnamn',
+    pl_orgnr_label:    'Org nr (valfritt)',
+    pl_stage_label:    'Fas',
+    pl_add_save:       'Lägg till',
+    pl_note_ph:        'Anteckningar…',
+    pl_delete_btn:     'Ta bort',
+    pl_name_required:  'Ange ett företagsnamn.',
+    pl_empty_title:    'Inga affärer i pipeline',
+    pl_empty_sub:      'Lägg till ett bolag eller skicka ett från Succession Radar.',
+
+    // Saved Searches
     ss_new_btn:        '+ Ny sökning',
     ss_new_title:      'Ny sparad sökning',
     ss_edit_title:     'Redigera sparad sökning',
@@ -4257,6 +4342,7 @@ function switchTab(name) {
   if (name === 'journal')            renderJournalTab();
   if (name === 'vault')              renderVaultList();
   if (name === 'succession-radar')   initSuccessionRadar();
+  if (name === 'pipeline')           initPipelineCRM();
   if (name === 'saved-searches')     initSavedSearches();
   if (name === 'competitor-bench')  {
     // Default to ranking unless user already picked a sub
@@ -5930,6 +6016,10 @@ function renderCompanyTab(d) {
   setKPI('kpiROE', fmtPct(roe), roe > 12 ? 'green' : roe > 6 ? 'amber' : 'red');
   setKPI('kpiDE',  fmtRatio(de), de < 1.5 ? 'green' : de < 3 ? 'amber' : 'red');
   setKPI('kpiCR',  fmtRatio(cr), cr > 1.5 ? 'green' : cr > 1 ? 'amber' : 'red');
+
+  // Pipeline button
+  const pipelineBtn = document.getElementById('btnAddToPipeline');
+  if (pipelineBtn) pipelineBtn.style.display = window.DEALSCOPE_FLAGS?.pipelineCrm ? '' : 'none';
 
   // Succession Radar KPI card + cache + button (only when flag is on)
   if (window.DEALSCOPE_FLAGS?.successionRadar) {
@@ -8273,7 +8363,12 @@ function renderSRTable() {
 }
 
 function srAddToPipelinePlaceholder(orgNr, name) {
-  showToast(`✓ ${name} — Pipeline CRM coming in Phase 3`);
+  if (!window.DEALSCOPE_FLAGS?.pipelineCrm) {
+    showToast(`${name} — Pipeline tab not enabled`);
+    return;
+  }
+  const row = _srRows.find(r => r.orgNr === orgNr);
+  plAddCard(orgNr, name, 'sourced', row ? { revenue: row.revenue, score: row.score } : null);
 }
 
 function srRemoveRow(orgNr) {
@@ -8398,6 +8493,142 @@ function srAddCurrentToRadar() {
   showToast(`✓ ${companyData.name} added to Succession Radar`);
   // Trigger background ownership fetch
   fetchOwnership(companyData.orgNr).catch(() => {});
+}
+
+// ============================================================
+// PIPELINE CRM
+// ============================================================
+const PL_STAGES = [
+  { id: 'universe', label: 'Universe' },
+  { id: 'sourced',  label: 'Sourced'  },
+  { id: 'outreach', label: 'Outreach' },
+  { id: 'met',      label: 'Met'      },
+  { id: 'loi',      label: 'LOI'      },
+  { id: 'dd',       label: 'DD'       },
+  { id: 'closed',   label: 'Closed'   },
+  { id: 'passed',   label: 'Passed'   },
+];
+
+function plLoad() { return DealScopeStore.get('pipeline') || []; }
+function plSave(list) { DealScopeStore.set('pipeline', list); }
+
+function plAddCard(orgNr, name, stage, extra) {
+  const list = plLoad();
+  const clean = (orgNr || '').replace(/[^0-9]/g, '');
+  if (clean && list.some(c => c.orgNr === clean)) {
+    showToast(`${escapeHtml(name)} already in pipeline`);
+    return;
+  }
+  list.push({
+    id: 'pl_' + Date.now(),
+    orgNr: clean,
+    name: name || '—',
+    stage: stage || 'sourced',
+    revenue: extra?.revenue ?? null,
+    score: extra?.score ?? null,
+    note: '',
+    addedAt: new Date().toISOString(),
+    movedAt: new Date().toISOString(),
+  });
+  plSave(list);
+  plRenderBoard();
+  showToast(`✓ ${name} → Pipeline`);
+}
+
+function plDeleteCard(id) {
+  plSave(plLoad().filter(c => c.id !== id));
+  plRenderBoard();
+}
+
+function plSetStage(id, stage) {
+  const list = plLoad();
+  const c = list.find(c => c.id === id);
+  if (c) { c.stage = stage; c.movedAt = new Date().toISOString(); plSave(list); plRenderBoard(); }
+}
+
+function plSaveNote(id, note) {
+  const list = plLoad();
+  const c = list.find(c => c.id === id);
+  if (c) { c.note = note; plSave(list); }
+}
+
+function plOpenAddForm() {
+  const form = document.getElementById('plAddForm');
+  if (!form) return;
+  ['plFieldName','plFieldOrgNr'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; });
+  const sel = document.getElementById('plFieldStage');
+  if (sel) sel.value = 'sourced';
+  form.style.display = '';
+  const el = document.getElementById('plFieldName');
+  if (el) el.focus();
+}
+
+function plCloseAddForm() {
+  const form = document.getElementById('plAddForm');
+  if (form) form.style.display = 'none';
+}
+
+function plSaveAddForm() {
+  const name = (document.getElementById('plFieldName')?.value || '').trim();
+  if (!name) { showToast(t('pl_name_required')); return; }
+  const orgNr = (document.getElementById('plFieldOrgNr')?.value || '').trim();
+  const stage = document.getElementById('plFieldStage')?.value || 'sourced';
+  plCloseAddForm();
+  plAddCard(orgNr, name, stage, null);
+}
+
+function plAddCurrentToPipeline() {
+  if (!companyData) { showToast(t('toast_no_company')); return; }
+  const scoreEl = document.getElementById('kpiSuccession');
+  const score = scoreEl ? parseInt(scoreEl.textContent) || null : null;
+  const rev = companyData.netSales ? Math.round(companyData.netSales / 1e6) : null;
+  plAddCard(companyData.orgNr, companyData.name, 'sourced', { revenue: rev, score });
+}
+
+function plRenderBoard() {
+  const board = document.getElementById('plBoard');
+  const empty = document.getElementById('plEmpty');
+  if (!board) return;
+  const list = plLoad();
+  if (list.length === 0) {
+    board.style.display = 'none';
+    board.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  board.style.display = '';
+  if (empty) empty.style.display = 'none';
+  board.innerHTML = PL_STAGES.map(stage => {
+    const cards = list.filter(c => c.stage === stage.id);
+    const stageOpts = PL_STAGES.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+    const cardsHtml = cards.map(c => {
+      const chips = [];
+      if (c.revenue != null) chips.push(`${c.revenue}M SEK`);
+      if (c.score != null) chips.push(`Score ${c.score}`);
+      const chipsHtml = chips.map(ch => `<span class="pl-chip">${escapeHtml(ch)}</span>`).join('');
+      const stageOptsSelected = PL_STAGES.map(s =>
+        `<option value="${s.id}"${s.id === c.stage ? ' selected' : ''}>${s.label}</option>`
+      ).join('');
+      return `<div class="pl-card">
+        <div class="pl-card-name">${escapeHtml(c.name)}</div>
+        ${chipsHtml ? `<div class="pl-card-chips">${chipsHtml}</div>` : ''}
+        <select class="pl-stage-sel" onchange="plSetStage('${c.id}',this.value)">${stageOptsSelected}</select>
+        <textarea class="pl-card-note" placeholder="${t('pl_note_ph')}" onblur="plSaveNote('${c.id}',this.value)">${escapeHtml(c.note || '')}</textarea>
+        <button class="pl-del-btn" onclick="plDeleteCard('${c.id}')">${t('pl_delete_btn')}</button>
+      </div>`;
+    }).join('');
+    return `<div class="pl-col">
+      <div class="pl-col-header">
+        <span class="pl-col-title">${stage.label}</span>
+        <span class="pl-col-count">${cards.length}</span>
+      </div>
+      <div class="pl-col-body">${cardsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function initPipelineCRM() {
+  plRenderBoard();
 }
 
 // ============================================================
@@ -8562,7 +8793,7 @@ function setStatusBar(msg, state='ok') {
 // Build tracer — lets you confirm the deployed JS is up to date
 // (open DevTools console and look for this line). Cache-busting
 // aside, if you don't see VCFO_BUILD, you're on a stale copy.
-window.DEALSCOPE_BUILD = 'phase-2-saved-searches-v1';
+window.DEALSCOPE_BUILD = 'phase-3-pipeline-crm-v1';
 try { console.log('DealScope build:', window.DEALSCOPE_BUILD); } catch(e){}
 
 document.addEventListener('DOMContentLoaded', () => {
