@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VCFO Terminal — Financial Health & Acquisition Screener</title>
+<title>DealScope — The deal-sourcing OS for Nordic acquirers</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -55,17 +55,24 @@ body {
 .logo { display:flex; align-items:center; gap: 12px; }
 .logo-mark {
   width: 28px; height: 28px;
-  background: var(--green);
+  background: var(--blue);
   border-radius: 6px;
   display:flex; align-items:center; justify-content:center;
-  font-size:11px; font-weight:700; color: var(--bg);
+  font-size:11px; font-weight:700; color: #fff;
 }
+.logo-text-block { display:flex; flex-direction:column; gap:1px; }
 .logo-text {
   font-family: 'DM Sans', sans-serif;
   font-weight: 700; font-size: 16px;
   letter-spacing: 0.02em; color: var(--text);
+  line-height: 1;
 }
-.logo-text span { color: var(--amber); }
+.logo-text span { color: var(--blue); }
+.logo-tagline {
+  font-size: 8px; color: var(--text3);
+  letter-spacing: 0.04em; font-weight: 400;
+  white-space: nowrap; line-height: 1;
+}
 .topbar-center { display:flex; align-items:center; gap: 8px; }
 .search-bar {
   display:flex; align-items:center;
@@ -1964,6 +1971,109 @@ body.light-mode {
   .cb-row-actions { flex-direction: column; }
   .cb-row-action { padding: 3px 6px; font-size: 9px; }
 }
+
+/* ===== SUCCESSION RADAR ===== */
+.sr-filters {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+  align-items: center;
+}
+.sr-filter-group {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+}
+.sr-filter-label {
+  font-size: 9px; color: var(--text3); letter-spacing: 0.06em;
+  text-transform: uppercase; white-space: nowrap;
+}
+.sr-pill {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 12px; padding: 3px 10px;
+  font-size: 10px; color: var(--text2); cursor: pointer;
+  transition: all 0.15s;
+}
+.sr-pill:hover { border-color: var(--border2); color: var(--text); }
+.sr-pill.active { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); }
+.sr-layout {
+  display: grid; grid-template-columns: 210px 1fr; gap: 14px; margin-bottom: 14px;
+}
+@media (max-width: 800px) { .sr-layout { grid-template-columns: 1fr; } }
+.sr-map-card { padding: 10px; }
+.sr-map-title { font-size: 9px; color: var(--text3); letter-spacing: 0.06em; margin-bottom: 6px; }
+.sr-stats-row {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 10px;
+}
+@media (max-width: 600px) { .sr-stats-row { grid-template-columns: repeat(2,1fr); } }
+.sr-add-card { padding: 12px; margin-bottom: 10px; }
+.sr-add-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.sr-add-input {
+  flex: 1; min-width: 180px; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 4px; padding: 6px 10px; color: var(--text);
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; outline: none;
+}
+.sr-add-input:focus { border-color: var(--border2); }
+.sr-table-wrap { overflow-x: auto; }
+.sr-table {
+  width: 100%; border-collapse: collapse; font-size: 11px;
+}
+.sr-table th {
+  padding: 8px 10px; text-align: left; background: var(--bg3);
+  color: var(--text3); font-size: 9px; letter-spacing: 0.06em;
+  text-transform: uppercase; cursor: pointer; white-space: nowrap;
+  border-bottom: 1px solid var(--border); user-select: none;
+}
+.sr-table th:hover { color: var(--text); }
+.sr-table th.sort-asc::after { content: ' ↑'; }
+.sr-table th.sort-desc::after { content: ' ↓'; }
+.sr-table td {
+  padding: 8px 10px; border-bottom: 1px solid var(--border);
+  vertical-align: middle; color: var(--text2);
+}
+.sr-table tr:hover td { background: var(--bg3); cursor: pointer; }
+.sr-score-bar {
+  display: flex; align-items: center; gap: 6px;
+}
+.sr-score-fill {
+  height: 4px; border-radius: 2px; min-width: 2px;
+  background: var(--blue);
+}
+.sr-score-fill.high  { background: var(--red); }
+.sr-score-fill.mid   { background: var(--amber); }
+.sr-score-fill.low   { background: var(--blue); }
+.sr-signal-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  margin-right: 2px; vertical-align: middle;
+}
+.sr-remove-btn {
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  padding: 2px 6px; color: var(--text3); font-size: 9px; cursor: pointer;
+}
+.sr-remove-btn:hover { border-color: var(--red); color: var(--red); }
+/* Pipeline CRM */
+.pl-board { display:flex; gap:10px; overflow-x:auto; padding-bottom:8px; min-height:280px; }
+.pl-col { flex:0 0 190px; background:var(--bg2); border:1px solid var(--border); border-radius:6px; display:flex; flex-direction:column; }
+.pl-col-header { padding:7px 10px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:4px; flex-shrink:0; }
+.pl-col-title { font-size:11px; font-weight:700; color:var(--text); }
+.pl-col-count { background:var(--bg3); border-radius:10px; padding:1px 6px; font-size:9px; color:var(--text2); flex-shrink:0; }
+.pl-col-body { flex:1; padding:6px; display:flex; flex-direction:column; gap:6px; overflow-y:auto; }
+.pl-card { background:var(--bg3); border:1px solid var(--border); border-radius:4px; padding:8px; }
+.pl-card-name { font-size:11px; font-weight:700; color:var(--text); margin-bottom:4px; line-height:1.3; word-break:break-word; }
+.pl-card-chips { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:5px; }
+.pl-chip { background:var(--bg); border:1px solid var(--border); border-radius:3px; padding:1px 4px; font-size:9px; color:var(--text2); }
+.pl-stage-sel { width:100%; box-sizing:border-box; background:var(--bg); border:1px solid var(--border); border-radius:3px; padding:2px 4px; font-size:9px; color:var(--text); cursor:pointer; }
+.pl-card-note { width:100%; box-sizing:border-box; background:var(--bg); border:1px solid var(--border); border-radius:3px; color:var(--text); font-size:9px; font-family:inherit; resize:vertical; min-height:28px; padding:3px 5px; margin-top:4px; }
+.pl-card-note:focus { outline:none; border-color:var(--blue); }
+.pl-del-btn { background:none; border:1px solid var(--border); border-radius:3px; padding:2px 6px; font-size:9px; color:var(--text3); cursor:pointer; margin-top:4px; }
+.pl-del-btn:hover { border-color:var(--red); color:var(--red); }
+.sr-add-pipeline-btn {
+  background: var(--blue-dim); border: 1px solid var(--blue); border-radius: 4px;
+  padding: 3px 8px; color: var(--blue); font-size: 9px; cursor: pointer; white-space: nowrap;
+}
+.sr-add-pipeline-btn:hover { background: var(--blue); color: #fff; }
+/* SVG county tooltip */
+.sr-county-tooltip {
+  position: fixed; background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 4px; padding: 4px 8px; font-size: 10px; color: var(--text);
+  pointer-events: none; z-index: 999; display: none;
+}
 </style>
 </head>
 <body>
@@ -2068,8 +2178,11 @@ body.light-mode {
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="logo">
-    <div class="logo-mark">V</div>
-    <div class="logo-text">VCFO <span>Terminal</span></div>
+    <div class="logo-mark">D</div>
+    <div class="logo-text-block">
+      <div class="logo-text">Deal<span>Scope</span></div>
+      <div class="logo-tagline">The deal-sourcing OS for Nordic acquirers.</div>
+    </div>
   </div>
   <div class="topbar-center">
     <div class="search-bar" style="position:relative;">
@@ -2080,6 +2193,12 @@ body.light-mode {
       <span id="searchModeLabel" style="font-size:9px;color:var(--text3);white-space:nowrap;letter-spacing:0.08em;">NAME</span>
     </div>
     <button class="btn-load" onclick="handleSearchLoad()">SEARCH</button>
+    <select id="countryPicker" onchange="ncSetCountry(this.value)" title="Country / market" style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:4px 6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;cursor:pointer;display:none;">
+      <option value="se">🇸🇪 SE</option>
+      <option value="no">🇳🇴 NO</option>
+      <option value="dk">🇩🇰 DK</option>
+      <option value="fi">🇫🇮 FI</option>
+    </select>
     <div id="fetchYearPicker" style="display:flex;align-items:center;gap:4px;">
       <span style="font-size:9px;color:var(--text3);letter-spacing:0.08em;white-space:nowrap;">FY:</span>
       <select id="fetchYearSelect" onchange="onFetchYearChange()" style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:4px 6px;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;outline:none;cursor:pointer;appearance:auto;min-width:65px;">
@@ -2128,17 +2247,15 @@ body.light-mode {
 
 <!-- INFO STRIP -->
 <div class="ticker-strip">
-  <span class="ticker-label">VCFO</span>
+  <span class="ticker-label">DS</span>
   <span class="ticker-sep">·</span>
-  <span class="ticker-info">Financial Health & Acquisition Screener</span>
+  <span class="ticker-info">Deal-Sourcing OS for Nordic Acquirers</span>
   <span class="ticker-sep">·</span>
-  <span class="ticker-info">Feature A: CFO Operational Audit</span>
+  <span class="ticker-info">Succession Radar · Saved Searches · Deal Pipeline</span>
   <span class="ticker-sep">·</span>
-  <span class="ticker-info">Feature B: M&A Acquisition Fit Screener</span>
+  <span class="ticker-info">Data Source: UC AB via allabolag.se + Bolagsverket</span>
   <span class="ticker-sep">·</span>
-  <span class="ticker-info">Data Source: UC AB via allabolag.se</span>
-  <span class="ticker-sep">·</span>
-  <span class="ticker-info">AI: Claude Sonnet — Anthropic</span>
+  <span class="ticker-info">AI: DealScope AI — Powered by Claude · Anthropic</span>
 </div>
 
 <!-- TABS -->
@@ -2153,7 +2270,11 @@ body.light-mode {
   <div class="tab" id="tab-journal-btn"          onclick="switchTab('journal')">📔 Journal</div>
   <div class="tab" id="tab-vault-btn"            onclick="switchTab('vault')">🗄 Vault</div>
   <div class="tab" id="tab-benchmarks-btn"       onclick="switchTab('benchmarks')" data-i18n="tab_benchmarks">📡 Benchmarks</div>
-  <div class="tab" id="tab-guide-btn"            onclick="switchTab('guide')" style="margin-left:auto;" data-i18n="tab_guide">📖 Guide</div>
+  <div class="tab" id="tab-pipeline-btn"          onclick="switchTab('pipeline')" data-i18n="tab_pipeline" style="display:none;">🗂 Pipeline</div>
+  <div class="tab" id="tab-saved-searches-btn"    onclick="switchTab('saved-searches')" data-i18n="tab_saved_searches" style="display:none;">🔔 Saved Searches</div>
+  <div class="tab" id="tab-succession-radar-btn"  onclick="switchTab('succession-radar')" data-i18n="tab_succession_radar" style="display:none;">📡 Succession Radar</div>
+  <div class="tab" id="tab-workspace-btn"         onclick="switchTab('workspace')" data-i18n="tab_workspace" style="display:none;">👥 Workspace</div>
+  <div class="tab" id="tab-guide-btn"             onclick="switchTab('guide')" style="margin-left:auto;" data-i18n="tab_guide">📖 Guide</div>
 </div>
 
 <!-- CONTENT -->
@@ -2161,6 +2282,19 @@ body.light-mode {
 
   <!-- ===== COMPANY TAB ===== -->
   <div id="tab-company">
+    <!-- Nordic coming-soon notice (shown when non-SE country active) -->
+    <div id="countryNotice" style="display:none;">
+      <div class="empty-state">
+        <div class="icon" id="ncFlag">🇳🇴</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text);" id="ncCountryName">Norway</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:6px;" id="ncRegistryName">Registry: Brønnøysundregistrene</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px;" data-i18n="nc_coming_soon_sub">Full integration coming soon — succession radar, financials, outreach generator</div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+          <a id="ncRegistryLink" href="#" target="_blank" rel="noopener" class="btn-secondary" style="font-size:10px;text-decoration:none;" data-i18n="nc_open_registry">Open Registry ↗</a>
+          <button class="btn-secondary" style="font-size:10px;" onclick="ncSetCountry('se')" data-i18n="nc_switch_se">Switch to Sweden</button>
+        </div>
+      </div>
+    </div>
     <div id="companyEmpty" class="empty-state">
       <div class="icon">🏢</div>
       <div style="font-size:14px;font-weight:600;color:var(--text);" data-i18n="search_heading">Search for any Swedish company</div>
@@ -2222,6 +2356,8 @@ body.light-mode {
             </button>
             <button class="btn-secondary" onclick="addToCompareFromMain()" title="Add this company to the Compare tab" data-i18n="btn_add_compare">⚖ Add to Compare</button>
             <button class="btn-pin" id="btnPinCompany" onclick="togglePinCompany()" title="Pin to Watchlist">★ Pin</button>
+            <button class="btn-secondary" id="btnAddToRadar" onclick="srAddCurrentToRadar()" style="display:none;" data-i18n="btn_add_to_radar">📡 Add to Radar</button>
+            <button class="btn-secondary" id="btnAddToPipeline" onclick="plAddCurrentToPipeline()" style="display:none;" data-i18n="btn_add_pipeline">🗂 Pipeline</button>
           </div>
         </div>
 
@@ -2253,6 +2389,11 @@ body.light-mode {
               <div class="kpi-value amber" id="kpiMAScore">—</div>
               <div class="kpi-sub" data-i18n="kpi_ma_sub">Acquisition Fit 0–100</div>
             </div>
+            <div class="kpi-card" id="kpiSuccessionCard" style="display:none;">
+              <div class="kpi-label" data-i18n="kpi_succession">Succession</div>
+              <div class="kpi-value" id="kpiSuccession">—</div>
+              <div class="kpi-sub" data-i18n="kpi_succession_sub">Exit likelihood 0–100</div>
+            </div>
           </div>
 
           <!-- Raw financial data — side by side -->
@@ -2273,6 +2414,42 @@ body.light-mode {
 
           <!-- Multi-year trend panel — rendered entirely by JS -->
           <div id="trendPanel" style="display:none;"></div>
+
+          <!-- Outreach Generator — flag-gated, populated by renderCompanyTab -->
+          <div id="outreachPanel" style="display:none;margin-top:14px;">
+            <div class="card">
+              <div class="card-title">📨 <span data-i18n="outreach_title">Outreach Generator</span></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+                <div>
+                  <label class="field-label" data-i18n="outreach_your_name">Your name</label>
+                  <input id="ogYourName" class="input-field" type="text" style="width:100%;box-sizing:border-box;" placeholder="e.g. Erik Svensson" onblur="DealScopeStore.set('og_your_name',this.value)" />
+                </div>
+                <div>
+                  <label class="field-label" data-i18n="outreach_your_firm">Your firm</label>
+                  <input id="ogYourFirm" class="input-field" type="text" style="width:100%;box-sizing:border-box;" placeholder="e.g. Nordic Ventures" onblur="DealScopeStore.set('og_your_firm',this.value)" />
+                </div>
+                <div>
+                  <label class="field-label" data-i18n="outreach_template">Template</label>
+                  <select id="ogTemplate" class="input-field" style="width:100%;box-sizing:border-box;">
+                    <option value="formal_sv" data-i18n="og_tpl_formal_sv">Formal letter (SV)</option>
+                    <option value="email_en"  data-i18n="og_tpl_email_en">Warm email (EN)</option>
+                    <option value="email_sv"  data-i18n="og_tpl_email_sv">Warm email (SV)</option>
+                    <option value="followup_en" data-i18n="og_tpl_followup">Follow-up (EN)</option>
+                  </select>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+                <button class="btn-primary" id="ogGenerateBtn" onclick="ogGenerate()" data-i18n="outreach_generate_btn">📨 Generate</button>
+                <span id="ogStatus" style="font-size:10px;color:var(--text3);"></span>
+              </div>
+              <div id="ogOutput" style="display:none;">
+                <div style="position:relative;">
+                  <textarea id="ogText" style="width:100%;box-sizing:border-box;min-height:200px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;line-height:1.6;padding:12px 52px 12px 12px;font-family:inherit;resize:vertical;" readonly></textarea>
+                  <button class="btn-secondary" style="position:absolute;top:6px;right:6px;font-size:10px;" onclick="ogCopy()" data-i18n="outreach_copy">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -2888,8 +3065,8 @@ body.light-mode {
   <!-- ===== GUIDE TAB ===== -->
   <div id="tab-guide" style="display:none;">
     <div style="max-width:760px;">
-      <div style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:800;color:var(--amber);margin-bottom:4px;">VCFO Terminal — User Guide</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:24px;">Financial Health & Acquisition Screener · Data: UC AB via allabolag.se + Claude AI</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:800;color:var(--amber);margin-bottom:4px;">DealScope — User Guide</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:24px;">Deal-Sourcing OS for Nordic Acquirers · Data: UC AB via allabolag.se + Claude AI</div>
 
       <div class="guide-section">
         <div class="guide-title">🏢 Feature A — CFO Operational Audit</div>
@@ -3142,14 +3319,344 @@ body.light-mode {
     </div>
   </div><!-- /tab-benchmarks -->
 
+  <!-- ===== PIPELINE TAB ===== -->
+  <div id="tab-pipeline" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);">🗂 <span data-i18n="tab_pipeline">Pipeline</span></div>
+      <button class="btn-primary" onclick="plOpenAddForm()" data-i18n="pl_add_btn">+ Add Deal</button>
+    </div>
+    <!-- Inline add-deal form -->
+    <div id="plAddForm" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;" data-i18n="pl_add_title">Add Deal</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end;">
+        <div>
+          <label class="field-label" data-i18n="pl_name_label">Company name</label>
+          <input id="plFieldName" class="input-field" type="text" style="width:100%;box-sizing:border-box;" />
+        </div>
+        <div>
+          <label class="field-label" data-i18n="pl_orgnr_label">Org nr (optional)</label>
+          <input id="plFieldOrgNr" class="input-field" type="text" style="width:100%;box-sizing:border-box;" />
+        </div>
+        <div>
+          <label class="field-label" data-i18n="pl_stage_label">Stage</label>
+          <select id="plFieldStage" class="input-field" style="width:100%;box-sizing:border-box;">
+            <option value="universe">Universe</option>
+            <option value="sourced" selected>Sourced</option>
+            <option value="outreach">Outreach</option>
+            <option value="met">Met</option>
+            <option value="loi">LOI</option>
+            <option value="dd">DD</option>
+            <option value="closed">Closed</option>
+            <option value="passed">Passed</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end;">
+        <button class="btn-secondary" onclick="plCloseAddForm()" data-i18n="cancel">Cancel</button>
+        <button class="btn-primary" onclick="plSaveAddForm()" data-i18n="pl_add_save">Add</button>
+      </div>
+    </div>
+    <!-- Kanban board -->
+    <div class="pl-board" id="plBoard" style="display:none;"></div>
+    <div id="plEmpty">
+      <div class="empty-state">
+        <div class="icon">🗂</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);" data-i18n="pl_empty_title">No deals in pipeline</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:6px;" data-i18n="pl_empty_sub">Add a company or push one from the Succession Radar.</div>
+      </div>
+    </div>
+  </div><!-- /tab-pipeline -->
+
+  <!-- ===== SAVED SEARCHES TAB ===== -->
+  <div id="tab-saved-searches" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);">🔔 <span data-i18n="tab_saved_searches">Saved Searches</span></div>
+      <button class="btn-primary" onclick="ssOpenNewForm()" data-i18n="ss_new_btn">+ New Search</button>
+    </div>
+    <!-- Create / Edit form -->
+    <div id="ssFormPanel" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;" id="ssFormTitle" data-i18n="ss_new_title">New Saved Search</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div>
+          <label class="field-label" data-i18n="ss_name_label">Search name</label>
+          <input id="ssFieldName" class="input-field" type="text" data-i18n-placeholder="ss_name_ph" placeholder="e.g. Succession targets Skåne" style="width:100%;box-sizing:border-box;" />
+        </div>
+        <div>
+          <label class="field-label" data-i18n="ss_sni_label">SNI sector (2-digit)</label>
+          <input id="ssFieldSni" class="input-field" type="text" data-i18n-placeholder="ss_sni_ph" placeholder="e.g. 25" style="width:100%;box-sizing:border-box;" />
+        </div>
+        <div>
+          <label class="field-label" data-i18n="ss_region_label">Region / County</label>
+          <input id="ssFieldRegion" class="input-field" type="text" data-i18n-placeholder="ss_region_ph" placeholder="e.g. Skåne" style="width:100%;box-sizing:border-box;" />
+        </div>
+        <div>
+          <label class="field-label" data-i18n="ss_rev_label">Revenue MSEK (min – max)</label>
+          <div style="display:flex;gap:4px;">
+            <input id="ssFieldRevMin" class="input-field" type="number" placeholder="Min" style="width:50%;box-sizing:border-box;" />
+            <input id="ssFieldRevMax" class="input-field" type="number" placeholder="Max" style="width:50%;box-sizing:border-box;" />
+          </div>
+        </div>
+        <div>
+          <label class="field-label" data-i18n="ss_ros_label">EBIT margin min (%)</label>
+          <input id="ssFieldRos" class="input-field" type="number" placeholder="5" style="width:100%;box-sizing:border-box;" />
+        </div>
+        <div>
+          <label class="field-label" data-i18n="ss_score_label">Succession score min (0–100)</label>
+          <input id="ssFieldScore" class="input-field" type="number" placeholder="40" min="0" max="100" style="width:100%;box-sizing:border-box;" />
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;">
+        <button class="btn-secondary" onclick="ssCloseForm()" data-i18n="cancel">Cancel</button>
+        <button class="btn-primary" onclick="ssSaveForm()" data-i18n="ss_save_btn">Save Search</button>
+      </div>
+    </div>
+    <!-- Search cards -->
+    <div id="ssList"></div>
+    <div id="ssEmpty" style="display:none;">
+      <div class="empty-state">
+        <div class="icon">🔍</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);" data-i18n="ss_empty_title">No saved searches yet</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:6px;" data-i18n="ss_empty_sub">Create a search to quickly resurface matching companies.</div>
+      </div>
+    </div>
+  </div><!-- /tab-saved-searches -->
+
+  <!-- ===== SUCCESSION RADAR TAB ===== -->
+  <div id="tab-succession-radar" style="display:none;">
+
+    <!-- Filter bar -->
+    <div class="sr-filters" id="srFilters">
+      <div class="sr-filter-group">
+        <span class="sr-filter-label">Sector</span>
+        <button class="sr-pill active" onclick="srSetFilter('sni','all',this)">All</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','construction',this)">Construction</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','manufacturing',this)">Manufacturing</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','wholesale',this)">Wholesale</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','retail',this)">Retail</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','professional',this)">Professional</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','transport',this)">Transport</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','realestate',this)">Real Estate</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','ict',this)">ICT</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','healthcare',this)">Healthcare</button>
+      </div>
+      <div class="sr-filter-group" style="margin-top:4px;">
+        <span class="sr-filter-label">Revenue</span>
+        <button class="sr-pill active" onclick="srSetFilter('revBand','all',this)">All Sizes</button>
+        <button class="sr-pill" onclick="srSetFilter('revBand','micro',this)">&lt; 10M</button>
+        <button class="sr-pill" onclick="srSetFilter('revBand','small',this)">10–50M</button>
+        <button class="sr-pill" onclick="srSetFilter('revBand','mid',this)">50–200M</button>
+        <button class="sr-pill" onclick="srSetFilter('revBand','large',this)">&gt; 200M</button>
+      </div>
+      <div class="sr-filter-group" style="margin-top:4px;">
+        <span class="sr-filter-label">Min Score</span>
+        <button class="sr-pill active" onclick="srSetFilter('minScore',0,this)">Any</button>
+        <button class="sr-pill" onclick="srSetFilter('minScore',20,this)">20+</button>
+        <button class="sr-pill" onclick="srSetFilter('minScore',40,this)">40+</button>
+        <button class="sr-pill" onclick="srSetFilter('minScore',60,this)">60+</button>
+      </div>
+    </div>
+
+    <!-- Map + right panel -->
+    <div class="sr-layout">
+      <!-- Sweden heatmap -->
+      <div class="card sr-map-card">
+        <div class="sr-map-title">SWEDEN · SUCCESSION HEATMAP</div>
+        <svg id="srMap" viewBox="0 0 200 470" style="width:100%;height:auto;display:block;">
+          <!-- Mainland silhouette -->
+          <polygon id="srMapOutline"
+            points="140,12 172,31 165,77 165,123 151,169 122,200 107,215 100,230 100,261 107,276 122,307 114,322 93,338 86,353 93,384 79,399 64,415 57,434 43,437 34,431 28,399 18,368 11,353 9,338 9,322 18,307 18,276 21,261 29,230 21,200 36,169 50,138 57,107 64,77 107,46 107,31"
+            fill="var(--bg3)" stroke="var(--border2)" stroke-width="1.2"/>
+          <!-- Gotland island -->
+          <ellipse cx="148" cy="355" rx="7" ry="11"
+            fill="var(--bg3)" stroke="var(--border2)" stroke-width="1"/>
+          <!-- Öland island -->
+          <ellipse cx="101" cy="392" rx="3" ry="9"
+            fill="var(--bg3)" stroke="var(--border2)" stroke-width="0.8"/>
+          <!-- County dot markers (rendered by JS) -->
+          <g id="srCountyDots"></g>
+        </svg>
+        <div style="font-size:8px;color:var(--text3);margin-top:4px;text-align:center;">
+          Dot size = company count · Color = avg score
+        </div>
+      </div>
+
+      <!-- Right panel -->
+      <div>
+        <!-- Stats row -->
+        <div class="sr-stats-row">
+          <div class="kpi-card">
+            <div class="kpi-label">In Radar</div>
+            <div class="kpi-value" id="srStatTotal">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Avg Score</div>
+            <div class="kpi-value amber" id="srStatAvg">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Score ≥ 40</div>
+            <div class="kpi-value red" id="srStatHigh">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Age Known</div>
+            <div class="kpi-value green" id="srStatAge">0</div>
+          </div>
+        </div>
+
+        <!-- Add company -->
+        <div class="card sr-add-card">
+          <div class="card-title" style="margin-bottom:8px;">Add Company to Radar</div>
+          <div class="sr-add-row">
+            <input id="srAddInput" class="sr-add-input" placeholder="Org. number e.g. 556000-1234"
+              onkeydown="if(event.key==='Enter')srAddByInput()">
+            <button class="btn-load" style="font-size:11px;padding:5px 14px;" onclick="srAddByInput()">ADD</button>
+            <button class="btn-secondary" onclick="srSeedFromWatchlist()" data-i18n="sr_add_from_wl">Import Watchlist</button>
+          </div>
+          <div id="srAddStatus" style="font-size:10px;color:var(--text3);margin-top:6px;"></div>
+        </div>
+
+        <!-- Signals legend -->
+        <div class="card" style="padding:10px 12px;">
+          <div class="card-title" style="margin-bottom:6px;">Score Signals</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;color:var(--text2);">
+            <div><span class="sr-signal-dot" style="background:var(--red)"></span> Owner age ≥ 65 (+35)</div>
+            <div><span class="sr-signal-dot" style="background:var(--amber)"></span> Owner age 60–64 (+20)</div>
+            <div><span class="sr-signal-dot" style="background:var(--amber)"></span> Owner age 55–59 (+10)</div>
+            <div><span class="sr-signal-dot" style="background:var(--blue)"></span> No family on board (+15)</div>
+            <div><span class="sr-signal-dot" style="background:var(--amber)"></span> Flat/declining revenue (+10)</div>
+            <div><span class="sr-signal-dot" style="background:var(--amber)"></span> Rising dividends 3yr (+10)</div>
+            <div><span class="sr-signal-dot" style="background:var(--red)"></span> Auditor remark (+10)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sortable table -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px;">
+        Succession Candidates
+        <span id="srTableCount" style="color:var(--text3);font-size:10px;font-weight:400;margin-left:6px;"></span>
+      </div>
+      <div class="sr-table-wrap">
+        <table class="sr-table">
+          <thead>
+            <tr>
+              <th onclick="srSortBy('rank')" id="srTh_rank">#</th>
+              <th onclick="srSortBy('name')" id="srTh_name">Company</th>
+              <th onclick="srSortBy('sni')"  id="srTh_sni">Sector</th>
+              <th onclick="srSortBy('county')" id="srTh_county">Region</th>
+              <th onclick="srSortBy('score')" id="srTh_score" class="sort-desc">Score</th>
+              <th onclick="srSortBy('ownerAge')" id="srTh_ownerAge">Owner Age</th>
+              <th onclick="srSortBy('ros')" id="srTh_ros">ROS</th>
+              <th onclick="srSortBy('revenue')" id="srTh_revenue">Revenue</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="srTableBody">
+            <tr><td colspan="9" style="text-align:center;color:var(--text3);padding:24px;" data-i18n="sr_empty">No companies in radar. Add companies above or import from Watchlist.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /tab-succession-radar -->
+
+  <!-- ===== WORKSPACE TAB ===== -->
+  <div id="tab-workspace" style="display:none;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <!-- Firm settings -->
+      <div class="card">
+        <div class="card-title">⚙ <span data-i18n="ws_firm_settings">Firm Settings</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div>
+            <label class="field-label" data-i18n="ws_firm_name">Firm / Fund name</label>
+            <input id="wsFirmName" class="input-field" type="text" style="width:100%;box-sizing:border-box;" onblur="DealScopeStore.set('ws_firm_name',this.value)" />
+          </div>
+          <div>
+            <label class="field-label" data-i18n="ws_acquirer_type">Acquirer type</label>
+            <select id="wsAcquirerType" class="input-field" style="width:100%;box-sizing:border-box;" onchange="DealScopeStore.set('ws_acquirer_type',this.value)">
+              <option value="search_fund" data-i18n="ws_type_sf">Search Fund</option>
+              <option value="micro_pe" data-i18n="ws_type_pe">Micro-PE</option>
+              <option value="family_office" data-i18n="ws_type_fo">Family Office</option>
+              <option value="strategic" data-i18n="ws_type_str">Strategic Acquirer</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" data-i18n="ws_criteria">Target criteria</label>
+            <textarea id="wsTargetCriteria" class="input-field" style="width:100%;box-sizing:border-box;min-height:60px;resize:vertical;" onblur="DealScopeStore.set('ws_target_criteria',this.value)" data-i18n-placeholder="ws_criteria_ph"></textarea>
+          </div>
+        </div>
+      </div>
+      <!-- Deal digest -->
+      <div class="card">
+        <div class="card-title">📊 <span data-i18n="ws_digest">Deal Digest</span></div>
+        <div id="wsDigestContent" style="font-size:11px;color:var(--text3);">—</div>
+      </div>
+    </div>
+    <!-- IC Memo generator -->
+    <div class="card">
+      <div class="card-title">📄 <span data-i18n="ws_ic_memo">IC Memo Generator</span></div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:10px;align-items:end;">
+        <div>
+          <label class="field-label" data-i18n="ws_pick_deal">Select deal from pipeline</label>
+          <select id="wsPickDeal" class="input-field" style="width:100%;box-sizing:border-box;">
+            <option value="">— select —</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn-primary" id="wsGenerateBtn" onclick="wsGenerateICMemo()" data-i18n="ws_generate_btn">📄 Generate Memo</button>
+          <span id="wsStatus" style="font-size:10px;color:var(--text3);"></span>
+        </div>
+      </div>
+      <div id="wsOutput" style="display:none;">
+        <div style="position:relative;">
+          <textarea id="wsMemoText" style="width:100%;box-sizing:border-box;min-height:320px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;line-height:1.6;padding:12px 52px 12px 12px;font-family:inherit;resize:vertical;" readonly></textarea>
+          <button class="btn-secondary" style="position:absolute;top:6px;right:6px;font-size:10px;" onclick="wsCopyMemo()" data-i18n="outreach_copy">Copy</button>
+        </div>
+      </div>
+    </div>
+    <!-- Nordic expansion roadmap -->
+    <div class="card" id="wsNordicRoadmap" style="margin-top:14px;display:none;">
+      <div class="card-title">🌐 <span data-i18n="nc_roadmap_title">Nordic Expansion Roadmap</span></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px;">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:10px;text-align:center;">
+          <div style="font-size:20px;margin-bottom:4px;">🇸🇪</div>
+          <div style="font-size:11px;font-weight:700;color:var(--green);">Sweden</div>
+          <div style="font-size:9px;color:var(--text2);margin-top:3px;">● Live</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;">Bolagsverket</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:10px;text-align:center;">
+          <div style="font-size:20px;margin-bottom:4px;">🇳🇴</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);">Norway</div>
+          <div style="font-size:9px;color:var(--amber);margin-top:3px;">◐ Planned</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;">Brønnøysund</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:10px;text-align:center;">
+          <div style="font-size:20px;margin-bottom:4px;">🇩🇰</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);">Denmark</div>
+          <div style="font-size:9px;color:var(--amber);margin-top:3px;">◐ Planned</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;">CVR</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:10px;text-align:center;">
+          <div style="font-size:20px;margin-bottom:4px;">🇫🇮</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);">Finland</div>
+          <div style="font-size:9px;color:var(--amber);margin-top:3px;">◐ Planned</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;">YTJ / PRH</div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /tab-workspace -->
+
+  <!-- County tooltip -->
+  <div class="sr-county-tooltip" id="srCountyTooltip"></div>
+
 </div><!-- /content -->
 
 <!-- ============================================================
-     VCFO CHATBOT
+     DEALSCOPE AI CHATBOT
      ============================================================ -->
 
 <!-- Floating trigger button (visible when chat is closed) -->
-<button class="chat-trigger" id="chatTrigger" onclick="openChat()" title="VCFO AI Assistant" style="display:flex;">
+<button class="chat-trigger" id="chatTrigger" onclick="openChat()" title="DealScope AI" style="display:flex;">
   <span>💬</span>
   <span class="chat-trigger-badge" id="chatBadge" style="display:none;"></span>
 </button>
@@ -3158,7 +3665,7 @@ body.light-mode {
 <div class="chat-minimised" id="chatMinimised" style="display:none;" onclick="unminimiseChat()">
   <span style="font-size:16px;">💬</span>
   <div>
-    <div class="chat-min-title">VCFO AI</div>
+    <div class="chat-min-title">DealScope AI</div>
     <div class="chat-min-sub" id="chatMinSub">Click to expand</div>
   </div>
   <span style="font-size:11px;color:rgba(255,255,255,0.8);">▲</span>
@@ -3171,7 +3678,7 @@ body.light-mode {
     <div class="chat-header-row">
       <div class="chat-avatar">🤖</div>
       <div>
-        <div class="chat-title">VCFO AI Assistant</div>
+        <div class="chat-title">DealScope AI</div>
         <div class="chat-sub" id="chatSubtitle">Aware of your company & analysis context</div>
       </div>
       <div class="chat-header-btns">
@@ -3207,11 +3714,89 @@ body.light-mode {
 
 <script>
 // ============================================================
+// DEALSCOPE FEATURE FLAGS
+// All default false — flip to true to enable in-progress features.
+// ============================================================
+window.DEALSCOPE_FLAGS = {
+  successionRadar:   true,
+  savedSearches:     true,
+  pipelineCrm:       true,
+  outreachGenerator: true,
+  teamWorkspace:     true,
+  nordicExpansion:   true,
+};
+
+// ============================================================
+// DEALSCOPE STORE — single source of truth for persistent state.
+// Backed by localStorage today; swap backend without touching UI.
+// ============================================================
+const DealScopeStore = (() => {
+  const PREFIX = 'dealscope_';
+  const _listeners = {};
+
+  function get(key) {
+    try {
+      const v = localStorage.getItem(PREFIX + key);
+      if (v === null) return null;
+      try { return JSON.parse(v); } catch(e) { return v; }
+    } catch(e) { return null; }
+  }
+
+  function set(key, value) {
+    try {
+      localStorage.setItem(PREFIX + key, JSON.stringify(value));
+      (_listeners[key] || []).forEach(fn => { try { fn(value); } catch(e) {} });
+    } catch(e) {}
+  }
+
+  function subscribe(key, fn) {
+    if (!_listeners[key]) _listeners[key] = [];
+    _listeners[key].push(fn);
+    return () => { _listeners[key] = _listeners[key].filter(f => f !== fn); };
+  }
+
+  function migrate() {
+    try {
+      if (localStorage.getItem(PREFIX + 'migrated')) return;
+      const keyMap = {
+        'vcfo_anthropic':    'anthropic',
+        'vcfo_proxy_url':    'proxy_url',
+        'vcfo_serp':         'serp',
+        'vcfo_lang':         'lang',
+        'vcfo_theme':        'theme',
+        'vcfo_chat_mode':    'chat_mode',
+        'vcfo_bch_cache':    'bch_cache',
+        'vcfo_chat_history': 'chat_history',
+        'vcfo_watchlist':    'watchlist',
+        'vcfo_journal':      'journal',
+        'vcfo_vault':        'vault',
+        'vcfo_cb_saved':     'cb_saved',
+      };
+      let migrated = false;
+      Object.entries(keyMap).forEach(([oldKey, newKey]) => {
+        const val = localStorage.getItem(oldKey);
+        if (val !== null && localStorage.getItem(PREFIX + newKey) === null) {
+          localStorage.setItem(PREFIX + newKey, val);
+          migrated = true;
+        }
+      });
+      localStorage.setItem(PREFIX + 'migrated', '1');
+      if (migrated) console.log('[DealScope] Migrated localStorage keys from vcfo_* to dealscope_*');
+    } catch(e) {}
+  }
+
+  return { get, set, subscribe, migrate };
+})();
+
+// Run migration immediately so all subsequent reads see dealscope_* keys
+DealScopeStore.migrate();
+
+// ============================================================
 // GLOBALS
 // ============================================================
-let anthropicKey = ''; try { anthropicKey = localStorage.getItem('vcfo_anthropic') || ''; } catch(e) {}
-let ANTHROPIC_PROXY_URL = ''; try { ANTHROPIC_PROXY_URL = localStorage.getItem('vcfo_proxy_url') || ''; } catch(e) {}
-let serpApiKey = ''; try { serpApiKey = localStorage.getItem('vcfo_serp') || ''; } catch(e) {}
+let anthropicKey = ''; try { anthropicKey = DealScopeStore.get('anthropic') || ''; } catch(e) {}
+let ANTHROPIC_PROXY_URL = ''; try { ANTHROPIC_PROXY_URL = DealScopeStore.get('proxy_url') || ''; } catch(e) {}
+let serpApiKey = ''; try { serpApiKey = DealScopeStore.get('serp') || ''; } catch(e) {}
 let companyData  = null;
 
 // ============================================================
@@ -3272,7 +3857,7 @@ let maRunning    = false;
 // ============================================================
 // INTERNATIONALISATION — EN / SV
 // ============================================================
-let appLang = 'en'; try { appLang = localStorage.getItem('vcfo_lang') || 'en'; } catch(e) {}
+let appLang = 'en'; try { appLang = DealScopeStore.get('lang') || 'en'; } catch(e) {}
 
 const STRINGS = {
   en: {
@@ -3286,15 +3871,29 @@ const STRINGS = {
     api_hint:           'SE Registry · UC AB via allabolag.se',
 
     // Tabs
-    tab_company:        '🏢 Company',
-    tab_cfo:            '📊 CFO Audit',
-    tab_ma:             '🎯 M&A Screener',
-    tab_financials:     '📋 Financials',
-    tab_cashflow:       '💧 Cash Flow',
-    tab_compare:        '⚖ Compare',
-    tab_benchmarks:     '📡 Benchmarks',
-    tab_watchlist:      '★ Watchlist',
-    tab_guide:          '📖 Guide',
+    tab_company:           '🏢 Company',
+    tab_cfo:               '📊 CFO Audit',
+    tab_ma:                '🎯 M&A Screener',
+    tab_financials:        '📋 Financials',
+    tab_cashflow:          '💧 Cash Flow',
+    tab_compare:           '⚖ Compare',
+    tab_benchmarks:        '📡 Benchmarks',
+    tab_watchlist:         '★ Watchlist',
+    tab_guide:             '📖 Guide',
+    tab_pipeline:          '🗂 Pipeline',
+    tab_saved_searches:    '🔔 Saved Searches',
+    tab_succession_radar:  '📡 Succession Radar',
+
+    // Succession Radar
+    kpi_succession:        'Succession',
+    kpi_succession_sub:    'Exit likelihood 0–100',
+    btn_add_to_radar:      '📡 Add to Radar',
+    sr_add_from_wl:        'Import Watchlist',
+    sr_empty:              'No companies in radar. Add companies above or import from Watchlist.',
+    sr_loading:            'Fetching ownership data…',
+    sr_score_label:        'Score',
+    sr_owner_age:          'Owner Age',
+    sr_signals:            'Signals',
 
     // Company empty state
     search_heading:     'Search for any Swedish company',
@@ -3446,14 +4045,96 @@ const STRINGS = {
     verdict_pass:           'PASS',
 
     // Chatbot
-    chat_title:             'VCFO AI Assistant',
-    chat_subtitle_simple:   'Plain English mode · Aware of your company context',
-    chat_subtitle_expert:   'Expert CFO/M&A mode · Aware of your company context',
+    chat_title:             'DealScope AI',
+    chat_subtitle_simple:   'Plain English mode · Your deal-sourcing copilot',
+    chat_subtitle_expert:   'Expert CFO/M&A mode · Your deal-sourcing copilot',
     chat_mode_simple:       'SIMPLE',
     chat_mode_expert:       'EXPERT',
-    chat_placeholder:       'Ask about the loaded company, CFO findings, M&A score…',
-    chat_label:             'VCFO AI',
-    chat_welcome:           "Hi! I'm your VCFO AI — both your **financial analyst** and your **app guide**.\n\nI know every feature of this terminal and I always know which screen you're on. You can ask me:\n- **About the app** — \"How do I use the Compare tab?\" or \"What does the M&A score mean?\"\n- **About the data** — \"Explain the CFO flags\" or \"Should I acquire this company?\"\n- **What to do next** — I'll guide you step by step.\n\nLoad a company to get started, or ask me anything.",
+    chat_placeholder:       'Ask about the loaded company, deal pipeline, succession signals…',
+    chat_label:             'DealScope AI',
+    chat_welcome:           "Hi! I'm **DealScope AI** — your deal-sourcing copilot for Nordic acquisitions.\n\nI know every feature of this platform and I always know which screen you're on. You can ask me:\n- **About the app** — \"How do I use the Pipeline tab?\" or \"What does the M&A score mean?\"\n- **About the data** — \"Explain the CFO flags\" or \"Is this company a good acquisition target?\"\n- **Deal sourcing** — \"Find succession candidates in Stockholm\" or \"What signals should I look for?\"\n- **What to do next** — I'll guide you step by step.\n\nLoad a company to get started, or ask me anything.",
+
+    // Saved Searches
+    // Nordic expansion
+    nc_coming_soon_sub:  'Full integration coming soon — succession radar, financials, outreach generator',
+    nc_open_registry:    'Open Registry ↗',
+    nc_switch_se:        'Switch to Sweden',
+    nc_roadmap_title:    'Nordic Expansion Roadmap',
+
+    // Workspace
+    tab_workspace:         '👥 Workspace',
+    ws_firm_settings:      'Firm Settings',
+    ws_firm_name:          'Firm / Fund name',
+    ws_acquirer_type:      'Acquirer type',
+    ws_type_sf:            'Search Fund',
+    ws_type_pe:            'Micro-PE',
+    ws_type_fo:            'Family Office',
+    ws_type_str:           'Strategic Acquirer',
+    ws_criteria:           'Target criteria',
+    ws_criteria_ph:        'e.g. Swedish manufacturing SMEs, EBIT ≥10M, owner aged 55+',
+    ws_digest:             'Deal Digest',
+    ws_ic_memo:            'IC Memo Generator',
+    ws_pick_deal:          'Select deal from pipeline',
+    ws_generate_btn:       '📄 Generate Memo',
+    ws_memo_ready:         '✓ Memo ready',
+    ws_select_deal:        'Select a deal first',
+    ws_memo_copied:        '✓ IC Memo copied',
+
+    // Outreach Generator
+    outreach_title:        'Outreach Generator',
+    outreach_your_name:    'Your name',
+    outreach_your_firm:    'Your firm',
+    outreach_template:     'Template',
+    og_tpl_formal_sv:      'Formal letter (SV)',
+    og_tpl_email_en:       'Warm email (EN)',
+    og_tpl_email_sv:       'Warm email (SV)',
+    og_tpl_followup:       'Follow-up (EN)',
+    outreach_generate_btn: '📨 Generate',
+    outreach_copy:         'Copy',
+    outreach_done:         '✓ Generated',
+    outreach_copied:       '✓ Copied to clipboard',
+    outreach_anon:         'Acquirer',
+
+    // Pipeline CRM
+    btn_add_pipeline:  '🗂 Pipeline',
+    pl_add_btn:        '+ Add Deal',
+    pl_add_title:      'Add Deal',
+    pl_name_label:     'Company name',
+    pl_orgnr_label:    'Org nr (optional)',
+    pl_stage_label:    'Stage',
+    pl_add_save:       'Add',
+    pl_note_ph:        'Notes…',
+    pl_delete_btn:     'Remove',
+    pl_name_required:  'Please enter a company name.',
+    pl_empty_title:    'No deals in pipeline',
+    pl_empty_sub:      'Add a company or push one from the Succession Radar.',
+
+    // Saved Searches
+    ss_new_btn:        '+ New Search',
+    ss_new_title:      'New Saved Search',
+    ss_edit_title:     'Edit Saved Search',
+    ss_save_btn:       'Save Search',
+    ss_name_label:     'Search name',
+    ss_name_ph:        'e.g. Succession targets Skåne',
+    ss_sni_label:      'SNI sector (2-digit)',
+    ss_sni_ph:         'e.g. 25',
+    ss_region_label:   'Region / County',
+    ss_region_ph:      'e.g. Skåne',
+    ss_rev_label:      'Revenue MSEK (min – max)',
+    ss_ros_label:      'EBIT margin min (%)',
+    ss_score_label:    'Succession score min (0–100)',
+    ss_run_btn:        'Run',
+    ss_edit_btn:       'Edit',
+    ss_delete_btn:     'Delete',
+    ss_empty_title:    'No saved searches yet',
+    ss_empty_sub:      'Create a search to quickly resurface matching companies.',
+    ss_last_run:       'Last run',
+    ss_never_run:      'Never run',
+    ss_just_now:       'just now',
+    ss_no_filters:     'No filters set',
+    ss_name_required:  'Please enter a search name.',
+    ss_saved_toast:    '✓ Search saved',
+    cancel:            'Cancel',
   },
 
   sv: {
@@ -3467,15 +4148,29 @@ const STRINGS = {
     api_hint:           'SE Register · UC AB via allabolag.se',
 
     // Tabs
-    tab_company:        '🏢 Företag',
-    tab_cfo:            '📊 CFO-analys',
-    tab_ma:             '🎯 Förvärvsscreening',
-    tab_financials:     '📋 Finanser',
-    tab_cashflow:       '💧 Kassaflöde',
-    tab_compare:        '⚖ Jämför',
-    tab_benchmarks:     '📡 Nyckeltal',
-    tab_watchlist:      '★ Bevakningslista',
-    tab_guide:          '📖 Guide',
+    tab_company:           '🏢 Företag',
+    tab_cfo:               '📊 CFO-analys',
+    tab_ma:                '🎯 Förvärvsscreening',
+    tab_financials:        '📋 Finanser',
+    tab_cashflow:          '💧 Kassaflöde',
+    tab_compare:           '⚖ Jämför',
+    tab_benchmarks:        '📡 Nyckeltal',
+    tab_watchlist:         '★ Bevakningslista',
+    tab_guide:             '📖 Guide',
+    tab_pipeline:          '🗂 Pipeline',
+    tab_saved_searches:    '🔔 Sparade sökningar',
+    tab_succession_radar:  '📡 Successionsradar',
+
+    // Succession Radar
+    kpi_succession:        'Succession',
+    kpi_succession_sub:    'Sannolikhet för exit 0–100',
+    btn_add_to_radar:      '📡 Lägg till i Radar',
+    sr_add_from_wl:        'Importera bevakningslista',
+    sr_empty:              'Inga företag i radarn. Lägg till företag ovan eller importera från bevakningslistan.',
+    sr_loading:            'Hämtar ägardata…',
+    sr_score_label:        'Poäng',
+    sr_owner_age:          'Ägarålder',
+    sr_signals:            'Signaler',
 
     // Company empty state
     search_heading:     'Sök efter vilket svenskt företag som helst',
@@ -3627,14 +4322,96 @@ const STRINGS = {
     verdict_pass:           'PASS',
 
     // Chatbot
-    chat_title:             'VCFO AI-assistent',
-    chat_subtitle_simple:   'Enkelt läge · Känner till ditt företagssammanhang',
-    chat_subtitle_expert:   'Expertläge CFO/M&A · Känner till ditt sammanhang',
+    chat_title:             'DealScope AI',
+    chat_subtitle_simple:   'Enkelt läge · Din deal-sourcing-copilot',
+    chat_subtitle_expert:   'Expertläge CFO/M&A · Din deal-sourcing-copilot',
     chat_mode_simple:       'ENKELT',
     chat_mode_expert:       'EXPERT',
-    chat_placeholder:       'Fråga om det laddade företaget, CFO-flaggor, förvärvspoäng…',
-    chat_label:             'VCFO AI',
-    chat_welcome:           "Hej! Jag är din VCFO AI — både din **finansiella analytiker** och din **appguide**.\n\nJag känner till varje funktion i det här verktyget och vet alltid vilken skärm du befinner dig på. Du kan fråga mig:\n- **Om appen** — \"Hur använder jag jämförelsefliken?\" eller \"Vad betyder förvärvspoängen?\"\n- **Om datan** — \"Förklara CFO-flaggorna\" eller \"Bör jag förvärva det här företaget?\"\n- **Vad du ska göra härnäst** — Jag guidar dig steg för steg.\n\nLadda ett företag för att komma igång, eller fråga mig vad som helst.",
+    chat_placeholder:       'Fråga om det laddade företaget, pipeline, successionsignaler…',
+    chat_label:             'DealScope AI',
+    chat_welcome:           "Hej! Jag är **DealScope AI** — din deal-sourcing-copilot för nordiska förvärv.\n\nJag känner till varje funktion i den här plattformen och vet alltid vilken skärm du befinner dig på. Du kan fråga mig:\n- **Om appen** — \"Hur använder jag Pipeline-fliken?\" eller \"Vad betyder förvärvspoängen?\"\n- **Om datan** — \"Förklara CFO-flaggorna\" eller \"Är det här ett bra förvärvsmål?\"\n- **Deal sourcing** — \"Hitta successionsbolag i Stockholm\" eller \"Vilka signaler ska jag leta efter?\"\n- **Vad du ska göra härnäst** — Jag guidar dig steg för steg.\n\nLadda ett företag för att komma igång, eller fråga mig vad som helst.",
+
+    // Saved Searches
+    // Nordic expansion
+    nc_coming_soon_sub:  'Full integration kommer snart — succession radar, ekonomi, outreach-generator',
+    nc_open_registry:    'Öppna register ↗',
+    nc_switch_se:        'Byt till Sverige',
+    nc_roadmap_title:    'Nordisk expansionsplan',
+
+    // Workspace
+    tab_workspace:         '👥 Arbetsyta',
+    ws_firm_settings:      'Firmainställningar',
+    ws_firm_name:          'Firma / Fond',
+    ws_acquirer_type:      'Förvärvartyp',
+    ws_type_sf:            'Sökfond',
+    ws_type_pe:            'Micro-PE',
+    ws_type_fo:            'Family Office',
+    ws_type_str:           'Strategisk förvärvare',
+    ws_criteria:           'Målkriterier',
+    ws_criteria_ph:        't.ex. Svenska tillverkningsbolag, EBIT ≥10M, ägare 55+',
+    ws_digest:             'Deal-sammanfattning',
+    ws_ic_memo:            'IC-memo-generator',
+    ws_pick_deal:          'Välj affär från pipeline',
+    ws_generate_btn:       '📄 Generera memo',
+    ws_memo_ready:         '✓ Memo klart',
+    ws_select_deal:        'Välj en affär först',
+    ws_memo_copied:        '✓ IC-memo kopierat',
+
+    // Outreach Generator
+    outreach_title:        'Outreach-generator',
+    outreach_your_name:    'Ditt namn',
+    outreach_your_firm:    'Ditt bolag',
+    outreach_template:     'Mall',
+    og_tpl_formal_sv:      'Formellt brev (SV)',
+    og_tpl_email_en:       'Varmt mejl (EN)',
+    og_tpl_email_sv:       'Varmt mejl (SV)',
+    og_tpl_followup:       'Uppföljning (EN)',
+    outreach_generate_btn: '📨 Generera',
+    outreach_copy:         'Kopiera',
+    outreach_done:         '✓ Genererat',
+    outreach_copied:       '✓ Kopierat',
+    outreach_anon:         'Förvärvaren',
+
+    // Pipeline CRM
+    btn_add_pipeline:  '🗂 Pipeline',
+    pl_add_btn:        '+ Lägg till affär',
+    pl_add_title:      'Lägg till affär',
+    pl_name_label:     'Företagsnamn',
+    pl_orgnr_label:    'Org nr (valfritt)',
+    pl_stage_label:    'Fas',
+    pl_add_save:       'Lägg till',
+    pl_note_ph:        'Anteckningar…',
+    pl_delete_btn:     'Ta bort',
+    pl_name_required:  'Ange ett företagsnamn.',
+    pl_empty_title:    'Inga affärer i pipeline',
+    pl_empty_sub:      'Lägg till ett bolag eller skicka ett från Succession Radar.',
+
+    // Saved Searches
+    ss_new_btn:        '+ Ny sökning',
+    ss_new_title:      'Ny sparad sökning',
+    ss_edit_title:     'Redigera sparad sökning',
+    ss_save_btn:       'Spara sökning',
+    ss_name_label:     'Söknamn',
+    ss_name_ph:        't.ex. Successionsbolag Skåne',
+    ss_sni_label:      'SNI-bransch (2 siffror)',
+    ss_sni_ph:         't.ex. 25',
+    ss_region_label:   'Region / Län',
+    ss_region_ph:      't.ex. Skåne',
+    ss_rev_label:      'Omsättning MSEK (min – max)',
+    ss_ros_label:      'EBIT-marginal min (%)',
+    ss_score_label:    'Successionspoäng min (0–100)',
+    ss_run_btn:        'Kör',
+    ss_edit_btn:       'Redigera',
+    ss_delete_btn:     'Ta bort',
+    ss_empty_title:    'Inga sparade sökningar ännu',
+    ss_empty_sub:      'Skapa en sökning för att snabbt hitta matchande bolag.',
+    ss_last_run:       'Senast körd',
+    ss_never_run:      'Aldrig körd',
+    ss_just_now:       'just nu',
+    ss_no_filters:     'Inga filter angivna',
+    ss_name_required:  'Ange ett söknamn.',
+    ss_saved_toast:    '✓ Sökning sparad',
+    cancel:            'Avbryt',
   }
 };
 
@@ -3646,13 +4423,13 @@ function t(key) {
 // Toggle between EN and SV
 function toggleLanguage() {
   appLang = appLang === 'en' ? 'sv' : 'en';
-  try { localStorage.setItem('vcfo_lang', appLang); } catch(e) {}
+  DealScopeStore.set('lang', appLang);
   applyLanguage();
 }
 
 function toggleTheme() {
   const isLight = document.body.classList.toggle('light-mode');
-  try { localStorage.setItem('vcfo_theme', isLight ? 'light' : 'dark'); } catch(e) {}
+  DealScopeStore.set('theme', isLight ? 'light' : 'dark');
   const btn = document.getElementById('themeToggleBtn');
   if (btn) btn.textContent = isLight ? '☽' : '☀';
   // Re-render any live charts so their hardcoded colours update
@@ -3664,7 +4441,7 @@ function toggleTheme() {
 
 function applyTheme() {
   let theme = 'dark';
-  try { theme = localStorage.getItem('vcfo_theme') || 'dark'; } catch(e) {}
+  try { theme = DealScopeStore.get('theme') || 'dark'; } catch(e) {}
   if (theme === 'light') {
     document.body.classList.add('light-mode');
   } else {
@@ -3783,11 +4560,15 @@ function switchTab(name) {
   }
   activeTab = name;
   _switchTopTab(name);
-  if (name === 'benchmarks')        initBenchmarksTab();
-  if (name === 'cashflow')          renderCashFlow();
-  if (name === 'watchlist')         renderWatchlistTab();
-  if (name === 'journal')           renderJournalTab();
-  if (name === 'vault')             renderVaultList();
+  if (name === 'benchmarks')         initBenchmarksTab();
+  if (name === 'cashflow')           renderCashFlow();
+  if (name === 'watchlist')          renderWatchlistTab();
+  if (name === 'journal')            renderJournalTab();
+  if (name === 'vault')              renderVaultList();
+  if (name === 'succession-radar')   initSuccessionRadar();
+  if (name === 'pipeline')           initPipelineCRM();
+  if (name === 'workspace')          initWorkspace();
+  if (name === 'saved-searches')     initSavedSearches();
   if (name === 'competitor-bench')  {
     // Default to ranking unless user already picked a sub
     const sub = _activeSubTab['competitor-bench'] || 'ranking';
@@ -3799,7 +4580,8 @@ function switchTab(name) {
 }
 
 function _switchTopTab(name) {
-  ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','journal','vault','benchmarks','guide'].forEach(t => {
+  ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','journal','vault','benchmarks',
+   'pipeline','saved-searches','succession-radar','workspace','guide'].forEach(t => {
     const panel = document.getElementById('tab-' + t);
     if (panel) panel.style.display = (t === name) ? 'block' : 'none';
     const btn = document.getElementById('tab-' + t + '-btn');
@@ -3837,9 +4619,9 @@ function saveSettings() {
   anthropicKey        = document.getElementById('anthropicKeyInput').value.trim();
   ANTHROPIC_PROXY_URL = document.getElementById('proxyUrlInput').value.trim();
   serpApiKey           = document.getElementById('serpKeyInput').value.trim();
-  try { localStorage.setItem('vcfo_anthropic', anthropicKey); } catch(e) {}
-  try { localStorage.setItem('vcfo_proxy_url', ANTHROPIC_PROXY_URL); } catch(e) {}
-  try { localStorage.setItem('vcfo_serp', serpApiKey); } catch(e) {}
+  DealScopeStore.set('anthropic', anthropicKey);
+  DealScopeStore.set('proxy_url', ANTHROPIC_PROXY_URL);
+  DealScopeStore.set('serp', serpApiKey);
   closeSettings();
   showToast(t('toast_settings_saved'));
   updateAIStatus();
@@ -4610,6 +5392,11 @@ function handleSearchKey(e) {
 }
 
 function handleSearchLoad() {
+  if (ncGetCountry() !== 'se') {
+    const c = NORDIC_COUNTRIES[ncGetCountry()];
+    showToast(`🚧 ${c.flag} ${c.name} integration coming soon`);
+    return;
+  }
   const val = document.getElementById('orgInput').value.trim();
   if (!val) { showToast(t('toast_no_input')); return; }
 
@@ -5460,6 +6247,38 @@ function renderCompanyTab(d) {
   setKPI('kpiDE',  fmtRatio(de), de < 1.5 ? 'green' : de < 3 ? 'amber' : 'red');
   setKPI('kpiCR',  fmtRatio(cr), cr > 1.5 ? 'green' : cr > 1 ? 'amber' : 'red');
 
+  // Pipeline button
+  const pipelineBtn = document.getElementById('btnAddToPipeline');
+  if (pipelineBtn) pipelineBtn.style.display = window.DEALSCOPE_FLAGS?.pipelineCrm ? '' : 'none';
+
+  // Succession Radar KPI card + cache + button (only when flag is on)
+  if (window.DEALSCOPE_FLAGS?.successionRadar) {
+    const succCard = document.getElementById('kpiSuccessionCard');
+    const radarBtn = document.getElementById('btnAddToRadar');
+    if (succCard) succCard.style.display = '';
+    if (radarBtn) radarBtn.style.display = '';
+
+    // Cache the company data for use in the radar
+    srCacheCompanyData(d.orgNr, d);
+
+    // Compute score with available data (ownership fetched async)
+    const cachedOwnership = DealScopeStore.get('ownership_' + d.orgNr.replace(/[^0-9]/g, ''));
+    const histArr = d.prevNetSales > 0 ? [{ netSales: d.prevNetSales, netProfit: 0, dividendsPaid: 0 }, d] : [d];
+    const succResult = computeSuccessionScore(d, cachedOwnership || null, histArr);
+    const succScore = succResult.score;
+    setKPI('kpiSuccession', String(succScore),
+      succScore >= 60 ? 'red' : succScore >= 30 ? 'amber' : 'green');
+
+    // Background fetch ownership and update KPI when it arrives
+    fetchOwnership(d.orgNr).then(owData => {
+      if (!owData || !companyData || companyData.orgNr !== d.orgNr) return;
+      const histArr2 = d.prevNetSales > 0 ? [{ netSales: d.prevNetSales, netProfit: 0, dividendsPaid: 0 }, d] : [d];
+      const res2 = computeSuccessionScore(d, owData, histArr2);
+      setKPI('kpiSuccession', String(res2.score),
+        res2.score >= 60 ? 'red' : res2.score >= 30 ? 'amber' : 'green');
+    }).catch(() => {});
+  }
+
   // Income / balance tables
   document.getElementById('incomeData').innerHTML = buildFieldRows([
     ['Net Sales (Nettoomsättning)', d.netSales, 'neutral'],
@@ -5481,6 +6300,9 @@ function renderCompanyTab(d) {
     ['  — Due in >5 years',         d.longTermDebtOver5y, d.longTermDebtOver5y > d.equity * 0.5 ? 'neg' : 'neutral'],
     ['Current Liabilities',         d.currentLiabilities, 'neutral'],
   ]);
+
+  // Outreach Generator panel
+  ogShow();
 }
 
 function setKPI(id, val, cls='') {
@@ -7428,6 +8250,1063 @@ function animateProgress(id, target, duration) {
 }
 
 // ============================================================
+// SUCCESSION RADAR — core data & computation
+// ============================================================
+
+function getOwnershipProxyUrl() { return '/api/ownership'; }
+
+async function fetchOwnership(orgNr) {
+  const clean = orgNr.replace(/[^0-9]/g, '');
+  const cacheKey = 'ownership_' + clean;
+  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+  const cached = DealScopeStore.get(cacheKey);
+  if (cached && cached.fetchedAt && (Date.now() - new Date(cached.fetchedAt).getTime()) < THIRTY_DAYS) {
+    return cached;
+  }
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    const res = await fetch(`${getOwnershipProxyUrl()}?orgNr=${clean}`, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.error && !data.county && !data.boardMembers?.length) return null;
+    DealScopeStore.set(cacheKey, data);
+    return data;
+  } catch(e) { return null; }
+}
+
+function computeSuccessionScore(company, ownership, histYears) {
+  const signals = [];
+  let score = 0;
+  const yr = new Date().getFullYear();
+
+  // Signals 1–3: Primary owner age
+  if (ownership?.primaryOwner?.birthYear) {
+    const age = yr - ownership.primaryOwner.birthYear;
+    if (age >= 65)      { score += 35; signals.push({ label: `Owner aged ${age} — prime succession window`, w: 35, color: 'red' }); }
+    else if (age >= 60) { score += 20; signals.push({ label: `Owner aged ${age} — approaching retirement`, w: 20, color: 'amber' }); }
+    else if (age >= 55) { score += 10; signals.push({ label: `Owner aged ${age} — succession horizon 5–10 yrs`, w: 10, color: 'amber' }); }
+  }
+
+  // Signal 4: No family members on board
+  if (ownership?.boardMembers?.length && ownership?.primaryOwner?.lastName) {
+    const ownerSurname = ownership.primaryOwner.lastName.toLowerCase();
+    const hasFamily = ownership.boardMembers.some(m =>
+      m.lastName && m.name !== ownership.primaryOwner.name &&
+      m.lastName.toLowerCase() === ownerSurname
+    );
+    if (!hasFamily) { score += 15; signals.push({ label: 'No family on board — no obvious internal successor', w: 15, color: 'blue' }); }
+  }
+
+  // Signal 5: Flat or declining revenue last 2 FYs
+  if (histYears && histYears.length >= 2) {
+    const latest = histYears[histYears.length - 1];
+    const prev   = histYears[histYears.length - 2];
+    if (latest && prev && prev.netSales > 0) {
+      const growth = (latest.netSales - prev.netSales) / prev.netSales * 100;
+      if (growth <= 2) { score += 10; signals.push({ label: `Revenue flat/declining (${growth.toFixed(1)}% YoY)`, w: 10, color: 'amber' }); }
+    }
+  } else if (company.prevNetSales > 0) {
+    const growth = (company.netSales - company.prevNetSales) / company.prevNetSales * 100;
+    if (growth <= 2) { score += 10; signals.push({ label: `Revenue flat/declining (${growth.toFixed(1)}% YoY)`, w: 10, color: 'amber' }); }
+  }
+
+  // Signal 6: Dividend payout ratio trending up ≥ 2 years (needs 3 years)
+  if (histYears && histYears.length >= 3) {
+    const payouts = histYears.slice(-3).map(y => y.netProfit > 0 ? y.dividendsPaid / y.netProfit : 0);
+    if (payouts[1] > payouts[0] && payouts[2] > payouts[1] && payouts[2] > 0.3) {
+      score += 10;
+      signals.push({ label: 'Dividends rising 3 consecutive years — extracting cash pre-exit', w: 10, color: 'amber' });
+    }
+  }
+
+  // Signal 7: No leadership hires last 24 months — skip (no data source)
+
+  // Signal 8: Auditor remark present
+  if (company.auditorRemark) { score += 10; signals.push({ label: 'Auditor remark (Anmärkning) — compliance risk', w: 10, color: 'red' }); }
+
+  return { score: Math.min(100, score), signals };
+}
+
+// ── SNI code → radar sector bucket ──────────────────────────────────────────
+function srSniToBucket(sni) {
+  if (!sni || sni === '—') return 'other';
+  const n = parseInt(String(sni).slice(0, 2));
+  if (n >= 10 && n <= 33) return 'manufacturing';
+  if (n >= 41 && n <= 43) return 'construction';
+  if (n === 46)            return 'wholesale';
+  if (n === 47)            return 'retail';
+  if (n >= 49 && n <= 53) return 'transport';
+  if (n === 68)            return 'realestate';
+  if (n >= 58 && n <= 63) return 'ict';
+  if (n >= 69 && n <= 74) return 'professional';
+  if (n >= 86 && n <= 88) return 'healthcare';
+  return 'other';
+}
+
+// ── Revenue band ─────────────────────────────────────────────────────────────
+function srRevBand(netSales) {
+  if (!netSales) return 'micro';
+  if (netSales < 10e6)   return 'micro';
+  if (netSales < 50e6)   return 'small';
+  if (netSales < 200e6)  return 'mid';
+  return 'large';
+}
+
+// ============================================================
+// SUCCESSION RADAR — universe store
+// ============================================================
+
+function srLoadUniverse() { return DealScopeStore.get('radar_universe') || []; }
+function srSaveUniverse(list) { DealScopeStore.set('radar_universe', list); }
+
+function srAddToUniverse(orgNr, name) {
+  const clean = orgNr.replace(/[^0-9]/g, '');
+  const list = srLoadUniverse();
+  if (!list.some(c => c.orgNr === clean)) {
+    list.push({ orgNr: clean, name: name || clean, addedAt: new Date().toISOString() });
+    srSaveUniverse(list);
+  }
+}
+
+function srRemoveFromUniverse(orgNr) {
+  const clean = orgNr.replace(/[^0-9]/g, '');
+  srSaveUniverse(srLoadUniverse().filter(c => c.orgNr !== clean));
+}
+
+// Cache company data keyed by orgNr for use in the radar
+function srCacheCompanyData(orgNr, data) {
+  DealScopeStore.set('company_cache_' + orgNr.replace(/[^0-9]/g, ''), {
+    data, cachedAt: new Date().toISOString()
+  });
+}
+function srGetCachedCompany(orgNr) {
+  const c = DealScopeStore.get('company_cache_' + orgNr.replace(/[^0-9]/g, ''));
+  return c?.data || null;
+}
+
+// ============================================================
+// SUCCESSION RADAR — filter + sort state
+// ============================================================
+
+const _srFilter = { sni: 'all', revBand: 'all', minScore: 0 };
+const _srSort   = { col: 'score', dir: 'desc' };
+let   _srRows   = [];  // last computed full row set
+
+function srSetFilter(key, val, btn) {
+  _srFilter[key] = typeof val === 'string' ? val : Number(val);
+  // Toggle pill active state within the group
+  if (btn) {
+    btn.closest('.sr-filter-group').querySelectorAll('.sr-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  renderSRTable();
+  renderSRMap(_srRows.filter(r => !r.loading));
+}
+
+function srSortBy(col) {
+  if (_srSort.col === col) { _srSort.dir = _srSort.dir === 'asc' ? 'desc' : 'asc'; }
+  else { _srSort.col = col; _srSort.dir = col === 'score' || col === 'revenue' || col === 'ownerAge' ? 'desc' : 'asc'; }
+  // Update header classes
+  document.querySelectorAll('.sr-table th[id^="srTh_"]').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+  });
+  const activeHdr = document.getElementById('srTh_' + col);
+  if (activeHdr) activeHdr.classList.add(_srSort.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+  renderSRTable();
+}
+
+// ============================================================
+// SUCCESSION RADAR — SVG county map
+// ============================================================
+
+const SR_COUNTIES = [
+  { code:'AB', name:'Stockholms',       x:132, y:295 },
+  { code:'C',  name:'Uppsala',          x:118, y:268 },
+  { code:'D',  name:'Södermanlands',    x:110, y:315 },
+  { code:'E',  name:'Östergötlands',    x: 96, y:338 },
+  { code:'F',  name:'Jönköpings',       x: 76, y:363 },
+  { code:'G',  name:'Kronobergs',       x: 78, y:395 },
+  { code:'H',  name:'Kalmar',           x:104, y:375 },
+  { code:'I',  name:'Gotlands',         x:148, y:355 },
+  { code:'K',  name:'Blekinge',         x: 94, y:420 },
+  { code:'M',  name:'Skåne',            x: 68, y:442 },
+  { code:'N',  name:'Hallands',         x: 44, y:415 },
+  { code:'O',  name:'Västra Götalands', x: 44, y:358 },
+  { code:'S',  name:'Värmlands',        x: 58, y:305 },
+  { code:'T',  name:'Örebro',           x: 84, y:308 },
+  { code:'U',  name:'Västmanlands',     x:102, y:290 },
+  { code:'W',  name:'Dalarnas',         x: 68, y:248 },
+  { code:'X',  name:'Gävleborgs',       x:108, y:235 },
+  { code:'Y',  name:'Västernorrlands',  x:118, y:195 },
+  { code:'Z',  name:'Jämtlands',        x: 62, y:188 },
+  { code:'AC', name:'Västerbottens',    x:102, y:138 },
+  { code:'BD', name:'Norrbottens',      x:132, y: 72 },
+];
+
+function renderSRMap(rows) {
+  rows = rows || [];
+  const g = document.getElementById('srCountyDots');
+  if (!g) return;
+
+  // Group rows by county
+  const byCounty = {};
+  rows.forEach(r => {
+    if (!r.county || r.county === '—') return;
+    // Match county name to code
+    const match = SR_COUNTIES.find(c => r.county.toLowerCase().includes(c.name.toLowerCase()));
+    if (!match) return;
+    if (!byCounty[match.code]) byCounty[match.code] = { count: 0, scoreSum: 0 };
+    byCounty[match.code].count++;
+    byCounty[match.code].scoreSum += (r.score || 0);
+  });
+
+  // Render dots
+  const maxCount = Math.max(1, ...Object.values(byCounty).map(d => d.count));
+  g.innerHTML = SR_COUNTIES.map(c => {
+    const d = byCounty[c.code];
+    if (!d) {
+      return `<circle cx="${c.x}" cy="${c.y}" r="4" fill="var(--bg4)" stroke="var(--border)" stroke-width="0.8" opacity="0.5"
+        data-county="${c.name}" class="sr-county-dot"/>
+              <text x="${c.x}" y="${c.y+3}" text-anchor="middle" font-size="5" fill="var(--text3)" pointer-events="none">${c.code}</text>`;
+    }
+    const avg = d.scoreSum / d.count;
+    const r = Math.max(6, Math.min(16, 6 + (d.count / maxCount) * 10));
+    const fill = avg >= 60 ? 'var(--red)' : avg >= 30 ? 'var(--amber)' : 'var(--blue)';
+    const opacity = 0.5 + (avg / 100) * 0.5;
+    return `<circle cx="${c.x}" cy="${c.y}" r="${r.toFixed(1)}" fill="${fill}" stroke="var(--bg)" stroke-width="1" opacity="${opacity.toFixed(2)}"
+      data-county="${c.name}" data-count="${d.count}" data-avg="${avg.toFixed(0)}" class="sr-county-dot" style="cursor:pointer;"/>
+            <text x="${c.x}" y="${c.y+3}" text-anchor="middle" font-size="5.5" font-weight="600" fill="var(--bg)" pointer-events="none">${c.code}</text>`;
+  }).join('');
+
+  // County tooltip
+  g.querySelectorAll('.sr-county-dot').forEach(el => {
+    el.addEventListener('mouseenter', (e) => {
+      const tip = document.getElementById('srCountyTooltip');
+      if (!tip) return;
+      const county = el.dataset.county;
+      const count = el.dataset.count;
+      const avg = el.dataset.avg;
+      tip.textContent = count
+        ? `${county} · ${count} co. · Avg score: ${avg}`
+        : `${county} · No companies`;
+      tip.style.display = 'block';
+      tip.style.left = (e.clientX + 10) + 'px';
+      tip.style.top  = (e.clientY - 4) + 'px';
+    });
+    el.addEventListener('mousemove', (e) => {
+      const tip = document.getElementById('srCountyTooltip');
+      if (tip) { tip.style.left = (e.clientX + 10) + 'px'; tip.style.top = (e.clientY - 4) + 'px'; }
+    });
+    el.addEventListener('mouseleave', () => {
+      const tip = document.getElementById('srCountyTooltip');
+      if (tip) tip.style.display = 'none';
+    });
+  });
+}
+
+// ============================================================
+// SUCCESSION RADAR — table render
+// ============================================================
+
+function renderSRTable() {
+  const tbody = document.getElementById('srTableBody');
+  const countEl = document.getElementById('srTableCount');
+  if (!tbody) return;
+
+  // Apply filters
+  let rows = _srRows.filter(r => {
+    if (r.loading) return true;
+    if (_srFilter.sni !== 'all' && srSniToBucket(r.sni) !== _srFilter.sni) return false;
+    if (_srFilter.revBand !== 'all' && srRevBand(r.revenue) !== _srFilter.revBand) return false;
+    if (r.score < _srFilter.minScore) return false;
+    return true;
+  });
+
+  // Sort
+  rows = [...rows].sort((a, b) => {
+    if (a.loading) return 1;
+    if (b.loading) return -1;
+    const col = _srSort.col;
+    let va = a[col], vb = b[col];
+    if (col === 'name') { va = (va||'').toLowerCase(); vb = (vb||'').toLowerCase(); }
+    if (va === null || va === undefined) return 1;
+    if (vb === null || vb === undefined) return -1;
+    return _srSort.dir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+  });
+
+  // Update stats
+  const scored = rows.filter(r => !r.loading);
+  document.getElementById('srStatTotal').textContent = scored.length;
+  const avgScore = scored.length ? Math.round(scored.reduce((s, r) => s + r.score, 0) / scored.length) : 0;
+  document.getElementById('srStatAvg').textContent = scored.length ? avgScore : '—';
+  document.getElementById('srStatHigh').textContent = scored.filter(r => r.score >= 40).length;
+  document.getElementById('srStatAge').textContent = scored.filter(r => r.ownerAge !== null).length;
+  if (countEl) countEl.textContent = scored.length ? `(${scored.length} companies)` : '';
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:24px;">${t('sr_empty')}</td></tr>`;
+    renderSRMap([]);
+    return;
+  }
+
+  tbody.innerHTML = rows.map((r, idx) => {
+    if (r.loading) {
+      return `<tr><td colspan="9" style="color:var(--text3);font-size:10px;padding:8px 10px;">
+        ⟳ ${r.name} — ${t('sr_loading')}</td></tr>`;
+    }
+    const rankStr = String(idx + 1).padStart(2, '0');
+    const scoreCls = r.score >= 60 ? 'high' : r.score >= 30 ? 'mid' : 'low';
+    const scoreColor = r.score >= 60 ? 'var(--red)' : r.score >= 30 ? 'var(--amber)' : 'var(--blue)';
+    const scoreBar = `<div class="sr-score-bar">
+      <div class="sr-score-fill ${scoreCls}" style="width:${Math.max(2, r.score)}px"></div>
+      <span style="color:${scoreColor};font-weight:600;">${r.score}</span>
+    </div>`;
+    const signalDots = r.signals.slice(0, 4).map(s =>
+      `<span class="sr-signal-dot" style="background:var(--${s.color})" title="${s.label}"></span>`
+    ).join('');
+    const sectorLabel = r.sni && r.sni !== '—' ? r.sni.slice(0, 4) : '—';
+    const orgFmt = r.orgNr.replace(/(\d{6})(\d{4})/, '$1-$2');
+
+    return `<tr onclick="loadCompanyByOrg('${r.orgNr}')" title="Click to load in Company tab">
+      <td style="color:var(--text3);">${rankStr}</td>
+      <td>
+        <div style="color:var(--text);font-weight:600;font-size:11px;">${r.name}</div>
+        <div style="color:var(--text3);font-size:9px;">${orgFmt}</div>
+      </td>
+      <td style="font-size:10px;">${sectorLabel}</td>
+      <td style="font-size:10px;">${r.county || '—'}</td>
+      <td>${scoreBar}${signalDots}</td>
+      <td style="color:${r.ownerAge ? (r.ownerAge >= 65 ? 'var(--red)' : r.ownerAge >= 60 ? 'var(--amber)' : 'var(--text2)') : 'var(--text3)'};">
+        ${r.ownerAge ? r.ownerAge + ' yrs' : '—'}
+      </td>
+      <td style="color:${r.ros > 8 ? 'var(--green)' : r.ros > 0 ? 'var(--amber)' : 'var(--red)'};">
+        ${r.ros !== null ? r.ros.toFixed(1) + '%' : '—'}
+      </td>
+      <td style="font-family:'JetBrains Mono',monospace;">${r.revenue ? fmtSEK(r.revenue) : '—'}</td>
+      <td onclick="event.stopPropagation();" style="white-space:nowrap;">
+        <button class="sr-add-pipeline-btn" onclick="srAddToPipelinePlaceholder('${r.orgNr}','${r.name.replace(/'/g,"\\'")}')">+ Pipeline</button>
+        <button class="sr-remove-btn" onclick="srRemoveRow('${r.orgNr}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  renderSRMap(scored);
+}
+
+function srAddToPipelinePlaceholder(orgNr, name) {
+  if (!window.DEALSCOPE_FLAGS?.pipelineCrm) {
+    showToast(`${name} — Pipeline tab not enabled`);
+    return;
+  }
+  const row = _srRows.find(r => r.orgNr === orgNr);
+  plAddCard(orgNr, name, 'sourced', row ? { revenue: row.revenue, score: row.score } : null);
+}
+
+function srRemoveRow(orgNr) {
+  srRemoveFromUniverse(orgNr);
+  _srRows = _srRows.filter(r => r.orgNr !== orgNr);
+  renderSRTable();
+  renderSRMap(_srRows.filter(r => !r.loading));
+}
+
+// ============================================================
+// SUCCESSION RADAR — init and data loading
+// ============================================================
+
+async function initSuccessionRadar() {
+  // Seed from watchlist on first ever visit
+  const universe = srLoadUniverse();
+  if (universe.length === 0) {
+    const wl = wlLoad();
+    if (wl.length > 0) {
+      wl.forEach(w => srAddToUniverse(w.orgNr, w.name));
+      document.getElementById('srAddStatus').textContent =
+        `✓ Imported ${wl.length} companies from Watchlist`;
+    }
+  }
+  await renderSuccessionRadar();
+}
+
+async function renderSuccessionRadar() {
+  const universe = srLoadUniverse();
+  _srRows = [];
+
+  for (const entry of universe) {
+    const orgNr = entry.orgNr;
+    const company = srGetCachedCompany(orgNr);
+    if (!company) {
+      _srRows.push({ orgNr, name: entry.name, loading: true, score: 0, signals: [], sni: '—', county: '—', ros: null, revenue: null, ownerAge: null });
+      continue;
+    }
+
+    const ownership = DealScopeStore.get('ownership_' + orgNr) || null;
+    // Build minimal history from available prev data
+    const histYears = [];
+    if (company.prevNetSales > 0) {
+      histYears.push({ netSales: company.prevNetSales, netProfit: 0, dividendsPaid: 0 });
+    }
+    histYears.push(company);
+
+    const m           = deriveMetrics(company);
+    const succession  = computeSuccessionScore(company, ownership, histYears);
+
+    _srRows.push({
+      orgNr,
+      name:     company.name || entry.name,
+      sni:      company.sni  || '—',
+      county:   ownership?.county || '—',
+      score:    succession.score,
+      signals:  succession.signals,
+      ownerAge: ownership?.primaryOwner?.birthYear ? (new Date().getFullYear() - ownership.primaryOwner.birthYear) : null,
+      ownerName: ownership?.primaryOwner?.name || null,
+      ros:      m?.ros ?? null,
+      revenue:  company.netSales || null,
+      maScore:  computeMAScore(company),
+      loading:  false,
+    });
+  }
+
+  renderSRTable();
+  renderSRMap(_srRows.filter(r => !r.loading));
+
+  // Background-fetch missing ownership data
+  for (const entry of universe) {
+    const orgNr = entry.orgNr;
+    if (DealScopeStore.get('ownership_' + orgNr)) continue;
+    fetchOwnership(orgNr).then(data => {
+      if (data) {
+        // Update the in-memory row and re-render
+        const row = _srRows.find(r => r.orgNr === orgNr);
+        if (row && !row.loading) {
+          const company = srGetCachedCompany(orgNr);
+          if (company) {
+            const histYears = company.prevNetSales > 0
+              ? [{ netSales: company.prevNetSales, netProfit: 0, dividendsPaid: 0 }, company]
+              : [company];
+            const succession = computeSuccessionScore(company, data, histYears);
+            row.county   = data.county || '—';
+            row.score    = succession.score;
+            row.signals  = succession.signals;
+            row.ownerAge = data.primaryOwner?.birthYear ? (new Date().getFullYear() - data.primaryOwner.birthYear) : null;
+            row.ownerName = data.primaryOwner?.name || null;
+            renderSRTable();
+          }
+        }
+      }
+    }).catch(() => {});
+  }
+}
+
+function srAddByInput() {
+  const input = document.getElementById('srAddInput');
+  const val = (input?.value || '').trim();
+  if (!val) return;
+  const orgNr = val.replace(/[^0-9]/g, '');
+  if (orgNr.length < 10) { document.getElementById('srAddStatus').textContent = '⚠ Enter a valid org. number (10 digits)'; return; }
+  srAddToUniverse(orgNr, orgNr);
+  if (input) input.value = '';
+  document.getElementById('srAddStatus').textContent = `✓ Added ${orgNr} — loading data…`;
+  renderSuccessionRadar();
+}
+
+function srSeedFromWatchlist() {
+  const wl = wlLoad();
+  if (!wl.length) { document.getElementById('srAddStatus').textContent = '⚠ Watchlist is empty'; return; }
+  wl.forEach(w => srAddToUniverse(w.orgNr, w.name));
+  document.getElementById('srAddStatus').textContent = `✓ Imported ${wl.length} from Watchlist`;
+  renderSuccessionRadar();
+}
+
+function srAddCurrentToRadar() {
+  if (!companyData) { showToast(t('toast_no_company')); return; }
+  srAddToUniverse(companyData.orgNr, companyData.name);
+  srCacheCompanyData(companyData.orgNr, companyData);
+  showToast(`✓ ${companyData.name} added to Succession Radar`);
+  // Trigger background ownership fetch
+  fetchOwnership(companyData.orgNr).catch(() => {});
+}
+
+// ============================================================
+// NORDIC EXPANSION
+// ============================================================
+const NORDIC_COUNTRIES = {
+  se: { flag: '🇸🇪', name: 'Sweden',  registry: 'Bolagsverket / allabolag.se', link: 'https://www.allabolag.se',         status: 'live'    },
+  no: { flag: '🇳🇴', name: 'Norway',  registry: 'Brønnøysundregistrene',        link: 'https://www.brreg.no',             status: 'planned' },
+  dk: { flag: '🇩🇰', name: 'Denmark', registry: 'CVR — Centrale Virksomhedsreg', link: 'https://datacvr.virk.dk',         status: 'planned' },
+  fi: { flag: '🇫🇮', name: 'Finland', registry: 'YTJ / PRH',                    link: 'https://www.ytj.fi',              status: 'planned' },
+};
+
+function ncGetCountry() {
+  return DealScopeStore.get('active_country') || 'se';
+}
+
+function ncSetCountry(code) {
+  if (!NORDIC_COUNTRIES[code]) return;
+  DealScopeStore.set('active_country', code);
+  const picker = document.getElementById('countryPicker');
+  if (picker) picker.value = code;
+  ncUpdateUI(code);
+}
+
+function ncUpdateUI(code) {
+  code = code || ncGetCountry();
+  const c = NORDIC_COUNTRIES[code] || NORDIC_COUNTRIES.se;
+  const isSE = code === 'se';
+
+  // apiHint in topbar
+  const hint = document.getElementById('apiHint');
+  if (hint) hint.textContent = isSE ? 'SE Registry · UC AB via allabolag.se' : `${c.flag} ${c.name} · ${c.registry}`;
+
+  // orgInput placeholder
+  const inp = document.getElementById('orgInput');
+  if (inp) inp.placeholder = isSE ? 'Company name or org. number…' : `${c.name}: integration coming soon…`;
+
+  // SEARCH button state
+  const searchBtn = document.querySelector('.btn-load');
+  if (searchBtn) { searchBtn.disabled = !isSE; searchBtn.style.opacity = isSE ? '' : '0.4'; }
+
+  // Country notice in company tab
+  const notice = document.getElementById('countryNotice');
+  const empty  = document.getElementById('companyEmpty');
+  if (notice) notice.style.display = isSE ? 'none' : '';
+  if (empty)  empty.style.display  = isSE ? ''     : 'none';
+
+  // Populate notice details
+  if (!isSE) {
+    const flagEl    = document.getElementById('ncFlag');
+    const nameEl    = document.getElementById('ncCountryName');
+    const regEl     = document.getElementById('ncRegistryName');
+    const linkEl    = document.getElementById('ncRegistryLink');
+    if (flagEl) flagEl.textContent = c.flag;
+    if (nameEl) nameEl.textContent = c.name;
+    if (regEl)  regEl.textContent  = `Registry: ${c.registry}`;
+    if (linkEl) { linkEl.href = c.link; }
+  }
+
+  // Show Nordic roadmap in workspace when flag is on
+  const roadmap = document.getElementById('wsNordicRoadmap');
+  if (roadmap) roadmap.style.display = window.DEALSCOPE_FLAGS?.nordicExpansion ? '' : 'none';
+}
+
+function plDetectCountry(orgNr) {
+  const d = (orgNr || '').replace(/[^0-9]/g, '');
+  if (d.length === 10) return 'se';
+  if (d.length === 9)  return 'no';
+  if (d.length === 8)  return 'dk';
+  if (d.length === 7)  return 'fi';
+  return null;
+}
+
+function ncInit() {
+  if (!window.DEALSCOPE_FLAGS?.nordicExpansion) return;
+  const picker = document.getElementById('countryPicker');
+  if (picker) { picker.style.display = ''; picker.value = ncGetCountry(); }
+  ncUpdateUI(ncGetCountry());
+}
+
+// ============================================================
+// WORKSPACE
+// ============================================================
+function wsInit() {
+  const firmEl = document.getElementById('wsFirmName');
+  const typeEl = document.getElementById('wsAcquirerType');
+  const critEl = document.getElementById('wsTargetCriteria');
+  if (firmEl) firmEl.value = DealScopeStore.get('ws_firm_name') || DealScopeStore.get('og_your_firm') || '';
+  if (typeEl) { const v = DealScopeStore.get('ws_acquirer_type'); if (v) typeEl.value = v; }
+  if (critEl) critEl.value = DealScopeStore.get('ws_target_criteria') || '';
+  wsPopulateDealPicker();
+  wsRenderDigest();
+  const roadmap = document.getElementById('wsNordicRoadmap');
+  if (roadmap) roadmap.style.display = window.DEALSCOPE_FLAGS?.nordicExpansion ? '' : 'none';
+  const outputEl = document.getElementById('wsOutput');
+  const statusEl = document.getElementById('wsStatus');
+  if (outputEl) outputEl.style.display = 'none';
+  if (statusEl) statusEl.textContent = '';
+}
+
+function wsPopulateDealPicker() {
+  const sel = document.getElementById('wsPickDeal');
+  if (!sel) return;
+  const list = plLoad();
+  sel.innerHTML = `<option value="">— ${t('ws_pick_deal')} —</option>` +
+    list.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} (${c.stage})</option>`).join('');
+}
+
+function wsRenderDigest() {
+  const el = document.getElementById('wsDigestContent');
+  if (!el) return;
+  const list = plLoad();
+  if (list.length === 0) {
+    el.innerHTML = `<div style="color:var(--text3);font-size:11px;">${t('pl_empty_title')}</div>`;
+    return;
+  }
+  const byStage = {};
+  PL_STAGES.forEach(s => { byStage[s.id] = 0; });
+  list.forEach(c => { if (byStage[c.stage] !== undefined) byStage[c.stage]++; });
+  const rows = PL_STAGES.filter(s => byStage[s.id] > 0).map(s =>
+    `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);">
+       <span style="font-size:11px;color:var(--text2);">${s.label}</span>
+       <span style="font-size:11px;font-weight:700;color:var(--text);">${byStage[s.id]}</span>
+     </div>`
+  ).join('');
+  el.innerHTML = `<div style="margin-bottom:8px;">${rows}</div>
+    <div style="font-size:10px;color:var(--text3);">Total: ${list.length} deal${list.length !== 1 ? 's' : ''}</div>`;
+}
+
+async function wsGenerateICMemo() {
+  const dealId = document.getElementById('wsPickDeal')?.value;
+  if (!dealId) { showToast(t('ws_select_deal')); return; }
+  const deal = plLoad().find(c => c.id === dealId);
+  if (!deal) return;
+
+  const btn = document.getElementById('wsGenerateBtn');
+  const statusEl = document.getElementById('wsStatus');
+  const outputEl = document.getElementById('wsOutput');
+  const textEl = document.getElementById('wsMemoText');
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
+  if (statusEl) statusEl.textContent = '';
+  if (outputEl) outputEl.style.display = 'none';
+
+  const firmName   = (document.getElementById('wsFirmName')?.value || '').trim() || DealScopeStore.get('og_your_firm') || 'the acquirer';
+  const acqType    = document.getElementById('wsAcquirerType')?.value || 'search_fund';
+  const criteria   = (document.getElementById('wsTargetCriteria')?.value || '').trim();
+  const yourName   = DealScopeStore.get('og_your_name') || '';
+  const cached     = DealScopeStore.get('company_cache_' + deal.orgNr.replace(/[^0-9]/g, ''));
+  const owData     = DealScopeStore.get('ownership_' + deal.orgNr.replace(/[^0-9]/g, ''));
+
+  const revenue  = cached?.netSales ? Math.round(cached.netSales  / 1e6) : (deal.revenue ?? '—');
+  const ebit     = cached?.opProfit ? Math.round(cached.opProfit  / 1e6) : '—';
+  const equity   = cached?.equity   ? Math.round(cached.equity    / 1e6) : '—';
+  const ros      = (cached?.netSales && cached?.opProfit)
+    ? ((cached.opProfit / cached.netSales) * 100).toFixed(1) + '%' : '—';
+
+  const prompt = `You are a senior analyst at a Nordic ${acqType.replace('_', ' ')} called "${firmName}". Write a professional 1-page Investment Committee memo for this potential acquisition target. Use clear M&A language with the following sections:
+
+1. EXECUTIVE SUMMARY
+2. COMPANY OVERVIEW
+3. FINANCIAL HIGHLIGHTS
+4. SUCCESSION & OWNERSHIP ANALYSIS
+5. DEAL THESIS (3 bullets)
+6. KEY RISKS (3 bullets)
+7. PROPOSED NEXT STEPS
+
+Company data:
+- Name: ${deal.name}
+- Org nr: ${deal.orgNr || '—'}
+- Industry: ${cached?.industry || '—'}
+- Pipeline stage: ${deal.stage}
+- Revenue: ${revenue} MSEK | EBIT: ${ebit} MSEK | EBIT margin: ${ros} | Equity: ${equity} MSEK
+- Primary owner: ${owData?.primaryOwner?.name || '—'}
+- Succession score: ${deal.score != null ? deal.score + '/100' : '—'}
+- Deal notes: ${deal.note || 'None'}${criteria ? '\n- Acquirer criteria: ' + criteria : ''}${yourName ? '\nPrepared by: ' + yourName : ''}
+Date: ${new Date().toLocaleDateString('en-SE')}
+
+Keep the full memo under 520 words.`;
+
+  try {
+    if (!anthropicKey) { openSettings(); throw new Error(t('toast_no_api_key')); }
+    const result = await callAnthropic({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }],
+    }, anthropicKey);
+    const text = result?.content?.[0]?.text || '';
+    if (!text) throw new Error('Empty response');
+    if (textEl) textEl.value = text;
+    if (outputEl) outputEl.style.display = '';
+    if (statusEl) statusEl.textContent = t('ws_memo_ready');
+  } catch(e) {
+    if (statusEl) statusEl.textContent = `⚠ ${e.message}`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = t('ws_generate_btn'); }
+  }
+}
+
+function wsCopyMemo() {
+  const textEl = document.getElementById('wsMemoText');
+  if (!textEl || !textEl.value) return;
+  navigator.clipboard.writeText(textEl.value)
+    .then(() => showToast(t('ws_memo_copied')))
+    .catch(() => { textEl.select(); document.execCommand('copy'); showToast(t('ws_memo_copied')); });
+}
+
+function initWorkspace() {
+  wsInit();
+}
+
+// ============================================================
+// OUTREACH GENERATOR
+// ============================================================
+const OG_TEMPLATES = {
+  formal_sv: (c) => `Du är en erfaren förvärvsrådgivare. Skriv ett formellt brev på svenska riktat till ägaren av ${c.name} (org.nr ${c.orgNr}).${c.ownerName ? ` Ägarens namn är ${c.ownerName}.` : ''} Brevet skickas av ${c.yourName}${c.yourFirm ? ' på ' + c.yourFirm : ''}. Bolaget verkar inom ${c.industry} och redovisade en omsättning på ${c.revenue} MSEK med ett rörelseresultat på ${c.opProfit} MSEK. Avsikten är att på ett diskret och respektfullt sätt uttrycka intresse för ett möjligt förvärv och be om ett inledande möte. Brevet ska vara professionellt, inte avslöja priskänsligheter, och hållas inom 220 ord.`,
+
+  email_en:  (c) => `You are a Nordic M&A originator. Write a warm, direct cold email in English addressed to the owner of ${c.name}.${c.ownerName ? ` The owner's name is ${c.ownerName}.` : ''} From: ${c.yourName}${c.yourFirm ? ' at ' + c.yourFirm : ''}. Company: ${c.industry}, revenue ${c.revenue} MSEK, EBIT ${c.opProfit} MSEK. Goal: genuine acquisition interest, propose a confidential first meeting. Tone: respectful, human, not salesy. Max 160 words.`,
+
+  email_sv:  (c) => `Du är en nordisk förvärvsspecialist. Skriv ett varmt och kortfattat kallt mejl på svenska till ägaren av ${c.name}.${c.ownerName ? ` Ägarens namn är ${c.ownerName}.` : ''} Från: ${c.yourName}${c.yourFirm ? ' på ' + c.yourFirm : ''}. Bolag: ${c.industry}, omsättning ${c.revenue} MSEK, EBIT ${c.opProfit} MSEK. Mål: genuint förvärvsintresse, föreslå ett konfidentiellt möte. Ton: direkt, respektfullt, inte säljigt. Max 160 ord.`,
+
+  followup_en: (c) => `You are a Nordic M&A originator. Write a brief, warm follow-up email in English to the owner of ${c.name},${c.ownerName ? ` ${c.ownerName},` : ''} referencing that you reached out previously. From: ${c.yourName}${c.yourFirm ? ' at ' + c.yourFirm : ''}. Keep it under 90 words, maintain warmth, reiterate interest without pressure.`,
+};
+
+function ogShow() {
+  const panel = document.getElementById('outreachPanel');
+  if (!panel) return;
+  if (!window.DEALSCOPE_FLAGS?.outreachGenerator) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  const nameEl = document.getElementById('ogYourName');
+  const firmEl = document.getElementById('ogYourFirm');
+  if (nameEl && !nameEl.value) nameEl.value = DealScopeStore.get('og_your_name') || '';
+  if (firmEl && !firmEl.value) firmEl.value = DealScopeStore.get('og_your_firm') || '';
+  const outputEl = document.getElementById('ogOutput');
+  const statusEl = document.getElementById('ogStatus');
+  if (outputEl) outputEl.style.display = 'none';
+  if (statusEl) statusEl.textContent = '';
+}
+
+async function ogGenerate() {
+  if (!companyData) { showToast(t('toast_no_company')); return; }
+  const btn = document.getElementById('ogGenerateBtn');
+  const statusEl = document.getElementById('ogStatus');
+  const outputEl = document.getElementById('ogOutput');
+  const textEl = document.getElementById('ogText');
+
+  const yourName = (document.getElementById('ogYourName')?.value || '').trim() || t('outreach_anon');
+  const yourFirm = (document.getElementById('ogYourFirm')?.value || '').trim();
+  DealScopeStore.set('og_your_name', yourName);
+  DealScopeStore.set('og_your_firm', yourFirm);
+
+  const template = document.getElementById('ogTemplate')?.value || 'email_en';
+  const templateFn = OG_TEMPLATES[template] || OG_TEMPLATES.email_en;
+
+  const owData = DealScopeStore.get('ownership_' + companyData.orgNr.replace(/[^0-9]/g, ''));
+  const ctx = {
+    name:      companyData.name,
+    orgNr:     companyData.orgNr,
+    industry:  companyData.industry || '—',
+    revenue:   companyData.netSales  ? Math.round(companyData.netSales  / 1e6) : '—',
+    opProfit:  companyData.opProfit  ? Math.round(companyData.opProfit  / 1e6) : '—',
+    ownerName: owData?.primaryOwner?.name || null,
+    yourName,
+    yourFirm,
+  };
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
+  if (statusEl) statusEl.textContent = '';
+  if (outputEl) outputEl.style.display = 'none';
+
+  try {
+    if (!anthropicKey) { openSettings(); throw new Error(t('toast_no_api_key')); }
+    const result = await callAnthropic({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 700,
+      messages: [{ role: 'user', content: templateFn(ctx) }],
+    }, anthropicKey);
+    const text = result?.content?.[0]?.text || '';
+    if (!text) throw new Error('Empty response');
+    if (textEl) textEl.value = text;
+    if (outputEl) outputEl.style.display = '';
+    if (statusEl) statusEl.textContent = t('outreach_done');
+  } catch(e) {
+    if (statusEl) statusEl.textContent = `⚠ ${e.message}`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = t('outreach_generate_btn'); }
+  }
+}
+
+function ogCopy() {
+  const textEl = document.getElementById('ogText');
+  if (!textEl || !textEl.value) return;
+  navigator.clipboard.writeText(textEl.value)
+    .then(() => showToast(t('outreach_copied')))
+    .catch(() => { textEl.select(); document.execCommand('copy'); showToast(t('outreach_copied')); });
+}
+
+// ============================================================
+// PIPELINE CRM
+// ============================================================
+const PL_STAGES = [
+  { id: 'universe', label: 'Universe' },
+  { id: 'sourced',  label: 'Sourced'  },
+  { id: 'outreach', label: 'Outreach' },
+  { id: 'met',      label: 'Met'      },
+  { id: 'loi',      label: 'LOI'      },
+  { id: 'dd',       label: 'DD'       },
+  { id: 'closed',   label: 'Closed'   },
+  { id: 'passed',   label: 'Passed'   },
+];
+
+function plLoad() { return DealScopeStore.get('pipeline') || []; }
+function plSave(list) { DealScopeStore.set('pipeline', list); }
+
+function plAddCard(orgNr, name, stage, extra) {
+  const list = plLoad();
+  const clean = (orgNr || '').replace(/[^0-9]/g, '');
+  if (clean && list.some(c => c.orgNr === clean)) {
+    showToast(`${escapeHtml(name)} already in pipeline`);
+    return;
+  }
+  list.push({
+    id: 'pl_' + Date.now(),
+    orgNr: clean,
+    name: name || '—',
+    stage: stage || 'sourced',
+    revenue: extra?.revenue ?? null,
+    score: extra?.score ?? null,
+    note: '',
+    addedAt: new Date().toISOString(),
+    movedAt: new Date().toISOString(),
+  });
+  plSave(list);
+  plRenderBoard();
+  showToast(`✓ ${name} → Pipeline`);
+}
+
+function plDeleteCard(id) {
+  plSave(plLoad().filter(c => c.id !== id));
+  plRenderBoard();
+}
+
+function plSetStage(id, stage) {
+  const list = plLoad();
+  const c = list.find(c => c.id === id);
+  if (c) { c.stage = stage; c.movedAt = new Date().toISOString(); plSave(list); plRenderBoard(); }
+}
+
+function plSaveNote(id, note) {
+  const list = plLoad();
+  const c = list.find(c => c.id === id);
+  if (c) { c.note = note; plSave(list); }
+}
+
+function plOpenAddForm() {
+  const form = document.getElementById('plAddForm');
+  if (!form) return;
+  ['plFieldName','plFieldOrgNr'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; });
+  const sel = document.getElementById('plFieldStage');
+  if (sel) sel.value = 'sourced';
+  form.style.display = '';
+  const el = document.getElementById('plFieldName');
+  if (el) el.focus();
+}
+
+function plCloseAddForm() {
+  const form = document.getElementById('plAddForm');
+  if (form) form.style.display = 'none';
+}
+
+function plSaveAddForm() {
+  const name = (document.getElementById('plFieldName')?.value || '').trim();
+  if (!name) { showToast(t('pl_name_required')); return; }
+  const orgNr = (document.getElementById('plFieldOrgNr')?.value || '').trim();
+  const stage = document.getElementById('plFieldStage')?.value || 'sourced';
+  plCloseAddForm();
+  plAddCard(orgNr, name, stage, null);
+}
+
+function plAddCurrentToPipeline() {
+  if (!companyData) { showToast(t('toast_no_company')); return; }
+  const scoreEl = document.getElementById('kpiSuccession');
+  const score = scoreEl ? parseInt(scoreEl.textContent) || null : null;
+  const rev = companyData.netSales ? Math.round(companyData.netSales / 1e6) : null;
+  plAddCard(companyData.orgNr, companyData.name, 'sourced', { revenue: rev, score });
+}
+
+function plRenderBoard() {
+  const board = document.getElementById('plBoard');
+  const empty = document.getElementById('plEmpty');
+  if (!board) return;
+  const list = plLoad();
+  if (list.length === 0) {
+    board.style.display = 'none';
+    board.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  board.style.display = '';
+  if (empty) empty.style.display = 'none';
+  board.innerHTML = PL_STAGES.map(stage => {
+    const cards = list.filter(c => c.stage === stage.id);
+    const stageOpts = PL_STAGES.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+    const cardsHtml = cards.map(c => {
+      const chips = [];
+      const detectedCountry = plDetectCountry(c.orgNr);
+      if (detectedCountry && NORDIC_COUNTRIES[detectedCountry]) chips.push(NORDIC_COUNTRIES[detectedCountry].flag);
+      if (c.revenue != null) chips.push(`${c.revenue}M SEK`);
+      if (c.score != null) chips.push(`Score ${c.score}`);
+      const chipsHtml = chips.map(ch => `<span class="pl-chip">${escapeHtml(ch)}</span>`).join('');
+      const stageOptsSelected = PL_STAGES.map(s =>
+        `<option value="${s.id}"${s.id === c.stage ? ' selected' : ''}>${s.label}</option>`
+      ).join('');
+      return `<div class="pl-card">
+        <div class="pl-card-name">${escapeHtml(c.name)}</div>
+        ${chipsHtml ? `<div class="pl-card-chips">${chipsHtml}</div>` : ''}
+        <select class="pl-stage-sel" onchange="plSetStage('${c.id}',this.value)">${stageOptsSelected}</select>
+        <textarea class="pl-card-note" placeholder="${t('pl_note_ph')}" onblur="plSaveNote('${c.id}',this.value)">${escapeHtml(c.note || '')}</textarea>
+        <button class="pl-del-btn" onclick="plDeleteCard('${c.id}')">${t('pl_delete_btn')}</button>
+      </div>`;
+    }).join('');
+    return `<div class="pl-col">
+      <div class="pl-col-header">
+        <span class="pl-col-title">${stage.label}</span>
+        <span class="pl-col-count">${cards.length}</span>
+      </div>
+      <div class="pl-col-body">${cardsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function initPipelineCRM() {
+  plRenderBoard();
+}
+
+// ============================================================
+// SAVED SEARCHES
+// ============================================================
+function ssLoad() { return DealScopeStore.get('saved_searches') || []; }
+function ssSave(list) { DealScopeStore.set('saved_searches', list); }
+
+let _ssEditId = null;
+
+function ssOpenNewForm(editId) {
+  _ssEditId = editId || null;
+  const panel = document.getElementById('ssFormPanel');
+  const titleEl = document.getElementById('ssFormTitle');
+  if (!panel) return;
+  if (editId) {
+    const s = ssLoad().find(s => s.id === editId);
+    if (!s) return;
+    if (titleEl) titleEl.textContent = t('ss_edit_title');
+    document.getElementById('ssFieldName').value   = s.name || '';
+    document.getElementById('ssFieldSni').value    = s.filters.sni || '';
+    document.getElementById('ssFieldRegion').value = s.filters.region || '';
+    document.getElementById('ssFieldRevMin').value = s.filters.revMin != null ? s.filters.revMin : '';
+    document.getElementById('ssFieldRevMax').value = s.filters.revMax != null ? s.filters.revMax : '';
+    document.getElementById('ssFieldRos').value    = s.filters.rosMin != null ? s.filters.rosMin : '';
+    document.getElementById('ssFieldScore').value  = s.filters.scoreMin != null ? s.filters.scoreMin : '';
+  } else {
+    if (titleEl) titleEl.textContent = t('ss_new_title');
+    ['ssFieldName','ssFieldSni','ssFieldRegion','ssFieldRevMin','ssFieldRevMax','ssFieldRos','ssFieldScore']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  }
+  panel.style.display = '';
+  const nameEl = document.getElementById('ssFieldName');
+  if (nameEl) nameEl.focus();
+}
+
+function ssCloseForm() {
+  const panel = document.getElementById('ssFormPanel');
+  if (panel) panel.style.display = 'none';
+  _ssEditId = null;
+}
+
+function ssSaveForm() {
+  const name = (document.getElementById('ssFieldName')?.value || '').trim();
+  if (!name) { showToast(t('ss_name_required')); return; }
+  const toNum = id => { const v = parseFloat(document.getElementById(id)?.value); return isNaN(v) ? null : v; };
+  const filters = {
+    sni:      (document.getElementById('ssFieldSni')?.value || '').trim(),
+    region:   (document.getElementById('ssFieldRegion')?.value || '').trim(),
+    revMin:   toNum('ssFieldRevMin'),
+    revMax:   toNum('ssFieldRevMax'),
+    rosMin:   toNum('ssFieldRos'),
+    scoreMin: toNum('ssFieldScore'),
+  };
+  const list = ssLoad();
+  if (_ssEditId) {
+    const idx = list.findIndex(s => s.id === _ssEditId);
+    if (idx >= 0) { list[idx].name = name; list[idx].filters = filters; }
+  } else {
+    list.push({ id: 'ss_' + Date.now(), name, createdAt: new Date().toISOString(), lastRunAt: null, filters });
+  }
+  ssSave(list);
+  ssCloseForm();
+  ssRenderList();
+  showToast(t('ss_saved_toast'));
+}
+
+function ssDelete(id) {
+  ssSave(ssLoad().filter(s => s.id !== id));
+  ssRenderList();
+}
+
+function ssMarkRun(id) {
+  const list = ssLoad();
+  const s = list.find(s => s.id === id);
+  if (s) { s.lastRunAt = new Date().toISOString(); ssSave(list); }
+}
+
+function ssOpenInSearch(id) {
+  const s = ssLoad().find(s => s.id === id);
+  if (!s) return;
+  ssMarkRun(id);
+  ssRenderList();
+  if (s.filters.sni) {
+    const el = document.getElementById('cbSniInput');
+    if (el) { el.value = s.filters.sni; cbActiveSNI = s.filters.sni; }
+  }
+  switchTab('competitor-bench');
+  showToast(`🔍 ${s.name}`);
+}
+
+function _ssRelativeTime(iso) {
+  if (!iso) return '—';
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 2) return t('ss_just_now');
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function ssRenderList() {
+  const container = document.getElementById('ssList');
+  const empty = document.getElementById('ssEmpty');
+  if (!container) return;
+  const list = ssLoad();
+  if (list.length === 0) {
+    container.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  container.innerHTML = list.map(s => {
+    const f = s.filters || {};
+    const chips = [];
+    if (f.sni) chips.push(`SNI ${f.sni}`);
+    if (f.region) chips.push(f.region);
+    if (f.revMin != null || f.revMax != null) chips.push(`Rev ${f.revMin != null ? f.revMin + 'M' : ''}–${f.revMax != null ? f.revMax + 'M' : '∞'}`);
+    if (f.rosMin != null) chips.push(`EBIT ≥${f.rosMin}%`);
+    if (f.scoreMin != null) chips.push(`Score ≥${f.scoreMin}`);
+    const runInfo = s.lastRunAt
+      ? `${t('ss_last_run')} ${_ssRelativeTime(s.lastRunAt)}`
+      : t('ss_never_run');
+    const chipsHtml = chips.length
+      ? chips.map(c => `<span style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:10px;color:var(--text2);">${escapeHtml(c)}</span>`).join('')
+      : `<span style="font-size:10px;color:var(--text3);">${t('ss_no_filters')}</span>`;
+    return `<div class="kpi-card" style="margin-bottom:8px;padding:12px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;">${escapeHtml(s.name)}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">${chipsHtml}</div>
+          <div style="font-size:10px;color:var(--text3);">${runInfo}</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button class="btn-primary" style="font-size:10px;padding:4px 10px;" onclick="ssOpenInSearch('${escapeHtml(s.id)}')">${t('ss_run_btn')}</button>
+          <button class="btn-secondary" style="font-size:10px;padding:4px 7px;" onclick="ssOpenNewForm('${escapeHtml(s.id)}')" title="${t('ss_edit_btn')}">✏️</button>
+          <button class="btn-secondary" style="font-size:10px;padding:4px 7px;color:var(--red);" onclick="ssDelete('${escapeHtml(s.id)}')" title="${t('ss_delete_btn')}">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function initSavedSearches() {
+  ssRenderList();
+}
+
+// ============================================================
 // STATUS BAR HELPER
 // ============================================================
 function setStatusBar(msg, state='ok') {
@@ -7444,8 +9323,8 @@ function setStatusBar(msg, state='ok') {
 // Build tracer — lets you confirm the deployed JS is up to date
 // (open DevTools console and look for this line). Cache-busting
 // aside, if you don't see VCFO_BUILD, you're on a stale copy.
-window.VCFO_BUILD = 'ranking-stay-on-page-v4';
-try { console.log('VCFO Terminal build:', window.VCFO_BUILD); } catch(e){}
+window.DEALSCOPE_BUILD = 'phase-6-nordic-expansion-v1';
+try { console.log('DealScope build:', window.DEALSCOPE_BUILD); } catch(e){}
 
 document.addEventListener('DOMContentLoaded', () => {
   try {
@@ -7473,9 +9352,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     })();
     try {
-      const cached = localStorage.getItem('vcfo_bch_cache');
-      if (cached) {
-        const data = JSON.parse(cached);
+      const data = DealScopeStore.get('bch_cache');
+      if (data) {
         applyBenchmarkData(data.data || {}, 'cached');
         bchLastFetch    = data;
         benchmarkSource = 'cached';
@@ -7486,8 +9364,25 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(e) {
       updateBenchmarkStatusBadge('err', 'Built-in estimates');
     }
+
+    // Show feature-flagged tabs
+    const flagTabMap = {
+      pipelineCrm:       'tab-pipeline-btn',
+      savedSearches:     'tab-saved-searches-btn',
+      successionRadar:   'tab-succession-radar-btn',
+      teamWorkspace:     'tab-workspace-btn',
+    };
+    Object.entries(flagTabMap).forEach(([flag, btnId]) => {
+      if (window.DEALSCOPE_FLAGS[flag]) {
+        const btn = document.getElementById(btnId);
+        if (btn) btn.style.display = '';
+      }
+    });
+
+    // Nordic expansion init
+    ncInit();
   } catch(e) {
-    console.warn('VCFO init error:', e);
+    console.warn('DealScope init error:', e);
   }
 });
 
@@ -8491,7 +10386,7 @@ function exportCompareCSV() {
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = `vcfo_comparison_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `dealscope_comparison_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
   showToast(t('toast_csv_exported'));
@@ -8552,12 +10447,12 @@ function initBenchmarksTab() {
   buildBchSectorList();
   renderBchSourceBadge();
 
-  // Restore cached fetch from localStorage
+  // Restore cached fetch from store
   let hasCached = false;
   try {
-    const cached = localStorage.getItem('vcfo_bch_cache');
+    const cached = DealScopeStore.get('bch_cache');
     if (cached) {
-      bchLastFetch = JSON.parse(cached);
+      bchLastFetch = cached;
       applyBenchmarkData(bchLastFetch.data, 'cached');
       renderBchTable(bchLastFetch.data);
       bchLog(`Restored cached data: ${Object.keys(bchLastFetch.data).length} sectors · FY${bchLastFetch.year}`, 'ok');
@@ -8730,7 +10625,7 @@ async function fetchBenchmarks() {
   const sourceType = liveCount > 0 ? 'live' : 'built-in';
 
   bchLastFetch = { data: results, year: bchYear, size: bchSize, fetchedAt: new Date().toISOString(), liveCount, estCount };
-  try { localStorage.setItem('vcfo_bch_cache', JSON.stringify(bchLastFetch)); } catch(e) {}
+  DealScopeStore.set('bch_cache', bchLastFetch);
 
   applyBenchmarkData(results, sourceType);
   renderBchTable(results);
@@ -9029,7 +10924,7 @@ function exportBenchmarkJSON() {
   const blob = new Blob([JSON.stringify(bchLastFetch, null, 2)], { type:'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href = url; a.download = `vcfo_benchmarks_${bchYear}_${bchSize}.json`; a.click();
+  a.href = url; a.download = `dealscope_benchmarks_${bchYear}_${bchSize}.json`; a.click();
   URL.revokeObjectURL(url);
   showToast(t('toast_benchmark_saved'));
 }
@@ -9376,18 +11271,11 @@ let chatOpen          = false;
 let chatExpanded      = false;
 let chatMinimised     = false;
 let chatLoading       = false;
-let chatMode          = 'simple'; try { chatMode = localStorage.getItem('vcfo_chat_mode') || 'simple'; } catch(e) {}
+let chatMode          = 'simple'; try { chatMode = DealScopeStore.get('chat_mode') || 'simple'; } catch(e) {}
 let chatUserScrolledUp = false;
 
-const CHAT_STORAGE_KEY = 'vcfo_chat_history';
-
-function chatLoadHistory() {
-  try { const r = localStorage.getItem(CHAT_STORAGE_KEY); return r ? JSON.parse(r) : null; }
-  catch(e) { return null; }
-}
-function chatSaveHistory(msgs) {
-  try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(msgs)); } catch(e) {}
-}
+function chatLoadHistory() { return DealScopeStore.get('chat_history'); }
+function chatSaveHistory(msgs) { DealScopeStore.set('chat_history', msgs); }
 
 let chatMessages = chatLoadHistory() || [{
   role: 'assistant',
@@ -9398,7 +11286,7 @@ let chatMessages = chatLoadHistory() || [{
 // ── Mode controls ──
 function setChatMode(mode) {
   chatMode = mode;
-  try { localStorage.setItem('vcfo_chat_mode', mode); } catch(e) {}
+  DealScopeStore.set('chat_mode', mode);
   document.getElementById('chatModeSimple').classList.toggle('active', mode === 'simple');
   document.getElementById('chatModeExpert').classList.toggle('active', mode === 'expert');
   const sub = document.getElementById('chatSubtitle');
@@ -9441,11 +11329,11 @@ function buildChatContext() {
   const tabName = tab.name;
   const tabDesc = tab.desc;
 
-  let ctx = `You are VCFO AI — the built-in assistant and guide for the VCFO Terminal, a Financial Health & Acquisition Screener for Swedish companies. You have three roles:
+  let ctx = `You are DealScope AI — the built-in deal-sourcing copilot for DealScope, the deal-sourcing OS for Nordic search funds and micro-PE firms. You help users find, evaluate, and pursue acquisition targets in the Nordic market. You have three roles:
 
-ROLE 1 — APP GUIDE: You know every feature of this app in detail. When users ask how the app works, what a screen does, what a metric means, or what to do next, you explain it clearly and tell them exactly where to click.
+ROLE 1 — APP GUIDE: You know every feature of DealScope in detail. When users ask how the app works, what a screen does, what a metric means, or what to do next, you explain it clearly and tell them exactly where to click.
 
-ROLE 2 — FINANCIAL ANALYST: You analyse the actual company data loaded in the terminal, referencing specific numbers, flags, and scores.
+ROLE 2 — DEAL ANALYST: You analyse the actual company data loaded in the platform, referencing specific numbers, flags, scores, and succession signals. You think like a search fund investor evaluating a Nordic SME for acquisition.
 
 ROLE 3 — BUSINESS LOOKUP: If the user is asking you to FIND, SEARCH, or LOOK UP Swedish companies (by name, industry keyword, or any filter), DO NOT answer from memory. Instead, respond with EXACTLY one line and nothing else:
 [[LOOKUP: <search query>]]
@@ -9470,11 +11358,14 @@ APP STRUCTURE (tabs in order):
     · Compare — load up to 5 companies for radar chart, M&A score bar chart, and risk flag matrix.
 - ★ Watchlist: Pinned companies persist across sessions. Quick-load or compare.
 - 📔 Journal: Date-indexed manual notes captured from any tab via the 📔 Note button in the top bar. Filter by active company, week, month, or AI-only.
-- 🗄 Vault: Persistent archive of saved AI outputs (Financials and Cash Flow summaries). Reopen past analyses without regenerating; each entry preserves the company context, filters, language, and timestamp it was saved with.
+- 🗄 Vault: Persistent archive of saved AI outputs. Reopen past analyses without regenerating.
 - 📡 Benchmarks: Fetch live SCB sector medians from Statistics Sweden.
+- 🗂 Pipeline (coming soon): Kanban deal pipeline — Universe → Sourced → Outreach → Met → LOI → DD → Closed → Passed.
+- 🔔 Saved Searches (coming soon): Saved search criteria with nightly alerts for new matches.
+- 📡 Succession Radar (coming soon): Find owner-operator companies where the founder is likely approaching exit age.
 - 📖 Guide: Reference docs for formulas and methodology.
 
-HOW TO USE THE APP (step by step):
+HOW TO USE DEALSCOPE (step by step):
 1. Enter a Swedish org. number or company name in the top search bar. A live dropdown appears as you type.
 2. The Company tab populates with key financials. Click "Run CFO Audit" or "Screen for M&A".
 3. Switch to Financials tab to see the revenue-to-profit waterfall and key ratios.
@@ -9482,7 +11373,7 @@ HOW TO USE THE APP (step by step):
 5. Use Competitors → Ranking sub-tab to add peers by name/org.nr and run a benchmark ranking.
 6. To compare companies side-by-side, click "⚖ Add to Compare" on the Company tab, then open Competitors → Compare sub-tab.
 7. To use real sector benchmarks, go to Benchmarks tab and click Fetch from SCB.
-8. The chatbot (that's me) is always aware of what's on screen — ask me anything.
+8. The chatbot (that's me) is always aware of what's on screen — ask me anything about deal sourcing or the data.
 
 KEY CONCEPTS & FORMULAS:
 - Org. number: Swedish company ID (format 556000-1234). Required to load any company.
@@ -10678,18 +12569,8 @@ function renderCashFlowSidebar(d) {
 // ============================================================
 // WATCHLIST — PERSISTENT PORTFOLIO
 // ============================================================
-const WL_STORAGE_KEY = 'vcfo_watchlist';
-
-function wlLoad() {
-  try {
-    const raw = localStorage.getItem(WL_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch(e) { return []; }
-}
-
-function wlSave(list) {
-  try { localStorage.setItem(WL_STORAGE_KEY, JSON.stringify(list)); } catch(e) {}
-}
+function wlLoad() { return DealScopeStore.get('watchlist') || []; }
+function wlSave(list) { DealScopeStore.set('watchlist', list); }
 
 function isCompanyPinned(orgNr) {
   if (!orgNr) return false;
@@ -10871,7 +12752,7 @@ function exportWatchlistCSV() {
   const blob = new Blob([csv], { type: 'text/csv' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href = url; a.download = 'vcfo_watchlist.csv'; a.click();
+  a.href = url; a.download = 'dealscope_watchlist.csv'; a.click();
   URL.revokeObjectURL(url);
   showToast(t('toast_csv_exported'));
 }
@@ -10879,20 +12760,14 @@ function exportWatchlistCSV() {
 // ============================================================
 // JOURNAL — date-indexed notes (localStorage, company-attached optional)
 // ============================================================
-const JOURNAL_STORAGE_KEY = 'vcfo_journal';
 let journalEntries = _journalLoad();
 let journalFilter  = 'all';                // all | company | week | month | ai
 let journalSearch  = '';
 let _journalEditingId = null;              // null = create, else editing that id
 let _journalModalAttachment = null;        // { orgNr, name } | null
 
-function _journalLoad() {
-  try { const r = localStorage.getItem(JOURNAL_STORAGE_KEY); return r ? JSON.parse(r) : []; }
-  catch(e) { return []; }
-}
-function _journalSave() {
-  try { localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(journalEntries)); } catch(e) {}
-}
+function _journalLoad() { return DealScopeStore.get('journal') || []; }
+function _journalSave() { DealScopeStore.set('journal', journalEntries); }
 function _journalId() { return 'j-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6); }
 
 // ── Modal control ──────────────────────────────────────────────
@@ -11153,7 +13028,7 @@ function exportJournalJSON() {
   const blob = new Blob([JSON.stringify(journalEntries, null, 2)], { type:'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `vcfo_journal_${new Date().toISOString().slice(0,10)}.json`;
+  a.download = `dealscope_journal_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
   showToast('✓ Journal exported');
@@ -11178,18 +13053,12 @@ document.addEventListener('keydown', e => {
 // the AI. The shape is module-namespaced so future modules can
 // register their own renderers via VAULT_RENDERERS.
 // ============================================================
-const VAULT_STORAGE_KEY = 'vcfo_vault';
 let vaultEntries = _vaultLoad();
 let vaultFilter  = 'all';     // all | financials | cashflow | company
 let vaultSearch  = '';
 
-function _vaultLoad() {
-  try { const r = localStorage.getItem(VAULT_STORAGE_KEY); return r ? JSON.parse(r) : []; }
-  catch(e) { return []; }
-}
-function _vaultSave() {
-  try { localStorage.setItem(VAULT_STORAGE_KEY, JSON.stringify(vaultEntries)); } catch(e) {}
-}
+function _vaultLoad() { return DealScopeStore.get('vault') || []; }
+function _vaultSave() { DealScopeStore.set('vault', vaultEntries); }
 function _vaultId() { return 'v-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6); }
 
 // Module → display label
@@ -11392,7 +13261,7 @@ function exportVaultJSON() {
   const blob = new Blob([JSON.stringify(vaultEntries, null, 2)], { type:'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `vcfo_vault_${new Date().toISOString().slice(0,10)}.json`;
+  a.download = `dealscope_vault_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
   showToast('✓ Vault exported');
@@ -11510,15 +13379,9 @@ const CB_MAX_COMPETITORS = 20;
 let cbCompetitors = [];
 let cbActiveSNI   = 'all';
 
-// ── Saved competitors — localStorage-backed, auto-classified by SNI ──
-const CB_SAVED_KEY = 'vcfo_cb_saved';
-
-function cbLoadSaved() {
-  try { return JSON.parse(localStorage.getItem(CB_SAVED_KEY)) || []; } catch(e) { return []; }
-}
-function cbPersistSaved(list) {
-  try { localStorage.setItem(CB_SAVED_KEY, JSON.stringify(list)); } catch(e) {}
-}
+// ── Saved competitors — store-backed, auto-classified by SNI ──
+function cbLoadSaved() { return DealScopeStore.get('cb_saved') || []; }
+function cbPersistSaved(list) { DealScopeStore.set('cb_saved', list); }
 
 // Map SNI 2-digit prefix to a human-readable label
 function cbSniToLabel(sni) {
@@ -12338,7 +14201,7 @@ function cbExportCSV() {
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'vcfo_competitor_bench.csv';
+  a.download = 'dealscope_competitor_bench.csv';
   a.click();
   URL.revokeObjectURL(a.href);
   showToast('✓ CSV exported');
