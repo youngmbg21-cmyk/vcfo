@@ -125,29 +125,76 @@ body {
 .settings-btn:hover { border-color: var(--border2); color: var(--text); }
 
 /* ===== TABS ===== */
+/* ===== APP BODY: sidebar + content ===== */
+.app-body {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+
+/* Sidebar navigation (vertical) */
 .tabs {
-  display:flex;
+  width: 200px;
+  flex-shrink: 0;
   background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  padding: 0 20px; gap: 0;
+  border-right: 1px solid var(--border);
+  padding: 8px 0;
   position: sticky;
-  top: 48px;       /* anchored below the 48px topbar */
+  top: 48px;
+  height: calc(100vh - 48px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   z-index: 90;
-  overflow-x: auto;
-  scrollbar-width: none;          /* Firefox */
-  -ms-overflow-style: none;       /* IE/Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 .tabs::-webkit-scrollbar { display: none; }
 .tab {
-  padding: 12px 20px;
-  font-size:12px; letter-spacing:0.02em;
-  font-weight:500;
-  color: var(--text3); cursor:pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s; user-select:none;
+  padding: 10px 16px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  font-weight: 500;
+  color: var(--text3);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.tab:hover { color: var(--text); }
-.tab.active { color: var(--green); border-bottom-color: var(--green); }
+.tab:hover { color: var(--text); background: var(--bg3); }
+.tab.active { color: var(--green); border-left-color: var(--green); background: var(--bg3); }
+
+/* Small screens: horizontal tab bar */
+@media (max-width: 768px) {
+  .app-body { flex-direction: column; }
+  .tabs {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 0 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: sticky;
+    top: 48px;
+  }
+  .tab {
+    flex-shrink: 0;
+    padding: 10px 14px;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  .tab.active { border-left-color: transparent; border-bottom-color: var(--green); background: transparent; }
+  .tab:hover { background: transparent; }
+}
 
 /* ===== SUB-TABS (nested inside a top-level tab) ===== */
 .subtabs {
@@ -209,7 +256,7 @@ body {
 .active-context .ac-clear:hover { background: var(--bg4); color: var(--text); }
 
 /* ===== CONTENT ===== */
-.content { padding: 20px; max-width: 1320px; margin: 0 auto; }
+.content { flex: 1; min-width: 0; padding: 20px; overflow-x: hidden; }
 
 /* ===== CARDS ===== */
 .card {
@@ -2258,7 +2305,10 @@ body.light-mode {
   <span class="ticker-info">AI: DealScope AI — Powered by Claude · Anthropic</span>
 </div>
 
-<!-- TABS -->
+<!-- APP BODY -->
+<div class="app-body">
+
+<!-- SIDEBAR -->
 <div class="tabs">
   <div class="tab active" id="tab-company-btn"    onclick="switchTab('company')" data-i18n="tab_company">🏢 Company</div>
   <div class="tab" id="tab-financials-btn"       onclick="switchTab('financials')" data-i18n="tab_financials">📋 Financials</div>
@@ -2274,11 +2324,11 @@ body.light-mode {
   <div class="tab" id="tab-saved-searches-btn"    onclick="switchTab('saved-searches')" data-i18n="tab_saved_searches" style="display:none;">🔔 Saved Searches</div>
   <div class="tab" id="tab-succession-radar-btn"  onclick="switchTab('succession-radar')" data-i18n="tab_succession_radar" style="display:none;">📡 Succession Radar</div>
   <div class="tab" id="tab-workspace-btn"         onclick="switchTab('workspace')" data-i18n="tab_workspace" style="display:none;">👥 Workspace</div>
-  <div class="tab" id="tab-guide-btn"             onclick="switchTab('guide')" style="margin-left:auto;" data-i18n="tab_guide">📖 Guide</div>
+  <div class="tab" id="tab-guide-btn"             onclick="switchTab('guide')" style="margin-top:auto;" data-i18n="tab_guide">📖 Guide</div>
 </div>
 
 <!-- CONTENT -->
-<div class="content">
+<div class="content" id="mainContent">
 
   <!-- ===== COMPANY TAB ===== -->
   <div id="tab-company">
@@ -3650,6 +3700,8 @@ body.light-mode {
   <div class="sr-county-tooltip" id="srCountyTooltip"></div>
 
 </div><!-- /content -->
+
+</div><!-- /app-body -->
 
 <!-- ============================================================
      DEALSCOPE AI CHATBOT
