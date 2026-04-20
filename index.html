@@ -14746,7 +14746,15 @@ const DealScopeKolada = (() => {
   };
 
   function _isFresh(cached) {
-    return !!(cached && cached._ts && (Date.now() - cached._ts) < CACHE_TTL);
+    if (!cached || !cached._ts || (Date.now() - cached._ts) >= CACHE_TTL) return false;
+    // Treat packages where every KPI series is empty as stale (pre-fix empty cache)
+    if (cached.data) {
+      const hasAny = Object.values(cached.data).some(b =>
+        b && typeof b === 'object' && Object.values(b).some(k => k?.series?.length > 0)
+      );
+      if (!hasAny) return false;
+    }
+    return true;
   }
 
   async function _kFetch(url) {
