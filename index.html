@@ -2394,6 +2394,42 @@ body.light-mode {
 
           <!-- Multi-year trend panel — rendered entirely by JS -->
           <div id="trendPanel" style="display:none;"></div>
+
+          <!-- Outreach Generator — flag-gated, populated by renderCompanyTab -->
+          <div id="outreachPanel" style="display:none;margin-top:14px;">
+            <div class="card">
+              <div class="card-title">📨 <span data-i18n="outreach_title">Outreach Generator</span></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+                <div>
+                  <label class="field-label" data-i18n="outreach_your_name">Your name</label>
+                  <input id="ogYourName" class="input-field" type="text" style="width:100%;box-sizing:border-box;" placeholder="e.g. Erik Svensson" onblur="DealScopeStore.set('og_your_name',this.value)" />
+                </div>
+                <div>
+                  <label class="field-label" data-i18n="outreach_your_firm">Your firm</label>
+                  <input id="ogYourFirm" class="input-field" type="text" style="width:100%;box-sizing:border-box;" placeholder="e.g. Nordic Ventures" onblur="DealScopeStore.set('og_your_firm',this.value)" />
+                </div>
+                <div>
+                  <label class="field-label" data-i18n="outreach_template">Template</label>
+                  <select id="ogTemplate" class="input-field" style="width:100%;box-sizing:border-box;">
+                    <option value="formal_sv" data-i18n="og_tpl_formal_sv">Formal letter (SV)</option>
+                    <option value="email_en"  data-i18n="og_tpl_email_en">Warm email (EN)</option>
+                    <option value="email_sv"  data-i18n="og_tpl_email_sv">Warm email (SV)</option>
+                    <option value="followup_en" data-i18n="og_tpl_followup">Follow-up (EN)</option>
+                  </select>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+                <button class="btn-primary" id="ogGenerateBtn" onclick="ogGenerate()" data-i18n="outreach_generate_btn">📨 Generate</button>
+                <span id="ogStatus" style="font-size:10px;color:var(--text3);"></span>
+              </div>
+              <div id="ogOutput" style="display:none;">
+                <div style="position:relative;">
+                  <textarea id="ogText" style="width:100%;box-sizing:border-box;min-height:200px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;line-height:1.6;padding:12px 52px 12px 12px;font-family:inherit;resize:vertical;" readonly></textarea>
+                  <button class="btn-secondary" style="position:absolute;top:6px;right:6px;font-size:10px;" onclick="ogCopy()" data-i18n="outreach_copy">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -3578,7 +3614,7 @@ window.DEALSCOPE_FLAGS = {
   successionRadar:   true,
   savedSearches:     true,
   pipelineCrm:       true,
-  outreachGenerator: false,
+  outreachGenerator: true,
   teamWorkspace:     false,
 };
 
@@ -3911,6 +3947,21 @@ const STRINGS = {
     chat_welcome:           "Hi! I'm **DealScope AI** — your deal-sourcing copilot for Nordic acquisitions.\n\nI know every feature of this platform and I always know which screen you're on. You can ask me:\n- **About the app** — \"How do I use the Pipeline tab?\" or \"What does the M&A score mean?\"\n- **About the data** — \"Explain the CFO flags\" or \"Is this company a good acquisition target?\"\n- **Deal sourcing** — \"Find succession candidates in Stockholm\" or \"What signals should I look for?\"\n- **What to do next** — I'll guide you step by step.\n\nLoad a company to get started, or ask me anything.",
 
     // Saved Searches
+    // Outreach Generator
+    outreach_title:        'Outreach Generator',
+    outreach_your_name:    'Your name',
+    outreach_your_firm:    'Your firm',
+    outreach_template:     'Template',
+    og_tpl_formal_sv:      'Formal letter (SV)',
+    og_tpl_email_en:       'Warm email (EN)',
+    og_tpl_email_sv:       'Warm email (SV)',
+    og_tpl_followup:       'Follow-up (EN)',
+    outreach_generate_btn: '📨 Generate',
+    outreach_copy:         'Copy',
+    outreach_done:         '✓ Generated',
+    outreach_copied:       '✓ Copied to clipboard',
+    outreach_anon:         'Acquirer',
+
     // Pipeline CRM
     btn_add_pipeline:  '🗂 Pipeline',
     pl_add_btn:        '+ Add Deal',
@@ -4148,6 +4199,21 @@ const STRINGS = {
     chat_welcome:           "Hej! Jag är **DealScope AI** — din deal-sourcing-copilot för nordiska förvärv.\n\nJag känner till varje funktion i den här plattformen och vet alltid vilken skärm du befinner dig på. Du kan fråga mig:\n- **Om appen** — \"Hur använder jag Pipeline-fliken?\" eller \"Vad betyder förvärvspoängen?\"\n- **Om datan** — \"Förklara CFO-flaggorna\" eller \"Är det här ett bra förvärvsmål?\"\n- **Deal sourcing** — \"Hitta successionsbolag i Stockholm\" eller \"Vilka signaler ska jag leta efter?\"\n- **Vad du ska göra härnäst** — Jag guidar dig steg för steg.\n\nLadda ett företag för att komma igång, eller fråga mig vad som helst.",
 
     // Saved Searches
+    // Outreach Generator
+    outreach_title:        'Outreach-generator',
+    outreach_your_name:    'Ditt namn',
+    outreach_your_firm:    'Ditt bolag',
+    outreach_template:     'Mall',
+    og_tpl_formal_sv:      'Formellt brev (SV)',
+    og_tpl_email_en:       'Varmt mejl (EN)',
+    og_tpl_email_sv:       'Varmt mejl (SV)',
+    og_tpl_followup:       'Uppföljning (EN)',
+    outreach_generate_btn: '📨 Generera',
+    outreach_copy:         'Kopiera',
+    outreach_done:         '✓ Genererat',
+    outreach_copied:       '✓ Kopierat',
+    outreach_anon:         'Förvärvaren',
+
     // Pipeline CRM
     btn_add_pipeline:  '🗂 Pipeline',
     pl_add_btn:        '+ Lägg till affär',
@@ -6070,6 +6136,9 @@ function renderCompanyTab(d) {
     ['  — Due in >5 years',         d.longTermDebtOver5y, d.longTermDebtOver5y > d.equity * 0.5 ? 'neg' : 'neutral'],
     ['Current Liabilities',         d.currentLiabilities, 'neutral'],
   ]);
+
+  // Outreach Generator panel
+  ogShow();
 }
 
 function setKPI(id, val, cls='') {
@@ -8496,6 +8565,92 @@ function srAddCurrentToRadar() {
 }
 
 // ============================================================
+// OUTREACH GENERATOR
+// ============================================================
+const OG_TEMPLATES = {
+  formal_sv: (c) => `Du är en erfaren förvärvsrådgivare. Skriv ett formellt brev på svenska riktat till ägaren av ${c.name} (org.nr ${c.orgNr}).${c.ownerName ? ` Ägarens namn är ${c.ownerName}.` : ''} Brevet skickas av ${c.yourName}${c.yourFirm ? ' på ' + c.yourFirm : ''}. Bolaget verkar inom ${c.industry} och redovisade en omsättning på ${c.revenue} MSEK med ett rörelseresultat på ${c.opProfit} MSEK. Avsikten är att på ett diskret och respektfullt sätt uttrycka intresse för ett möjligt förvärv och be om ett inledande möte. Brevet ska vara professionellt, inte avslöja priskänsligheter, och hållas inom 220 ord.`,
+
+  email_en:  (c) => `You are a Nordic M&A originator. Write a warm, direct cold email in English addressed to the owner of ${c.name}.${c.ownerName ? ` The owner's name is ${c.ownerName}.` : ''} From: ${c.yourName}${c.yourFirm ? ' at ' + c.yourFirm : ''}. Company: ${c.industry}, revenue ${c.revenue} MSEK, EBIT ${c.opProfit} MSEK. Goal: genuine acquisition interest, propose a confidential first meeting. Tone: respectful, human, not salesy. Max 160 words.`,
+
+  email_sv:  (c) => `Du är en nordisk förvärvsspecialist. Skriv ett varmt och kortfattat kallt mejl på svenska till ägaren av ${c.name}.${c.ownerName ? ` Ägarens namn är ${c.ownerName}.` : ''} Från: ${c.yourName}${c.yourFirm ? ' på ' + c.yourFirm : ''}. Bolag: ${c.industry}, omsättning ${c.revenue} MSEK, EBIT ${c.opProfit} MSEK. Mål: genuint förvärvsintresse, föreslå ett konfidentiellt möte. Ton: direkt, respektfullt, inte säljigt. Max 160 ord.`,
+
+  followup_en: (c) => `You are a Nordic M&A originator. Write a brief, warm follow-up email in English to the owner of ${c.name},${c.ownerName ? ` ${c.ownerName},` : ''} referencing that you reached out previously. From: ${c.yourName}${c.yourFirm ? ' at ' + c.yourFirm : ''}. Keep it under 90 words, maintain warmth, reiterate interest without pressure.`,
+};
+
+function ogShow() {
+  const panel = document.getElementById('outreachPanel');
+  if (!panel) return;
+  if (!window.DEALSCOPE_FLAGS?.outreachGenerator) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  const nameEl = document.getElementById('ogYourName');
+  const firmEl = document.getElementById('ogYourFirm');
+  if (nameEl && !nameEl.value) nameEl.value = DealScopeStore.get('og_your_name') || '';
+  if (firmEl && !firmEl.value) firmEl.value = DealScopeStore.get('og_your_firm') || '';
+  const outputEl = document.getElementById('ogOutput');
+  const statusEl = document.getElementById('ogStatus');
+  if (outputEl) outputEl.style.display = 'none';
+  if (statusEl) statusEl.textContent = '';
+}
+
+async function ogGenerate() {
+  if (!companyData) { showToast(t('toast_no_company')); return; }
+  const btn = document.getElementById('ogGenerateBtn');
+  const statusEl = document.getElementById('ogStatus');
+  const outputEl = document.getElementById('ogOutput');
+  const textEl = document.getElementById('ogText');
+
+  const yourName = (document.getElementById('ogYourName')?.value || '').trim() || t('outreach_anon');
+  const yourFirm = (document.getElementById('ogYourFirm')?.value || '').trim();
+  DealScopeStore.set('og_your_name', yourName);
+  DealScopeStore.set('og_your_firm', yourFirm);
+
+  const template = document.getElementById('ogTemplate')?.value || 'email_en';
+  const templateFn = OG_TEMPLATES[template] || OG_TEMPLATES.email_en;
+
+  const owData = DealScopeStore.get('ownership_' + companyData.orgNr.replace(/[^0-9]/g, ''));
+  const ctx = {
+    name:      companyData.name,
+    orgNr:     companyData.orgNr,
+    industry:  companyData.industry || '—',
+    revenue:   companyData.netSales  ? Math.round(companyData.netSales  / 1e6) : '—',
+    opProfit:  companyData.opProfit  ? Math.round(companyData.opProfit  / 1e6) : '—',
+    ownerName: owData?.primaryOwner?.name || null,
+    yourName,
+    yourFirm,
+  };
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
+  if (statusEl) statusEl.textContent = '';
+  if (outputEl) outputEl.style.display = 'none';
+
+  try {
+    if (!anthropicKey) { openSettings(); throw new Error(t('toast_no_api_key')); }
+    const result = await callAnthropic({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 700,
+      messages: [{ role: 'user', content: templateFn(ctx) }],
+    }, anthropicKey);
+    const text = result?.content?.[0]?.text || '';
+    if (!text) throw new Error('Empty response');
+    if (textEl) textEl.value = text;
+    if (outputEl) outputEl.style.display = '';
+    if (statusEl) statusEl.textContent = t('outreach_done');
+  } catch(e) {
+    if (statusEl) statusEl.textContent = `⚠ ${e.message}`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = t('outreach_generate_btn'); }
+  }
+}
+
+function ogCopy() {
+  const textEl = document.getElementById('ogText');
+  if (!textEl || !textEl.value) return;
+  navigator.clipboard.writeText(textEl.value)
+    .then(() => showToast(t('outreach_copied')))
+    .catch(() => { textEl.select(); document.execCommand('copy'); showToast(t('outreach_copied')); });
+}
+
+// ============================================================
 // PIPELINE CRM
 // ============================================================
 const PL_STAGES = [
@@ -8793,7 +8948,7 @@ function setStatusBar(msg, state='ok') {
 // Build tracer — lets you confirm the deployed JS is up to date
 // (open DevTools console and look for this line). Cache-busting
 // aside, if you don't see VCFO_BUILD, you're on a stale copy.
-window.DEALSCOPE_BUILD = 'phase-3-pipeline-crm-v1';
+window.DEALSCOPE_BUILD = 'phase-4-outreach-generator-v1';
 try { console.log('DealScope build:', window.DEALSCOPE_BUILD); } catch(e){}
 
 document.addEventListener('DOMContentLoaded', () => {
