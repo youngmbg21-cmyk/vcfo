@@ -3256,13 +3256,57 @@ body.light-mode {
     </div>
   </div><!-- /tab-pipeline -->
 
-  <!-- ===== SAVED SEARCHES TAB (Phase 2) ===== -->
+  <!-- ===== SAVED SEARCHES TAB ===== -->
   <div id="tab-saved-searches" style="display:none;">
-    <div class="empty-state">
-      <div class="icon">🔔</div>
-      <div style="font-size:14px;font-weight:600;color:var(--text);">Saved Searches</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:6px;">Coming in Phase 2 — Save search criteria and get nightly alerts for new matches.</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:4px;">Filters: SNI sector · Region · Revenue band · ROS min · Succession score · Owner age</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);">🔔 <span data-i18n="tab_saved_searches">Saved Searches</span></div>
+      <button class="btn-primary" onclick="ssOpenNewForm()" data-i18n="ss_new_btn">+ New Search</button>
+    </div>
+    <!-- Create / Edit form -->
+    <div id="ssFormPanel" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;" id="ssFormTitle" data-i18n="ss_new_title">New Saved Search</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div>
+          <label class="field-label" data-i18n="ss_name_label">Search name</label>
+          <input id="ssFieldName" class="input-field" type="text" data-i18n-placeholder="ss_name_ph" placeholder="e.g. Succession targets Skåne" style="width:100%;box-sizing:border-box;" />
+        </div>
+        <div>
+          <label class="field-label" data-i18n="ss_sni_label">SNI sector (2-digit)</label>
+          <input id="ssFieldSni" class="input-field" type="text" data-i18n-placeholder="ss_sni_ph" placeholder="e.g. 25" style="width:100%;box-sizing:border-box;" />
+        </div>
+        <div>
+          <label class="field-label" data-i18n="ss_region_label">Region / County</label>
+          <input id="ssFieldRegion" class="input-field" type="text" data-i18n-placeholder="ss_region_ph" placeholder="e.g. Skåne" style="width:100%;box-sizing:border-box;" />
+        </div>
+        <div>
+          <label class="field-label" data-i18n="ss_rev_label">Revenue MSEK (min – max)</label>
+          <div style="display:flex;gap:4px;">
+            <input id="ssFieldRevMin" class="input-field" type="number" placeholder="Min" style="width:50%;box-sizing:border-box;" />
+            <input id="ssFieldRevMax" class="input-field" type="number" placeholder="Max" style="width:50%;box-sizing:border-box;" />
+          </div>
+        </div>
+        <div>
+          <label class="field-label" data-i18n="ss_ros_label">EBIT margin min (%)</label>
+          <input id="ssFieldRos" class="input-field" type="number" placeholder="5" style="width:100%;box-sizing:border-box;" />
+        </div>
+        <div>
+          <label class="field-label" data-i18n="ss_score_label">Succession score min (0–100)</label>
+          <input id="ssFieldScore" class="input-field" type="number" placeholder="40" min="0" max="100" style="width:100%;box-sizing:border-box;" />
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;">
+        <button class="btn-secondary" onclick="ssCloseForm()" data-i18n="cancel">Cancel</button>
+        <button class="btn-primary" onclick="ssSaveForm()" data-i18n="ss_save_btn">Save Search</button>
+      </div>
+    </div>
+    <!-- Search cards -->
+    <div id="ssList"></div>
+    <div id="ssEmpty" style="display:none;">
+      <div class="empty-state">
+        <div class="icon">🔍</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);" data-i18n="ss_empty_title">No saved searches yet</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:6px;" data-i18n="ss_empty_sub">Create a search to quickly resurface matching companies.</div>
+      </div>
     </div>
   </div><!-- /tab-saved-searches -->
 
@@ -3477,7 +3521,7 @@ body.light-mode {
 // ============================================================
 window.DEALSCOPE_FLAGS = {
   successionRadar:   true,
-  savedSearches:     false,
+  savedSearches:     true,
   pipelineCrm:       false,
   outreachGenerator: false,
   teamWorkspace:     false,
@@ -3810,6 +3854,33 @@ const STRINGS = {
     chat_placeholder:       'Ask about the loaded company, deal pipeline, succession signals…',
     chat_label:             'DealScope AI',
     chat_welcome:           "Hi! I'm **DealScope AI** — your deal-sourcing copilot for Nordic acquisitions.\n\nI know every feature of this platform and I always know which screen you're on. You can ask me:\n- **About the app** — \"How do I use the Pipeline tab?\" or \"What does the M&A score mean?\"\n- **About the data** — \"Explain the CFO flags\" or \"Is this company a good acquisition target?\"\n- **Deal sourcing** — \"Find succession candidates in Stockholm\" or \"What signals should I look for?\"\n- **What to do next** — I'll guide you step by step.\n\nLoad a company to get started, or ask me anything.",
+
+    // Saved Searches
+    ss_new_btn:        '+ New Search',
+    ss_new_title:      'New Saved Search',
+    ss_edit_title:     'Edit Saved Search',
+    ss_save_btn:       'Save Search',
+    ss_name_label:     'Search name',
+    ss_name_ph:        'e.g. Succession targets Skåne',
+    ss_sni_label:      'SNI sector (2-digit)',
+    ss_sni_ph:         'e.g. 25',
+    ss_region_label:   'Region / County',
+    ss_region_ph:      'e.g. Skåne',
+    ss_rev_label:      'Revenue MSEK (min – max)',
+    ss_ros_label:      'EBIT margin min (%)',
+    ss_score_label:    'Succession score min (0–100)',
+    ss_run_btn:        'Run',
+    ss_edit_btn:       'Edit',
+    ss_delete_btn:     'Delete',
+    ss_empty_title:    'No saved searches yet',
+    ss_empty_sub:      'Create a search to quickly resurface matching companies.',
+    ss_last_run:       'Last run',
+    ss_never_run:      'Never run',
+    ss_just_now:       'just now',
+    ss_no_filters:     'No filters set',
+    ss_name_required:  'Please enter a search name.',
+    ss_saved_toast:    '✓ Search saved',
+    cancel:            'Cancel',
   },
 
   sv: {
@@ -4005,6 +4076,33 @@ const STRINGS = {
     chat_placeholder:       'Fråga om det laddade företaget, pipeline, successionsignaler…',
     chat_label:             'DealScope AI',
     chat_welcome:           "Hej! Jag är **DealScope AI** — din deal-sourcing-copilot för nordiska förvärv.\n\nJag känner till varje funktion i den här plattformen och vet alltid vilken skärm du befinner dig på. Du kan fråga mig:\n- **Om appen** — \"Hur använder jag Pipeline-fliken?\" eller \"Vad betyder förvärvspoängen?\"\n- **Om datan** — \"Förklara CFO-flaggorna\" eller \"Är det här ett bra förvärvsmål?\"\n- **Deal sourcing** — \"Hitta successionsbolag i Stockholm\" eller \"Vilka signaler ska jag leta efter?\"\n- **Vad du ska göra härnäst** — Jag guidar dig steg för steg.\n\nLadda ett företag för att komma igång, eller fråga mig vad som helst.",
+
+    // Saved Searches
+    ss_new_btn:        '+ Ny sökning',
+    ss_new_title:      'Ny sparad sökning',
+    ss_edit_title:     'Redigera sparad sökning',
+    ss_save_btn:       'Spara sökning',
+    ss_name_label:     'Söknamn',
+    ss_name_ph:        't.ex. Successionsbolag Skåne',
+    ss_sni_label:      'SNI-bransch (2 siffror)',
+    ss_sni_ph:         't.ex. 25',
+    ss_region_label:   'Region / Län',
+    ss_region_ph:      't.ex. Skåne',
+    ss_rev_label:      'Omsättning MSEK (min – max)',
+    ss_ros_label:      'EBIT-marginal min (%)',
+    ss_score_label:    'Successionspoäng min (0–100)',
+    ss_run_btn:        'Kör',
+    ss_edit_btn:       'Redigera',
+    ss_delete_btn:     'Ta bort',
+    ss_empty_title:    'Inga sparade sökningar ännu',
+    ss_empty_sub:      'Skapa en sökning för att snabbt hitta matchande bolag.',
+    ss_last_run:       'Senast körd',
+    ss_never_run:      'Aldrig körd',
+    ss_just_now:       'just nu',
+    ss_no_filters:     'Inga filter angivna',
+    ss_name_required:  'Ange ett söknamn.',
+    ss_saved_toast:    '✓ Sökning sparad',
+    cancel:            'Avbryt',
   }
 };
 
@@ -4159,6 +4257,7 @@ function switchTab(name) {
   if (name === 'journal')            renderJournalTab();
   if (name === 'vault')              renderVaultList();
   if (name === 'succession-radar')   initSuccessionRadar();
+  if (name === 'saved-searches')     initSavedSearches();
   if (name === 'competitor-bench')  {
     // Default to ranking unless user already picked a sub
     const sub = _activeSubTab['competitor-bench'] || 'ranking';
@@ -8302,6 +8401,151 @@ function srAddCurrentToRadar() {
 }
 
 // ============================================================
+// SAVED SEARCHES
+// ============================================================
+function ssLoad() { return DealScopeStore.get('saved_searches') || []; }
+function ssSave(list) { DealScopeStore.set('saved_searches', list); }
+
+let _ssEditId = null;
+
+function ssOpenNewForm(editId) {
+  _ssEditId = editId || null;
+  const panel = document.getElementById('ssFormPanel');
+  const titleEl = document.getElementById('ssFormTitle');
+  if (!panel) return;
+  if (editId) {
+    const s = ssLoad().find(s => s.id === editId);
+    if (!s) return;
+    if (titleEl) titleEl.textContent = t('ss_edit_title');
+    document.getElementById('ssFieldName').value   = s.name || '';
+    document.getElementById('ssFieldSni').value    = s.filters.sni || '';
+    document.getElementById('ssFieldRegion').value = s.filters.region || '';
+    document.getElementById('ssFieldRevMin').value = s.filters.revMin != null ? s.filters.revMin : '';
+    document.getElementById('ssFieldRevMax').value = s.filters.revMax != null ? s.filters.revMax : '';
+    document.getElementById('ssFieldRos').value    = s.filters.rosMin != null ? s.filters.rosMin : '';
+    document.getElementById('ssFieldScore').value  = s.filters.scoreMin != null ? s.filters.scoreMin : '';
+  } else {
+    if (titleEl) titleEl.textContent = t('ss_new_title');
+    ['ssFieldName','ssFieldSni','ssFieldRegion','ssFieldRevMin','ssFieldRevMax','ssFieldRos','ssFieldScore']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  }
+  panel.style.display = '';
+  const nameEl = document.getElementById('ssFieldName');
+  if (nameEl) nameEl.focus();
+}
+
+function ssCloseForm() {
+  const panel = document.getElementById('ssFormPanel');
+  if (panel) panel.style.display = 'none';
+  _ssEditId = null;
+}
+
+function ssSaveForm() {
+  const name = (document.getElementById('ssFieldName')?.value || '').trim();
+  if (!name) { showToast(t('ss_name_required')); return; }
+  const toNum = id => { const v = parseFloat(document.getElementById(id)?.value); return isNaN(v) ? null : v; };
+  const filters = {
+    sni:      (document.getElementById('ssFieldSni')?.value || '').trim(),
+    region:   (document.getElementById('ssFieldRegion')?.value || '').trim(),
+    revMin:   toNum('ssFieldRevMin'),
+    revMax:   toNum('ssFieldRevMax'),
+    rosMin:   toNum('ssFieldRos'),
+    scoreMin: toNum('ssFieldScore'),
+  };
+  const list = ssLoad();
+  if (_ssEditId) {
+    const idx = list.findIndex(s => s.id === _ssEditId);
+    if (idx >= 0) { list[idx].name = name; list[idx].filters = filters; }
+  } else {
+    list.push({ id: 'ss_' + Date.now(), name, createdAt: new Date().toISOString(), lastRunAt: null, filters });
+  }
+  ssSave(list);
+  ssCloseForm();
+  ssRenderList();
+  showToast(t('ss_saved_toast'));
+}
+
+function ssDelete(id) {
+  ssSave(ssLoad().filter(s => s.id !== id));
+  ssRenderList();
+}
+
+function ssMarkRun(id) {
+  const list = ssLoad();
+  const s = list.find(s => s.id === id);
+  if (s) { s.lastRunAt = new Date().toISOString(); ssSave(list); }
+}
+
+function ssOpenInSearch(id) {
+  const s = ssLoad().find(s => s.id === id);
+  if (!s) return;
+  ssMarkRun(id);
+  ssRenderList();
+  if (s.filters.sni) {
+    const el = document.getElementById('cbSniInput');
+    if (el) { el.value = s.filters.sni; cbActiveSNI = s.filters.sni; }
+  }
+  switchTab('competitor-bench');
+  showToast(`🔍 ${s.name}`);
+}
+
+function _ssRelativeTime(iso) {
+  if (!iso) return '—';
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 2) return t('ss_just_now');
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function ssRenderList() {
+  const container = document.getElementById('ssList');
+  const empty = document.getElementById('ssEmpty');
+  if (!container) return;
+  const list = ssLoad();
+  if (list.length === 0) {
+    container.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  container.innerHTML = list.map(s => {
+    const f = s.filters || {};
+    const chips = [];
+    if (f.sni) chips.push(`SNI ${f.sni}`);
+    if (f.region) chips.push(f.region);
+    if (f.revMin != null || f.revMax != null) chips.push(`Rev ${f.revMin != null ? f.revMin + 'M' : ''}–${f.revMax != null ? f.revMax + 'M' : '∞'}`);
+    if (f.rosMin != null) chips.push(`EBIT ≥${f.rosMin}%`);
+    if (f.scoreMin != null) chips.push(`Score ≥${f.scoreMin}`);
+    const runInfo = s.lastRunAt
+      ? `${t('ss_last_run')} ${_ssRelativeTime(s.lastRunAt)}`
+      : t('ss_never_run');
+    const chipsHtml = chips.length
+      ? chips.map(c => `<span style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:10px;color:var(--text2);">${escapeHtml(c)}</span>`).join('')
+      : `<span style="font-size:10px;color:var(--text3);">${t('ss_no_filters')}</span>`;
+    return `<div class="kpi-card" style="margin-bottom:8px;padding:12px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;">${escapeHtml(s.name)}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">${chipsHtml}</div>
+          <div style="font-size:10px;color:var(--text3);">${runInfo}</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button class="btn-primary" style="font-size:10px;padding:4px 10px;" onclick="ssOpenInSearch('${escapeHtml(s.id)}')">${t('ss_run_btn')}</button>
+          <button class="btn-secondary" style="font-size:10px;padding:4px 7px;" onclick="ssOpenNewForm('${escapeHtml(s.id)}')" title="${t('ss_edit_btn')}">✏️</button>
+          <button class="btn-secondary" style="font-size:10px;padding:4px 7px;color:var(--red);" onclick="ssDelete('${escapeHtml(s.id)}')" title="${t('ss_delete_btn')}">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function initSavedSearches() {
+  ssRenderList();
+}
+
+// ============================================================
 // STATUS BAR HELPER
 // ============================================================
 function setStatusBar(msg, state='ok') {
@@ -8318,7 +8562,7 @@ function setStatusBar(msg, state='ok') {
 // Build tracer — lets you confirm the deployed JS is up to date
 // (open DevTools console and look for this line). Cache-busting
 // aside, if you don't see VCFO_BUILD, you're on a stale copy.
-window.DEALSCOPE_BUILD = 'phase-1-succession-radar-v1';
+window.DEALSCOPE_BUILD = 'phase-2-saved-searches-v1';
 try { console.log('DealScope build:', window.DEALSCOPE_BUILD); } catch(e){}
 
 document.addEventListener('DOMContentLoaded', () => {
