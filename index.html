@@ -2193,6 +2193,12 @@ body.light-mode {
       <span id="searchModeLabel" style="font-size:9px;color:var(--text3);white-space:nowrap;letter-spacing:0.08em;">NAME</span>
     </div>
     <button class="btn-load" onclick="handleSearchLoad()">SEARCH</button>
+    <select id="countryPicker" onchange="ncSetCountry(this.value)" title="Country / market" style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:4px 6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;cursor:pointer;display:none;">
+      <option value="se">🇸🇪 SE</option>
+      <option value="no">🇳🇴 NO</option>
+      <option value="dk">🇩🇰 DK</option>
+      <option value="fi">🇫🇮 FI</option>
+    </select>
     <div id="fetchYearPicker" style="display:flex;align-items:center;gap:4px;">
       <span style="font-size:9px;color:var(--text3);letter-spacing:0.08em;white-space:nowrap;">FY:</span>
       <select id="fetchYearSelect" onchange="onFetchYearChange()" style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:4px 6px;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;outline:none;cursor:pointer;appearance:auto;min-width:65px;">
@@ -2276,6 +2282,19 @@ body.light-mode {
 
   <!-- ===== COMPANY TAB ===== -->
   <div id="tab-company">
+    <!-- Nordic coming-soon notice (shown when non-SE country active) -->
+    <div id="countryNotice" style="display:none;">
+      <div class="empty-state">
+        <div class="icon" id="ncFlag">🇳🇴</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text);" id="ncCountryName">Norway</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:6px;" id="ncRegistryName">Registry: Brønnøysundregistrene</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px;" data-i18n="nc_coming_soon_sub">Full integration coming soon — succession radar, financials, outreach generator</div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+          <a id="ncRegistryLink" href="#" target="_blank" rel="noopener" class="btn-secondary" style="font-size:10px;text-decoration:none;" data-i18n="nc_open_registry">Open Registry ↗</a>
+          <button class="btn-secondary" style="font-size:10px;" onclick="ncSetCountry('se')" data-i18n="nc_switch_se">Switch to Sweden</button>
+        </div>
+      </div>
+    </div>
     <div id="companyEmpty" class="empty-state">
       <div class="icon">🏢</div>
       <div style="font-size:14px;font-weight:600;color:var(--text);" data-i18n="search_heading">Search for any Swedish company</div>
@@ -3595,6 +3614,36 @@ body.light-mode {
         </div>
       </div>
     </div>
+    <!-- Nordic expansion roadmap -->
+    <div class="card" id="wsNordicRoadmap" style="margin-top:14px;display:none;">
+      <div class="card-title">🌐 <span data-i18n="nc_roadmap_title">Nordic Expansion Roadmap</span></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px;">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:10px;text-align:center;">
+          <div style="font-size:20px;margin-bottom:4px;">🇸🇪</div>
+          <div style="font-size:11px;font-weight:700;color:var(--green);">Sweden</div>
+          <div style="font-size:9px;color:var(--text2);margin-top:3px;">● Live</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;">Bolagsverket</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:10px;text-align:center;">
+          <div style="font-size:20px;margin-bottom:4px;">🇳🇴</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);">Norway</div>
+          <div style="font-size:9px;color:var(--amber);margin-top:3px;">◐ Planned</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;">Brønnøysund</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:10px;text-align:center;">
+          <div style="font-size:20px;margin-bottom:4px;">🇩🇰</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);">Denmark</div>
+          <div style="font-size:9px;color:var(--amber);margin-top:3px;">◐ Planned</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;">CVR</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:10px;text-align:center;">
+          <div style="font-size:20px;margin-bottom:4px;">🇫🇮</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);">Finland</div>
+          <div style="font-size:9px;color:var(--amber);margin-top:3px;">◐ Planned</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;">YTJ / PRH</div>
+        </div>
+      </div>
+    </div>
   </div><!-- /tab-workspace -->
 
   <!-- County tooltip -->
@@ -3674,6 +3723,7 @@ window.DEALSCOPE_FLAGS = {
   pipelineCrm:       true,
   outreachGenerator: true,
   teamWorkspace:     true,
+  nordicExpansion:   true,
 };
 
 // ============================================================
@@ -4005,6 +4055,12 @@ const STRINGS = {
     chat_welcome:           "Hi! I'm **DealScope AI** — your deal-sourcing copilot for Nordic acquisitions.\n\nI know every feature of this platform and I always know which screen you're on. You can ask me:\n- **About the app** — \"How do I use the Pipeline tab?\" or \"What does the M&A score mean?\"\n- **About the data** — \"Explain the CFO flags\" or \"Is this company a good acquisition target?\"\n- **Deal sourcing** — \"Find succession candidates in Stockholm\" or \"What signals should I look for?\"\n- **What to do next** — I'll guide you step by step.\n\nLoad a company to get started, or ask me anything.",
 
     // Saved Searches
+    // Nordic expansion
+    nc_coming_soon_sub:  'Full integration coming soon — succession radar, financials, outreach generator',
+    nc_open_registry:    'Open Registry ↗',
+    nc_switch_se:        'Switch to Sweden',
+    nc_roadmap_title:    'Nordic Expansion Roadmap',
+
     // Workspace
     tab_workspace:         '👥 Workspace',
     ws_firm_settings:      'Firm Settings',
@@ -4276,6 +4332,12 @@ const STRINGS = {
     chat_welcome:           "Hej! Jag är **DealScope AI** — din deal-sourcing-copilot för nordiska förvärv.\n\nJag känner till varje funktion i den här plattformen och vet alltid vilken skärm du befinner dig på. Du kan fråga mig:\n- **Om appen** — \"Hur använder jag Pipeline-fliken?\" eller \"Vad betyder förvärvspoängen?\"\n- **Om datan** — \"Förklara CFO-flaggorna\" eller \"Är det här ett bra förvärvsmål?\"\n- **Deal sourcing** — \"Hitta successionsbolag i Stockholm\" eller \"Vilka signaler ska jag leta efter?\"\n- **Vad du ska göra härnäst** — Jag guidar dig steg för steg.\n\nLadda ett företag för att komma igång, eller fråga mig vad som helst.",
 
     // Saved Searches
+    // Nordic expansion
+    nc_coming_soon_sub:  'Full integration kommer snart — succession radar, ekonomi, outreach-generator',
+    nc_open_registry:    'Öppna register ↗',
+    nc_switch_se:        'Byt till Sverige',
+    nc_roadmap_title:    'Nordisk expansionsplan',
+
     // Workspace
     tab_workspace:         '👥 Arbetsyta',
     ws_firm_settings:      'Firmainställningar',
@@ -5330,6 +5392,11 @@ function handleSearchKey(e) {
 }
 
 function handleSearchLoad() {
+  if (ncGetCountry() !== 'se') {
+    const c = NORDIC_COUNTRIES[ncGetCountry()];
+    showToast(`🚧 ${c.flag} ${c.name} integration coming soon`);
+    return;
+  }
   const val = document.getElementById('orgInput').value.trim();
   if (!val) { showToast(t('toast_no_input')); return; }
 
@@ -8662,6 +8729,84 @@ function srAddCurrentToRadar() {
 }
 
 // ============================================================
+// NORDIC EXPANSION
+// ============================================================
+const NORDIC_COUNTRIES = {
+  se: { flag: '🇸🇪', name: 'Sweden',  registry: 'Bolagsverket / allabolag.se', link: 'https://www.allabolag.se',         status: 'live'    },
+  no: { flag: '🇳🇴', name: 'Norway',  registry: 'Brønnøysundregistrene',        link: 'https://www.brreg.no',             status: 'planned' },
+  dk: { flag: '🇩🇰', name: 'Denmark', registry: 'CVR — Centrale Virksomhedsreg', link: 'https://datacvr.virk.dk',         status: 'planned' },
+  fi: { flag: '🇫🇮', name: 'Finland', registry: 'YTJ / PRH',                    link: 'https://www.ytj.fi',              status: 'planned' },
+};
+
+function ncGetCountry() {
+  return DealScopeStore.get('active_country') || 'se';
+}
+
+function ncSetCountry(code) {
+  if (!NORDIC_COUNTRIES[code]) return;
+  DealScopeStore.set('active_country', code);
+  const picker = document.getElementById('countryPicker');
+  if (picker) picker.value = code;
+  ncUpdateUI(code);
+}
+
+function ncUpdateUI(code) {
+  code = code || ncGetCountry();
+  const c = NORDIC_COUNTRIES[code] || NORDIC_COUNTRIES.se;
+  const isSE = code === 'se';
+
+  // apiHint in topbar
+  const hint = document.getElementById('apiHint');
+  if (hint) hint.textContent = isSE ? 'SE Registry · UC AB via allabolag.se' : `${c.flag} ${c.name} · ${c.registry}`;
+
+  // orgInput placeholder
+  const inp = document.getElementById('orgInput');
+  if (inp) inp.placeholder = isSE ? 'Company name or org. number…' : `${c.name}: integration coming soon…`;
+
+  // SEARCH button state
+  const searchBtn = document.querySelector('.btn-load');
+  if (searchBtn) { searchBtn.disabled = !isSE; searchBtn.style.opacity = isSE ? '' : '0.4'; }
+
+  // Country notice in company tab
+  const notice = document.getElementById('countryNotice');
+  const empty  = document.getElementById('companyEmpty');
+  if (notice) notice.style.display = isSE ? 'none' : '';
+  if (empty)  empty.style.display  = isSE ? ''     : 'none';
+
+  // Populate notice details
+  if (!isSE) {
+    const flagEl    = document.getElementById('ncFlag');
+    const nameEl    = document.getElementById('ncCountryName');
+    const regEl     = document.getElementById('ncRegistryName');
+    const linkEl    = document.getElementById('ncRegistryLink');
+    if (flagEl) flagEl.textContent = c.flag;
+    if (nameEl) nameEl.textContent = c.name;
+    if (regEl)  regEl.textContent  = `Registry: ${c.registry}`;
+    if (linkEl) { linkEl.href = c.link; }
+  }
+
+  // Show Nordic roadmap in workspace when flag is on
+  const roadmap = document.getElementById('wsNordicRoadmap');
+  if (roadmap) roadmap.style.display = window.DEALSCOPE_FLAGS?.nordicExpansion ? '' : 'none';
+}
+
+function plDetectCountry(orgNr) {
+  const d = (orgNr || '').replace(/[^0-9]/g, '');
+  if (d.length === 10) return 'se';
+  if (d.length === 9)  return 'no';
+  if (d.length === 8)  return 'dk';
+  if (d.length === 7)  return 'fi';
+  return null;
+}
+
+function ncInit() {
+  if (!window.DEALSCOPE_FLAGS?.nordicExpansion) return;
+  const picker = document.getElementById('countryPicker');
+  if (picker) { picker.style.display = ''; picker.value = ncGetCountry(); }
+  ncUpdateUI(ncGetCountry());
+}
+
+// ============================================================
 // WORKSPACE
 // ============================================================
 function wsInit() {
@@ -8673,6 +8818,8 @@ function wsInit() {
   if (critEl) critEl.value = DealScopeStore.get('ws_target_criteria') || '';
   wsPopulateDealPicker();
   wsRenderDigest();
+  const roadmap = document.getElementById('wsNordicRoadmap');
+  if (roadmap) roadmap.style.display = window.DEALSCOPE_FLAGS?.nordicExpansion ? '' : 'none';
   const outputEl = document.getElementById('wsOutput');
   const statusEl = document.getElementById('wsStatus');
   if (outputEl) outputEl.style.display = 'none';
@@ -8984,6 +9131,8 @@ function plRenderBoard() {
     const stageOpts = PL_STAGES.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
     const cardsHtml = cards.map(c => {
       const chips = [];
+      const detectedCountry = plDetectCountry(c.orgNr);
+      if (detectedCountry && NORDIC_COUNTRIES[detectedCountry]) chips.push(NORDIC_COUNTRIES[detectedCountry].flag);
       if (c.revenue != null) chips.push(`${c.revenue}M SEK`);
       if (c.score != null) chips.push(`Score ${c.score}`);
       const chipsHtml = chips.map(ch => `<span class="pl-chip">${escapeHtml(ch)}</span>`).join('');
@@ -9174,7 +9323,7 @@ function setStatusBar(msg, state='ok') {
 // Build tracer — lets you confirm the deployed JS is up to date
 // (open DevTools console and look for this line). Cache-busting
 // aside, if you don't see VCFO_BUILD, you're on a stale copy.
-window.DEALSCOPE_BUILD = 'phase-5-team-workspace-v1';
+window.DEALSCOPE_BUILD = 'phase-6-nordic-expansion-v1';
 try { console.log('DealScope build:', window.DEALSCOPE_BUILD); } catch(e){}
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -9229,6 +9378,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btn) btn.style.display = '';
       }
     });
+
+    // Nordic expansion init
+    ncInit();
   } catch(e) {
     console.warn('DealScope init error:', e);
   }
