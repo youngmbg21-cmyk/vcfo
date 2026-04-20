@@ -14758,9 +14758,20 @@ const DealScopeKolada = (() => {
   }
 
   async function _kFetch(url) {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`Kolada HTTP ${r.status}`);
-    return r.json();
+    // Try direct first; Kolada API lacks CORS headers so browser requests are blocked.
+    // Fall back to corsproxy.io which adds the required Access-Control-Allow-Origin header.
+    let lastErr;
+    for (const target of [url, `https://corsproxy.io/?${encodeURIComponent(url)}`]) {
+      try {
+        const r = await fetch(target);
+        if (!r.ok) throw new Error(`Kolada HTTP ${r.status}`);
+        return await r.json();
+      } catch(e) {
+        lastErr = e;
+        console.warn('[Kolada] _kFetch failed for', target, e.message);
+      }
+    }
+    throw lastErr;
   }
 
   function resolveMuniForCompany(cd) {
@@ -14789,15 +14800,6 @@ const DealScopeKolada = (() => {
     }
 
     console.log('[Kolada] fetchCorePackage: starting fetch for muniCode=', muniCode);
-    // Diagnostic: test one KPI first so raw response is visible in console
-    try {
-      const testUrl = `${BASE}/data/kpi/N00999/municipality/${muniCode}`;
-      console.log('[Kolada] DIAGNOSTIC test fetch:', testUrl);
-      const testJson = await fetch(testUrl).then(r => r.json());
-      console.log('[Kolada] DIAGNOSTIC raw response:', JSON.stringify(testJson).slice(0, 800));
-    } catch(e) {
-      console.error('[Kolada] DIAGNOSTIC test fetch failed:', e);
-    }
     const pkg = { vitality:{}, fiscal:{}, population:{}, liveability:{}, _fetchedAt: new Date().toISOString() };
     const log = logFn || (msg => console.log('[Kolada]', msg));
 
