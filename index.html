@@ -2481,10 +2481,9 @@ body.light-mode {
                 <div>
                   <label class="field-label" data-i18n="outreach_template">Template</label>
                   <select id="ogTemplate" class="input-field" style="width:100%;box-sizing:border-box;">
-                    <option value="formal_sv" data-i18n="og_tpl_formal_sv">Formal letter (SV)</option>
-                    <option value="email_en"  data-i18n="og_tpl_email_en">Warm email (EN)</option>
-                    <option value="email_sv"  data-i18n="og_tpl_email_sv">Warm email (SV)</option>
-                    <option value="followup_en" data-i18n="og_tpl_followup">Follow-up (EN)</option>
+                    <option value="email_en"    selected>Warm email (EN)</option>
+                    <option value="formal_en">Formal letter (EN)</option>
+                    <option value="followup_en">Follow-up (EN)</option>
                   </select>
                 </div>
               </div>
@@ -8993,11 +8992,9 @@ function initWorkspace() {
 // OUTREACH GENERATOR
 // ============================================================
 const OG_TEMPLATES = {
-  formal_sv: (c) => `Du är en erfaren förvärvsrådgivare. Skriv ett formellt brev på svenska riktat till ägaren av ${c.name} (org.nr ${c.orgNr}).${c.ownerName ? ` Ägarens namn är ${c.ownerName}.` : ''} Brevet skickas av ${c.yourName}${c.yourFirm ? ' på ' + c.yourFirm : ''}. Bolaget verkar inom ${c.industry} och redovisade en omsättning på ${c.revenue} MSEK med ett rörelseresultat på ${c.opProfit} MSEK. Avsikten är att på ett diskret och respektfullt sätt uttrycka intresse för ett möjligt förvärv och be om ett inledande möte. Brevet ska vara professionellt, inte avslöja priskänsligheter, och hållas inom 220 ord.`,
+  email_en:   (c) => `You are a Nordic M&A originator. Write a warm, direct cold email in English addressed to the owner of ${c.name}.${c.ownerName ? ` The owner's name is ${c.ownerName}.` : ''} From: ${c.yourName}${c.yourFirm ? ' at ' + c.yourFirm : ''}. Company: ${c.industry}, revenue ${c.revenue} MSEK, EBIT ${c.opProfit} MSEK. Goal: genuine acquisition interest, propose a confidential first meeting. Tone: respectful, human, not salesy. Max 160 words.`,
 
-  email_en:  (c) => `You are a Nordic M&A originator. Write a warm, direct cold email in English addressed to the owner of ${c.name}.${c.ownerName ? ` The owner's name is ${c.ownerName}.` : ''} From: ${c.yourName}${c.yourFirm ? ' at ' + c.yourFirm : ''}. Company: ${c.industry}, revenue ${c.revenue} MSEK, EBIT ${c.opProfit} MSEK. Goal: genuine acquisition interest, propose a confidential first meeting. Tone: respectful, human, not salesy. Max 160 words.`,
-
-  email_sv:  (c) => `Du är en nordisk förvärvsspecialist. Skriv ett varmt och kortfattat kallt mejl på svenska till ägaren av ${c.name}.${c.ownerName ? ` Ägarens namn är ${c.ownerName}.` : ''} Från: ${c.yourName}${c.yourFirm ? ' på ' + c.yourFirm : ''}. Bolag: ${c.industry}, omsättning ${c.revenue} MSEK, EBIT ${c.opProfit} MSEK. Mål: genuint förvärvsintresse, föreslå ett konfidentiellt möte. Ton: direkt, respektfullt, inte säljigt. Max 160 ord.`,
+  formal_en:  (c) => `You are an experienced M&A advisor. Write a formal acquisition letter in English addressed to the owner of ${c.name} (org. ${c.orgNr}).${c.ownerName ? ` The owner's name is ${c.ownerName}.` : ''} From: ${c.yourName}${c.yourFirm ? ' at ' + c.yourFirm : ''}. Company: ${c.industry}, revenue ${c.revenue} MSEK, EBIT ${c.opProfit} MSEK. The letter should professionally and discreetly express acquisition interest and request an initial meeting, without disclosing price sensitivities. Max 220 words.`,
 
   followup_en: (c) => `You are a Nordic M&A originator. Write a brief, warm follow-up email in English to the owner of ${c.name},${c.ownerName ? ` ${c.ownerName},` : ''} referencing that you reached out previously. From: ${c.yourName}${c.yourFirm ? ' at ' + c.yourFirm : ''}. Keep it under 90 words, maintain warmth, reiterate interest without pressure.`,
 };
