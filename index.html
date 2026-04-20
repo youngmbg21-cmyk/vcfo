@@ -14802,6 +14802,10 @@ const DealScopeKolada = (() => {
     return { code: '0180', name: 'Stockholm' }; // default fallback
   }
 
+  // In-flight deduplication: if two callers ask for the same muni simultaneously,
+  // the second just awaits the first promise instead of firing a duplicate proxy request.
+  const _inFlight = {};
+
   async function fetchCorePackage(muniCode, logFn) {
     const pkgKey = `kolada.pkg.${muniCode}`;
     const cached = DealScopeStore.get(pkgKey);
@@ -14809,71 +14813,71 @@ const DealScopeKolada = (() => {
       console.log('[Kolada] fetchCorePackage: serving fresh cache for', muniCode);
       return cached.data;
     }
+    if (_inFlight[muniCode]) {
+      console.log('[Kolada] fetchCorePackage: joining in-flight request for', muniCode);
+      return _inFlight[muniCode];
+    }
 
-    console.log('[Kolada] fetchCorePackage: starting fetch for muniCode=', muniCode);
+    _inFlight[muniCode] = _doFetch(muniCode, logFn).finally(() => { delete _inFlight[muniCode]; });
+    return _inFlight[muniCode];
+  }
+
+  async function _doFetch(muniCode, logFn) {
+    const pkgKey = `kolada.pkg.${muniCode}`;
+    console.log('[Kolada] _doFetch: starting for muniCode=', muniCode);
     const pkg = { vitality:{}, fiscal:{}, population:{}, liveability:{}, _fetchedAt: new Date().toISOString() };
     const log = logFn || (msg => console.log('[Kolada]', msg));
 
-    let totalRows = 0;
-    let skippedRows = 0;
+    // Fetch all KPIs in one request to minimise proxy round-trips and rate-limit exposure
+    const allIds = CORE_KPIS.map(k => k.id).join(',');
+    const url    = `${BASE}/data/kpi/${allIds}/municipality/${muniCode}`;
+    let totalRows = 0, skippedRows = 0;
 
-    // Batch KPIs in groups of 4 with 200ms pacing (polite rate limit)
-    for (let i = 0; i < CORE_KPIS.length; i += 4) {
-      const batch = CORE_KPIS.slice(i, i + 4);
-      const ids   = batch.map(k => k.id).join(',');
-      const url   = `${BASE}/data/kpi/${ids}/municipality/${muniCode}`;
-      try {
-        log(`Fetching ${ids}…`);
-        console.log('[Kolada] GET', url);
-        const json = await _kFetch(url);
-        console.log('[Kolada] response for', ids, '→', json.values?.length, 'rows');
-        for (const row of (json.values || [])) {
-          totalRows++;
-          const meta = CORE_KPIS.find(k => k.id === row.kpi);
-          if (!meta) { skippedRows++; continue; }
-          // Accept gender 'T' (total), or fall back to first non-null value (some KPIs are non-gendered)
-          const tot = (row.values || []).find(v => v.gender === 'T')
-                   || (row.values || []).find(v => v.value !== null && v.value !== undefined);
-          if (!tot || tot.value === null || tot.value === undefined) { skippedRows++; continue; }
-          const yr = parseInt(row.period);
-          if (!pkg[meta.bucket][meta.id]) {
-            pkg[meta.bucket][meta.id] = { series:[], label:meta.label, goodHigh:meta.goodHigh };
-          }
-          pkg[meta.bucket][meta.id].series.push({ year: yr, value: tot.value });
-          log(`  ✓ ${row.kpi} period=${row.period} val=${tot.value}`);
+    try {
+      log(`Fetching all ${CORE_KPIS.length} KPIs…`);
+      console.log('[Kolada] GET', url);
+      const json = await _kFetch(url);
+      console.log('[Kolada] response:', json.values?.length, 'rows');
+      for (const row of (json.values || [])) {
+        totalRows++;
+        const meta = CORE_KPIS.find(k => k.id === row.kpi);
+        if (!meta) { skippedRows++; continue; }
+        // Accept gender 'T' (total), or fall back to first non-null value
+        const tot = (row.values || []).find(v => v.gender === 'T')
+                 || (row.values || []).find(v => v.value !== null && v.value !== undefined);
+        if (!tot || tot.value === null || tot.value === undefined) { skippedRows++; continue; }
+        const yr = parseInt(row.period);
+        if (!pkg[meta.bucket][meta.id]) {
+          pkg[meta.bucket][meta.id] = { series:[], label:meta.label, goodHigh:meta.goodHigh };
         }
-      } catch(e) {
-        log(`⚠ ${ids}: ${e.message} — skipping`);
-        console.error('[Kolada] batch fetch error for', ids, e);
-        for (const kpi of batch) {
-          if (!pkg[kpi.bucket][kpi.id]) {
-            pkg[kpi.bucket][kpi.id] = { series:[], label:kpi.label, goodHigh:kpi.goodHigh, _error:e.message };
-          }
-        }
+        pkg[meta.bucket][meta.id].series.push({ year: yr, value: tot.value });
+        log(`  ✓ ${row.kpi} period=${row.period} val=${tot.value}`);
       }
-      await new Promise(r => setTimeout(r, 200));
+    } catch(e) {
+      log(`⚠ fetch error: ${e.message}`);
+      console.error('[Kolada] _doFetch error:', e);
+      // fall through — we may have partial data if the error is from the proxy layer
     }
 
     // Sort each series by year ascending
     for (const bucket of Object.values(pkg)) {
-      if (typeof bucket !== 'object' || !bucket || typeof bucket === 'string') continue;
+      if (!bucket || typeof bucket !== 'object') continue;
       for (const kpi of Object.values(bucket)) {
         if (kpi?.series) kpi.series.sort((a, b) => a.year - b.year);
       }
     }
 
-    // Count KPIs that actually got data
-    const kpisWithData = Object.values(pkg).flatMap(b => typeof b === 'object' ? Object.values(b) : [])
+    const kpisWithData = Object.values(pkg)
+      .flatMap(b => (b && typeof b === 'object') ? Object.values(b) : [])
       .filter(k => k?.series?.length > 0).length;
-    console.log(`[Kolada] fetchCorePackage done: ${kpisWithData}/${CORE_KPIS.length} KPIs with data, ${totalRows} rows total, ${skippedRows} skipped`);
+    console.log(`[Kolada] done: ${kpisWithData}/${CORE_KPIS.length} KPIs with data, ${totalRows} rows, ${skippedRows} skipped`);
     log(`Done: ${kpisWithData}/${CORE_KPIS.length} KPIs with data`);
 
-    // Only cache if we got at least some data; empty results likely indicate an API/network problem
     if (kpisWithData > 0) {
       DealScopeStore.set(pkgKey, { data: pkg, _ts: Date.now() });
     } else {
-      console.warn('[Kolada] No KPI data returned for', muniCode, '— not caching empty package');
-      throw new Error(`No KPI data returned for municipality ${muniCode}. Check console for API response details.`);
+      console.warn('[Kolada] No KPI data returned for', muniCode);
+      throw new Error(`No KPI data returned for municipality ${muniCode}. Check console for API/proxy errors.`);
     }
 
     return pkg;
