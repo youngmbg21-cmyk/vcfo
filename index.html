@@ -2595,14 +2595,15 @@ body.light-mode {
               <div class="ai-output-title" data-i18n="card_cfo_ai">🤖 AI CFO Analysis — 3 Operational Concerns</div>
               <div style="display:flex;gap:6px;">
                 <button class="btn-copy" onclick="copyAIOutput('cfoAIOutput', this)" title="Copy to clipboard">📋 Copy</button>
+                <button class="btn-secondary" onclick="saveCFOToVault()" id="btnCFOSaveVault" style="font-size:10px;display:none;">🗄 Save</button>
                 <button class="btn-secondary" onclick="askAboutAnalysis('cfo')" style="font-size:10px;" data-i18n="btn_ask_ai">💬 Ask AI</button>
                 <button class="btn-analyze" onclick="runCFOAudit()" id="btnCFOAI" data-i18n="btn_run_cfo_ai">
-                  Run AI Audit
+                  ↺ Re-run AI Audit
                 </button>
               </div>
             </div>
             <div class="ai-output-body" id="cfoAIOutput">
-              <div style="color:var(--text3);">Click "Run AI Audit" to generate a deep AI analysis of the 3 most critical operational concerns based on the company's annual report data.</div>
+              <div style="color:var(--text3);">AI analysis runs automatically when a company is loaded. Use "↺ Re-run AI Audit" to refresh.</div>
             </div>
             <div class="progress-bar" style="margin:0 16px 12px;"><div class="progress-fill" id="cfoProgress" style="width:0%"></div></div>
           </div>
@@ -2690,14 +2691,15 @@ body.light-mode {
           <div class="ai-output-title" data-i18n="card_ma_ai">🤖 AI M&A Recommendation — Buy / Pass</div>
           <div style="display:flex;gap:6px;">
             <button class="btn-copy" onclick="copyAIOutput('maAIOutput', this)" title="Copy to clipboard">📋 Copy</button>
+            <button class="btn-secondary" onclick="saveMAToVault()" id="btnMASaveVault" style="font-size:10px;display:none;">🗄 Save</button>
             <button class="btn-secondary" onclick="askAboutAnalysis('ma')" style="font-size:10px;" data-i18n="btn_ask_ai">💬 Ask AI</button>
             <button class="btn-analyze" onclick="runMAScreen()" id="btnMAAI" data-i18n="btn_run_ma_ai">
-              Run AI Screen
+              ↺ Re-run AI Screen
             </button>
           </div>
         </div>
         <div class="ai-output-body" id="maAIOutput">
-          <div style="color:var(--text3);">Click "Run AI Screen" to generate an AI-powered M&A recommendation with detailed due diligence findings, scored across compliance, financials, assets, and strategic fit.</div>
+          <div style="color:var(--text3);">AI analysis runs automatically when a company is loaded. Use "↺ Re-run AI Screen" to refresh.</div>
         </div>
         <div class="progress-bar" style="margin:0 16px 12px;"><div class="progress-fill" id="maProgress" style="width:0%"></div></div>
       </div>
@@ -2755,7 +2757,7 @@ body.light-mode {
             <span id="finAIStale" class="ai-stale-badge" style="display:none;" title="Filters changed since the last summary was generated">● Filters changed</span>
             <button class="btn-copy" id="finAISaveBtn" onclick="saveAISummaryToVault('financials')" title="Save this summary to the Vault for future reference" style="display:none;">🗄 Save to Vault</button>
             <button class="btn-copy" id="finAICopyBtn" onclick="copyAIOutput('finAIBody', this)" title="Copy" style="display:none;">📋 Copy</button>
-            <button class="btn-analyze" id="finAIRunBtn" onclick="runAIPerformanceSummary('financials')" style="background:linear-gradient(135deg,rgba(0,200,255,0.12),rgba(0,200,255,0.06));border-color:rgba(0,200,255,0.4);color:var(--blue);">🤖 Generate Summary</button>
+            <button class="btn-analyze" id="finAIRunBtn" onclick="runAIPerformanceSummary('financials')" style="background:linear-gradient(135deg,rgba(0,200,255,0.12),rgba(0,200,255,0.06));border-color:rgba(0,200,255,0.4);color:var(--blue);">🤖 Regenerate</button>
           </div>
         </div>
         <div id="finAIBody" class="ai-summary-body">
@@ -2833,7 +2835,7 @@ body.light-mode {
             <span id="cfAIStale" class="ai-stale-badge" style="display:none;" title="Filters changed since the last summary was generated">● Filters changed</span>
             <button class="btn-copy" id="cfAISaveBtn" onclick="saveAISummaryToVault('cashflow')" title="Save this summary to the Vault for future reference" style="display:none;">🗄 Save to Vault</button>
             <button class="btn-copy" id="cfAICopyBtn" onclick="copyAIOutput('cfAIBody', this)" title="Copy" style="display:none;">📋 Copy</button>
-            <button class="btn-analyze" id="cfAIRunBtn" onclick="runAIPerformanceSummary('cashflow')" style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.06));border-color:rgba(16,185,129,0.4);color:var(--green);">🤖 Generate Summary</button>
+            <button class="btn-analyze" id="cfAIRunBtn" onclick="runAIPerformanceSummary('cashflow')" style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.06));border-color:rgba(16,185,129,0.4);color:var(--green);">🤖 Regenerate</button>
           </div>
         </div>
         <div id="cfAIBody" class="ai-summary-body">
@@ -2940,6 +2942,8 @@ body.light-mode {
         <button class="filter-pill active" data-vfilter="all"        onclick="vaultSetFilter('all')">All</button>
         <button class="filter-pill"        data-vfilter="financials" onclick="vaultSetFilter('financials')">Financials</button>
         <button class="filter-pill"        data-vfilter="cashflow"   onclick="vaultSetFilter('cashflow')">Cash Flow</button>
+        <button class="filter-pill"        data-vfilter="cfo"        onclick="vaultSetFilter('cfo')">CFO Audit</button>
+        <button class="filter-pill"        data-vfilter="ma"         onclick="vaultSetFilter('ma')">M&amp;A</button>
         <button class="filter-pill"        data-vfilter="company"    onclick="vaultSetFilter('company')">Active Company</button>
       </div>
     </div>
@@ -3904,6 +3908,8 @@ function resetFilterYearsFor(obj, years) {
 let maScore      = null;
 let cfoRunning   = false;
 let maRunning    = false;
+let _cfoParsed   = null;
+let _maParsed    = null;
 
 // ============================================================
 // INTERNATIONALISATION — EN / SV
@@ -3974,8 +3980,8 @@ const STRINGS = {
     btn_export:         '⬇ Export',
     btn_refresh_screen: '↺ Refresh Screen',
     btn_ask_ai:         '💬 Ask AI',
-    btn_run_cfo_ai:     'Run AI Audit',
-    btn_run_ma_ai:      'Run AI Screen',
+    btn_run_cfo_ai:     '↺ Re-run AI Audit',
+    btn_run_ma_ai:      '↺ Re-run AI Screen',
     btn_run_ai_compare: '🤖 AI Compare',
     btn_export_csv:     '⬇ Export CSV',
     btn_clear_all:      '✕ Clear All',
@@ -4251,8 +4257,8 @@ const STRINGS = {
     btn_export:         '⬇ Exportera',
     btn_refresh_screen: '↺ Uppdatera screening',
     btn_ask_ai:         '💬 Fråga AI',
-    btn_run_cfo_ai:     'Kör AI-analys',
-    btn_run_ma_ai:      'Kör AI-screening',
+    btn_run_cfo_ai:     '↺ Kör AI-analys',
+    btn_run_ma_ai:      '↺ Kör AI-screening',
     btn_run_ai_compare: '🤖 AI-jämförelse',
     btn_export_csv:     '⬇ Exportera CSV',
     btn_clear_all:      '✕ Rensa alla',
@@ -5785,6 +5791,19 @@ async function loadCompanyByOrg(raw, knownName) {
   if (availableYears.length >= 2) {
     loadAllYears();
   }
+
+  // Auto-run all AI analyses on company load (skip if no API key or no live data)
+  if (isLive && anthropicKey) {
+    setTimeout(autoRunAllAnalyses, 200);
+  }
+}
+
+function autoRunAllAnalyses() {
+  if (!companyData || !anthropicKey) return;
+  runCFOAudit();
+  runMAScreen();
+  runAIPerformanceSummary('financials');
+  runAIPerformanceSummary('cashflow');
 }
 
 // Keep old loadCompany for backward compat
@@ -7740,6 +7759,9 @@ Return ONLY a JSON object in this exact format:
 }
 
 function renderCFOAIOutput(data) {
+  _cfoParsed = data;
+  const btn = document.getElementById('btnCFOSaveVault');
+  if (btn) btn.style.display = '';
   const sevColor = { CRITICAL:'var(--red)', WARNING:'var(--amber)', INFO:'var(--blue)' };
   const html = `
     ${data.concerns.map(c => `
@@ -8236,6 +8258,9 @@ Return ONLY a JSON object:
 }
 
 function renderMAOutput(data) {
+  _maParsed = data;
+  const btn = document.getElementById('btnMASaveVault');
+  if (btn) btn.style.display = '';
   const statusColor = { PASS:'var(--green)', CONCERN:'var(--amber)', FAIL:'var(--red)' };
   const impactColor = { LOW:'var(--green)', MEDIUM:'var(--amber)', HIGH:'var(--red)' };
   const verdColor = { BUY:'var(--green)', HOLD:'var(--amber)', PASS:'var(--red)' };
@@ -13114,6 +13139,8 @@ function _vaultId() { return 'v-' + Date.now() + '-' + Math.random().toString(36
 const VAULT_MODULE_LABELS = {
   financials: { en: 'Financials AI Summary',  sv: 'Finansiell AI-sammanfattning' },
   cashflow:   { en: 'Cash Flow AI Summary',    sv: 'Kassaflödes AI-sammanfattning' },
+  cfo:        { en: 'CFO Audit' },
+  ma:         { en: 'M&A Screener' },
 };
 function _vaultModuleLabel(mod, lang) {
   const map = VAULT_MODULE_LABELS[mod];
@@ -13126,7 +13153,69 @@ function _vaultModuleLabel(mod, lang) {
 const VAULT_RENDERERS = {
   financials: (entry, container) => _vaultRenderAISummary('financials', entry, container),
   cashflow:   (entry, container) => _vaultRenderAISummary('cashflow',   entry, container),
+  cfo:        (entry, container) => _vaultRenderCFO(entry, container),
+  ma:         (entry, container) => _vaultRenderMA(entry, container),
 };
+
+function _vaultRenderCFO(entry, container) {
+  const p = entry.parsed || {};
+  const sevColor = { CRITICAL:'var(--red)', WARNING:'var(--amber)', INFO:'var(--blue)' };
+  const concerns = (p.concerns || []).map(c => `
+    <div class="ai-section">
+      <div class="ai-section-title">${escapeHtml(String(c.rank||''))}. ${escapeHtml(c.category||'')} — <span style="color:${sevColor[c.severity]||'var(--amber)'};font-size:9px;">${escapeHtml(c.severity||'')}</span></div>
+      <div style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--text);">${escapeHtml(c.title||'')}</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:6px;">${escapeHtml(c.finding||'')}</div>
+      <div style="font-size:11px;color:var(--green);border-left:2px solid var(--green);padding-left:10px;margin-bottom:4px;">→ ${escapeHtml(c.recommendation||'')}</div>
+      <div style="font-size:9px;color:var(--text3);">Ref: <span class="reg-pill">${escapeHtml(c.ref||'')}</span></div>
+    </div>`).join('<div class="separator"></div>');
+  container.innerHTML = `
+    ${concerns}
+    <div class="separator"></div>
+    <div class="ai-section">
+      <div class="ai-section-title">Executive Assessment</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6;">${escapeHtml(p.overallAssessment||'')}</div>
+    </div>`;
+}
+
+function _vaultRenderMA(entry, container) {
+  const p = entry.parsed || {};
+  const statusColor = { PASS:'var(--green)', CONCERN:'var(--amber)', FAIL:'var(--red)' };
+  const impactColor = { LOW:'var(--green)', MEDIUM:'var(--amber)', HIGH:'var(--red)' };
+  const verdColor   = { BUY:'var(--green)', HOLD:'var(--amber)', PASS:'var(--red)' };
+  const rows = (p.findings || []).map(f => `<tr>
+    <td style="font-weight:600;white-space:nowrap;">${escapeHtml(f.area||'')}</td>
+    <td style="color:var(--text2);font-size:10px;line-height:1.5;">${escapeHtml(f.finding||'')}</td>
+    <td style="text-align:center;"><span style="font-size:9px;padding:2px 8px;border-radius:3px;background:${statusColor[f.status]}22;color:${statusColor[f.status]};">${escapeHtml(f.status||'')}</span></td>
+    <td style="text-align:center;"><span style="font-size:9px;padding:2px 8px;border-radius:3px;background:${impactColor[f.dealImpact]}22;color:${impactColor[f.dealImpact]};">${escapeHtml(f.dealImpact||'')}</span></td>
+  </tr>`).join('');
+  const riskList  = (p.keyRisks||[]).map(r=>`<li>${escapeHtml(r)}</li>`).join('');
+  const oppList   = (p.keyOpportunities||[]).map(o=>`<li>${escapeHtml(o)}</li>`).join('');
+  container.innerHTML = `
+    <div class="ai-section">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div style="font-size:18px;font-weight:800;font-family:'DM Sans',sans-serif;color:${verdColor[p.verdict]||'var(--amber)'};">${escapeHtml(p.verdict||'')}</div>
+        <div style="font-size:12px;color:var(--text2);">${escapeHtml(p.verdictRationale||'')}</div>
+      </div>
+    </div>
+    <div class="separator"></div>
+    <div class="ai-section">
+      <div class="ai-section-title">Due Diligence Findings</div>
+      <table class="data-table">
+        <thead><tr><th>Area</th><th>Finding</th><th style="text-align:center">Status</th><th style="text-align:center">Deal Impact</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div class="separator"></div>
+    <div class="ai-section" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div><div class="ai-section-title" style="color:var(--red)">Key Risks</div><ul style="margin:0;padding-left:16px;font-size:11px;color:var(--text2);">${riskList}</ul></div>
+      <div><div class="ai-section-title" style="color:var(--green)">Key Opportunities</div><ul style="margin:0;padding-left:16px;font-size:11px;color:var(--text2);">${oppList}</ul></div>
+    </div>
+    <div class="separator"></div>
+    <div class="ai-section">
+      <div class="ai-section-title">Deal Structure Recommendation</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6;">${escapeHtml(p.dealStructureRecommendation||'')}</div>
+    </div>`;
+}
 
 function _vaultRenderAISummary(tab, entry, container) {
   const lang = entry.language || 'en';
@@ -13184,6 +13273,42 @@ function saveAISummaryToVault(tab) {
   if (activeTab === 'vault') renderVaultList();
 }
 
+function saveCFOToVault() {
+  if (!_cfoParsed) { showToast('Run AI Audit first'); return; }
+  vaultEntries.push({
+    id: _vaultId(),
+    savedAt: new Date().toISOString(),
+    sourceModule: 'cfo',
+    companyOrgNr: companyData?.orgNr || null,
+    companyName:  companyData?.name  || null,
+    language: 'en',
+    filtersSnapshot: null,
+    contextLabel: companyData?.name ? `CFO Audit — ${companyData.name}` : 'CFO Audit',
+    parsed: _cfoParsed,
+  });
+  _vaultSave();
+  showToast('🗄 Saved to Vault', { action: { label: 'Open Vault', onClick: () => switchTab('vault') } });
+  if (activeTab === 'vault') renderVaultList();
+}
+
+function saveMAToVault() {
+  if (!_maParsed) { showToast('Run AI Screen first'); return; }
+  vaultEntries.push({
+    id: _vaultId(),
+    savedAt: new Date().toISOString(),
+    sourceModule: 'ma',
+    companyOrgNr: companyData?.orgNr || null,
+    companyName:  companyData?.name  || null,
+    language: 'en',
+    filtersSnapshot: null,
+    contextLabel: companyData?.name ? `M&A Screen — ${companyData.name}` : 'M&A Screen',
+    parsed: _maParsed,
+  });
+  _vaultSave();
+  showToast('🗄 Saved to Vault', { action: { label: 'Open Vault', onClick: () => switchTab('vault') } });
+  if (activeTab === 'vault') renderVaultList();
+}
+
 function deleteVaultEntry(id) {
   const idx = vaultEntries.findIndex(x => x.id === id);
   if (idx === -1) return;
@@ -13221,12 +13346,22 @@ function _vaultFiltered() {
         if (e.sourceModule !== vaultFilter) return false;
       }
       if (vaultSearch) {
+        const p = e.parsed || {};
+        const cfoText = e.sourceModule === 'cfo'
+          ? (p.concerns||[]).map(c => `${c.category||''} ${c.title||''} ${c.finding||''} ${c.recommendation||''}`).join(' ') + ' ' + (p.overallAssessment||'')
+          : '';
+        const maText = e.sourceModule === 'ma'
+          ? `${p.verdict||''} ${p.verdictRationale||''} ` +
+            (p.findings||[]).map(f=>`${f.area||''} ${f.finding||''}`).join(' ') + ' ' +
+            (p.keyRisks||[]).join(' ') + ' ' + (p.keyOpportunities||[]).join(' ')
+          : '';
         const hay = (
           (e.companyName||'') + ' ' +
           (e.parsed?.narrative||'') + ' ' +
-          (e.parsed?.goingWell||[]).join(' ') + ' ' +
-          (e.parsed?.concerns||[]).join(' ') + ' ' +
-          (e.parsed?.watch||[]).join(' ') + ' ' +
+          (Array.isArray(p.goingWell) ? p.goingWell : []).join(' ') + ' ' +
+          (Array.isArray(p.concerns)  ? p.concerns.filter(x=>typeof x==='string') : []).join(' ') + ' ' +
+          (Array.isArray(p.watch)     ? p.watch     : []).join(' ') + ' ' +
+          cfoText + ' ' + maText + ' ' +
           (e.contextLabel||'')
         ).toLowerCase();
         if (!hay.includes(vaultSearch)) return false;
@@ -13244,7 +13379,7 @@ function renderVaultList() {
   const entries = _vaultFiltered();
   if (entries.length === 0) {
     const hint = vaultEntries.length === 0
-      ? 'Vault is empty. Generate an AI summary on the Financials or Cash Flow tab and click <strong>🗄 Save to Vault</strong>.'
+      ? 'Vault is empty. Generate an AI analysis on the Financials, Cash Flow, CFO Audit, or M&amp;A tab and click <strong>🗄 Save</strong>.'
       : 'No vault entries match this filter.';
     list.innerHTML = `<div class="journal-empty">
       <div class="icon">🗄</div>
@@ -13256,12 +13391,27 @@ function renderVaultList() {
   list.innerHTML = entries.map(_vaultRenderCard).join('');
 }
 
+function _vaultCardPreview(e) {
+  const p = e.parsed || {};
+  if (e.sourceModule === 'cfo') {
+    const first = (p.concerns||[])[0];
+    return first ? `${first.rank}. ${first.category}: ${first.title}` : (p.overallAssessment||'CFO Audit');
+  }
+  if (e.sourceModule === 'ma') {
+    return p.verdict ? `${p.verdict} — ${p.verdictRationale||''}` : 'M&A Screen';
+  }
+  return p.narrative || '';
+}
+
 function _vaultRenderCard(e) {
   const d = new Date(e.savedAt);
   const time = d.toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
   const langLabel = (e.language === 'sv') ? '🇸🇪 SV' : '🇬🇧 EN';
   const moduleLabel = _vaultModuleLabel(e.sourceModule, e.language || 'en');
-  const accent = e.sourceModule === 'cashflow' ? 'var(--green)' : 'var(--blue)';
+  const accent = e.sourceModule === 'cashflow' ? 'var(--green)'
+              : e.sourceModule === 'ma'       ? 'var(--amber)'
+              : e.sourceModule === 'cfo'      ? 'var(--red)'
+              : 'var(--blue)';
   const company = e.companyName ? escapeHtml(e.companyName) : '—';
   const filterSummary = e.filtersSnapshot
     ? `${e.filtersSnapshot.years.length} year${e.filtersSnapshot.years.length===1?'':'s'} · ${e.filtersSnapshot.series.length} series`
@@ -13274,7 +13424,7 @@ function _vaultRenderCard(e) {
       <span class="vault-card-chip">${langLabel}</span>
       ${filterSummary ? `<span class="vault-card-chip">${escapeHtml(filterSummary)}</span>` : ''}
     </div>
-    <div class="vault-card-narrative">${escapeHtml(e.parsed?.narrative || '')}</div>
+    <div class="vault-card-narrative">${escapeHtml(_vaultCardPreview(e))}</div>
     <div class="vault-card-actions">
       <button class="journal-entry-action" onclick="openVaultViewer('${escapeHtml(e.id)}')">Open</button>
       <button class="journal-entry-action danger" onclick="deleteVaultEntry('${escapeHtml(e.id)}')">Delete</button>
