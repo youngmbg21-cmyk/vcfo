@@ -1971,6 +1971,93 @@ body.light-mode {
   .cb-row-actions { flex-direction: column; }
   .cb-row-action { padding: 3px 6px; font-size: 9px; }
 }
+
+/* ===== SUCCESSION RADAR ===== */
+.sr-filters {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+  align-items: center;
+}
+.sr-filter-group {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+}
+.sr-filter-label {
+  font-size: 9px; color: var(--text3); letter-spacing: 0.06em;
+  text-transform: uppercase; white-space: nowrap;
+}
+.sr-pill {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 12px; padding: 3px 10px;
+  font-size: 10px; color: var(--text2); cursor: pointer;
+  transition: all 0.15s;
+}
+.sr-pill:hover { border-color: var(--border2); color: var(--text); }
+.sr-pill.active { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); }
+.sr-layout {
+  display: grid; grid-template-columns: 210px 1fr; gap: 14px; margin-bottom: 14px;
+}
+@media (max-width: 800px) { .sr-layout { grid-template-columns: 1fr; } }
+.sr-map-card { padding: 10px; }
+.sr-map-title { font-size: 9px; color: var(--text3); letter-spacing: 0.06em; margin-bottom: 6px; }
+.sr-stats-row {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 10px;
+}
+@media (max-width: 600px) { .sr-stats-row { grid-template-columns: repeat(2,1fr); } }
+.sr-add-card { padding: 12px; margin-bottom: 10px; }
+.sr-add-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.sr-add-input {
+  flex: 1; min-width: 180px; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 4px; padding: 6px 10px; color: var(--text);
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; outline: none;
+}
+.sr-add-input:focus { border-color: var(--border2); }
+.sr-table-wrap { overflow-x: auto; }
+.sr-table {
+  width: 100%; border-collapse: collapse; font-size: 11px;
+}
+.sr-table th {
+  padding: 8px 10px; text-align: left; background: var(--bg3);
+  color: var(--text3); font-size: 9px; letter-spacing: 0.06em;
+  text-transform: uppercase; cursor: pointer; white-space: nowrap;
+  border-bottom: 1px solid var(--border); user-select: none;
+}
+.sr-table th:hover { color: var(--text); }
+.sr-table th.sort-asc::after { content: ' ↑'; }
+.sr-table th.sort-desc::after { content: ' ↓'; }
+.sr-table td {
+  padding: 8px 10px; border-bottom: 1px solid var(--border);
+  vertical-align: middle; color: var(--text2);
+}
+.sr-table tr:hover td { background: var(--bg3); cursor: pointer; }
+.sr-score-bar {
+  display: flex; align-items: center; gap: 6px;
+}
+.sr-score-fill {
+  height: 4px; border-radius: 2px; min-width: 2px;
+  background: var(--blue);
+}
+.sr-score-fill.high  { background: var(--red); }
+.sr-score-fill.mid   { background: var(--amber); }
+.sr-score-fill.low   { background: var(--blue); }
+.sr-signal-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  margin-right: 2px; vertical-align: middle;
+}
+.sr-remove-btn {
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  padding: 2px 6px; color: var(--text3); font-size: 9px; cursor: pointer;
+}
+.sr-remove-btn:hover { border-color: var(--red); color: var(--red); }
+.sr-add-pipeline-btn {
+  background: var(--blue-dim); border: 1px solid var(--blue); border-radius: 4px;
+  padding: 3px 8px; color: var(--blue); font-size: 9px; cursor: pointer; white-space: nowrap;
+}
+.sr-add-pipeline-btn:hover { background: var(--blue); color: #fff; }
+/* SVG county tooltip */
+.sr-county-tooltip {
+  position: fixed; background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 4px; padding: 4px 8px; font-size: 10px; color: var(--text);
+  pointer-events: none; z-index: 999; display: none;
+}
 </style>
 </head>
 <body>
@@ -2233,6 +2320,7 @@ body.light-mode {
             </button>
             <button class="btn-secondary" onclick="addToCompareFromMain()" title="Add this company to the Compare tab" data-i18n="btn_add_compare">⚖ Add to Compare</button>
             <button class="btn-pin" id="btnPinCompany" onclick="togglePinCompany()" title="Pin to Watchlist">★ Pin</button>
+            <button class="btn-secondary" id="btnAddToRadar" onclick="srAddCurrentToRadar()" style="display:none;" data-i18n="btn_add_to_radar">📡 Add to Radar</button>
           </div>
         </div>
 
@@ -2263,6 +2351,11 @@ body.light-mode {
               <div class="kpi-label" data-i18n="kpi_ma_score">M&A Score</div>
               <div class="kpi-value amber" id="kpiMAScore">—</div>
               <div class="kpi-sub" data-i18n="kpi_ma_sub">Acquisition Fit 0–100</div>
+            </div>
+            <div class="kpi-card" id="kpiSuccessionCard" style="display:none;">
+              <div class="kpi-label" data-i18n="kpi_succession">Succession</div>
+              <div class="kpi-value" id="kpiSuccession">—</div>
+              <div class="kpi-sub" data-i18n="kpi_succession_sub">Exit likelihood 0–100</div>
             </div>
           </div>
 
@@ -3173,15 +3266,146 @@ body.light-mode {
     </div>
   </div><!-- /tab-saved-searches -->
 
-  <!-- ===== SUCCESSION RADAR TAB (Phase 1) ===== -->
+  <!-- ===== SUCCESSION RADAR TAB ===== -->
   <div id="tab-succession-radar" style="display:none;">
-    <div class="empty-state">
-      <div class="icon">📡</div>
-      <div style="font-size:14px;font-weight:600;color:var(--text);">Succession Radar</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:6px;">Coming in Phase 1 — Find owner-operators aged 60+ who are likely approaching exit.</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:4px;">Scores companies 0–100 on succession likelihood · Heatmap by region · Sortable table</div>
+
+    <!-- Filter bar -->
+    <div class="sr-filters" id="srFilters">
+      <div class="sr-filter-group">
+        <span class="sr-filter-label">Sector</span>
+        <button class="sr-pill active" onclick="srSetFilter('sni','all',this)">All</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','construction',this)">Construction</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','manufacturing',this)">Manufacturing</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','wholesale',this)">Wholesale</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','retail',this)">Retail</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','professional',this)">Professional</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','transport',this)">Transport</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','realestate',this)">Real Estate</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','ict',this)">ICT</button>
+        <button class="sr-pill" onclick="srSetFilter('sni','healthcare',this)">Healthcare</button>
+      </div>
+      <div class="sr-filter-group" style="margin-top:4px;">
+        <span class="sr-filter-label">Revenue</span>
+        <button class="sr-pill active" onclick="srSetFilter('revBand','all',this)">All Sizes</button>
+        <button class="sr-pill" onclick="srSetFilter('revBand','micro',this)">&lt; 10M</button>
+        <button class="sr-pill" onclick="srSetFilter('revBand','small',this)">10–50M</button>
+        <button class="sr-pill" onclick="srSetFilter('revBand','mid',this)">50–200M</button>
+        <button class="sr-pill" onclick="srSetFilter('revBand','large',this)">&gt; 200M</button>
+      </div>
+      <div class="sr-filter-group" style="margin-top:4px;">
+        <span class="sr-filter-label">Min Score</span>
+        <button class="sr-pill active" onclick="srSetFilter('minScore',0,this)">Any</button>
+        <button class="sr-pill" onclick="srSetFilter('minScore',20,this)">20+</button>
+        <button class="sr-pill" onclick="srSetFilter('minScore',40,this)">40+</button>
+        <button class="sr-pill" onclick="srSetFilter('minScore',60,this)">60+</button>
+      </div>
     </div>
+
+    <!-- Map + right panel -->
+    <div class="sr-layout">
+      <!-- Sweden heatmap -->
+      <div class="card sr-map-card">
+        <div class="sr-map-title">SWEDEN · SUCCESSION HEATMAP</div>
+        <svg id="srMap" viewBox="0 0 200 470" style="width:100%;height:auto;display:block;">
+          <!-- Mainland silhouette -->
+          <polygon id="srMapOutline"
+            points="140,12 172,31 165,77 165,123 151,169 122,200 107,215 100,230 100,261 107,276 122,307 114,322 93,338 86,353 93,384 79,399 64,415 57,434 43,437 34,431 28,399 18,368 11,353 9,338 9,322 18,307 18,276 21,261 29,230 21,200 36,169 50,138 57,107 64,77 107,46 107,31"
+            fill="var(--bg3)" stroke="var(--border2)" stroke-width="1.2"/>
+          <!-- Gotland island -->
+          <ellipse cx="148" cy="355" rx="7" ry="11"
+            fill="var(--bg3)" stroke="var(--border2)" stroke-width="1"/>
+          <!-- Öland island -->
+          <ellipse cx="101" cy="392" rx="3" ry="9"
+            fill="var(--bg3)" stroke="var(--border2)" stroke-width="0.8"/>
+          <!-- County dot markers (rendered by JS) -->
+          <g id="srCountyDots"></g>
+        </svg>
+        <div style="font-size:8px;color:var(--text3);margin-top:4px;text-align:center;">
+          Dot size = company count · Color = avg score
+        </div>
+      </div>
+
+      <!-- Right panel -->
+      <div>
+        <!-- Stats row -->
+        <div class="sr-stats-row">
+          <div class="kpi-card">
+            <div class="kpi-label">In Radar</div>
+            <div class="kpi-value" id="srStatTotal">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Avg Score</div>
+            <div class="kpi-value amber" id="srStatAvg">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Score ≥ 40</div>
+            <div class="kpi-value red" id="srStatHigh">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Age Known</div>
+            <div class="kpi-value green" id="srStatAge">0</div>
+          </div>
+        </div>
+
+        <!-- Add company -->
+        <div class="card sr-add-card">
+          <div class="card-title" style="margin-bottom:8px;">Add Company to Radar</div>
+          <div class="sr-add-row">
+            <input id="srAddInput" class="sr-add-input" placeholder="Org. number e.g. 556000-1234"
+              onkeydown="if(event.key==='Enter')srAddByInput()">
+            <button class="btn-load" style="font-size:11px;padding:5px 14px;" onclick="srAddByInput()">ADD</button>
+            <button class="btn-secondary" onclick="srSeedFromWatchlist()" data-i18n="sr_add_from_wl">Import Watchlist</button>
+          </div>
+          <div id="srAddStatus" style="font-size:10px;color:var(--text3);margin-top:6px;"></div>
+        </div>
+
+        <!-- Signals legend -->
+        <div class="card" style="padding:10px 12px;">
+          <div class="card-title" style="margin-bottom:6px;">Score Signals</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;color:var(--text2);">
+            <div><span class="sr-signal-dot" style="background:var(--red)"></span> Owner age ≥ 65 (+35)</div>
+            <div><span class="sr-signal-dot" style="background:var(--amber)"></span> Owner age 60–64 (+20)</div>
+            <div><span class="sr-signal-dot" style="background:var(--amber)"></span> Owner age 55–59 (+10)</div>
+            <div><span class="sr-signal-dot" style="background:var(--blue)"></span> No family on board (+15)</div>
+            <div><span class="sr-signal-dot" style="background:var(--amber)"></span> Flat/declining revenue (+10)</div>
+            <div><span class="sr-signal-dot" style="background:var(--amber)"></span> Rising dividends 3yr (+10)</div>
+            <div><span class="sr-signal-dot" style="background:var(--red)"></span> Auditor remark (+10)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sortable table -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px;">
+        Succession Candidates
+        <span id="srTableCount" style="color:var(--text3);font-size:10px;font-weight:400;margin-left:6px;"></span>
+      </div>
+      <div class="sr-table-wrap">
+        <table class="sr-table">
+          <thead>
+            <tr>
+              <th onclick="srSortBy('rank')" id="srTh_rank">#</th>
+              <th onclick="srSortBy('name')" id="srTh_name">Company</th>
+              <th onclick="srSortBy('sni')"  id="srTh_sni">Sector</th>
+              <th onclick="srSortBy('county')" id="srTh_county">Region</th>
+              <th onclick="srSortBy('score')" id="srTh_score" class="sort-desc">Score</th>
+              <th onclick="srSortBy('ownerAge')" id="srTh_ownerAge">Owner Age</th>
+              <th onclick="srSortBy('ros')" id="srTh_ros">ROS</th>
+              <th onclick="srSortBy('revenue')" id="srTh_revenue">Revenue</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="srTableBody">
+            <tr><td colspan="9" style="text-align:center;color:var(--text3);padding:24px;" data-i18n="sr_empty">No companies in radar. Add companies above or import from Watchlist.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div><!-- /tab-succession-radar -->
+  <!-- County tooltip -->
+  <div class="sr-county-tooltip" id="srCountyTooltip"></div>
 
 </div><!-- /content -->
 
@@ -3252,7 +3476,7 @@ body.light-mode {
 // All default false — flip to true to enable in-progress features.
 // ============================================================
 window.DEALSCOPE_FLAGS = {
-  successionRadar:   false,
+  successionRadar:   true,
   savedSearches:     false,
   pipelineCrm:       false,
   outreachGenerator: false,
@@ -3416,6 +3640,17 @@ const STRINGS = {
     tab_pipeline:          '🗂 Pipeline',
     tab_saved_searches:    '🔔 Saved Searches',
     tab_succession_radar:  '📡 Succession Radar',
+
+    // Succession Radar
+    kpi_succession:        'Succession',
+    kpi_succession_sub:    'Exit likelihood 0–100',
+    btn_add_to_radar:      '📡 Add to Radar',
+    sr_add_from_wl:        'Import Watchlist',
+    sr_empty:              'No companies in radar. Add companies above or import from Watchlist.',
+    sr_loading:            'Fetching ownership data…',
+    sr_score_label:        'Score',
+    sr_owner_age:          'Owner Age',
+    sr_signals:            'Signals',
 
     // Company empty state
     search_heading:     'Search for any Swedish company',
@@ -3600,6 +3835,17 @@ const STRINGS = {
     tab_pipeline:          '🗂 Pipeline',
     tab_saved_searches:    '🔔 Sparade sökningar',
     tab_succession_radar:  '📡 Successionsradar',
+
+    // Succession Radar
+    kpi_succession:        'Succession',
+    kpi_succession_sub:    'Sannolikhet för exit 0–100',
+    btn_add_to_radar:      '📡 Lägg till i Radar',
+    sr_add_from_wl:        'Importera bevakningslista',
+    sr_empty:              'Inga företag i radarn. Lägg till företag ovan eller importera från bevakningslistan.',
+    sr_loading:            'Hämtar ägardata…',
+    sr_score_label:        'Poäng',
+    sr_owner_age:          'Ägarålder',
+    sr_signals:            'Signaler',
 
     // Company empty state
     search_heading:     'Sök efter vilket svenskt företag som helst',
@@ -3907,11 +4153,12 @@ function switchTab(name) {
   }
   activeTab = name;
   _switchTopTab(name);
-  if (name === 'benchmarks')        initBenchmarksTab();
-  if (name === 'cashflow')          renderCashFlow();
-  if (name === 'watchlist')         renderWatchlistTab();
-  if (name === 'journal')           renderJournalTab();
-  if (name === 'vault')             renderVaultList();
+  if (name === 'benchmarks')         initBenchmarksTab();
+  if (name === 'cashflow')           renderCashFlow();
+  if (name === 'watchlist')          renderWatchlistTab();
+  if (name === 'journal')            renderJournalTab();
+  if (name === 'vault')              renderVaultList();
+  if (name === 'succession-radar')   initSuccessionRadar();
   if (name === 'competitor-bench')  {
     // Default to ranking unless user already picked a sub
     const sub = _activeSubTab['competitor-bench'] || 'ranking';
@@ -5584,6 +5831,34 @@ function renderCompanyTab(d) {
   setKPI('kpiROE', fmtPct(roe), roe > 12 ? 'green' : roe > 6 ? 'amber' : 'red');
   setKPI('kpiDE',  fmtRatio(de), de < 1.5 ? 'green' : de < 3 ? 'amber' : 'red');
   setKPI('kpiCR',  fmtRatio(cr), cr > 1.5 ? 'green' : cr > 1 ? 'amber' : 'red');
+
+  // Succession Radar KPI card + cache + button (only when flag is on)
+  if (window.DEALSCOPE_FLAGS?.successionRadar) {
+    const succCard = document.getElementById('kpiSuccessionCard');
+    const radarBtn = document.getElementById('btnAddToRadar');
+    if (succCard) succCard.style.display = '';
+    if (radarBtn) radarBtn.style.display = '';
+
+    // Cache the company data for use in the radar
+    srCacheCompanyData(d.orgNr, d);
+
+    // Compute score with available data (ownership fetched async)
+    const cachedOwnership = DealScopeStore.get('ownership_' + d.orgNr.replace(/[^0-9]/g, ''));
+    const histArr = d.prevNetSales > 0 ? [{ netSales: d.prevNetSales, netProfit: 0, dividendsPaid: 0 }, d] : [d];
+    const succResult = computeSuccessionScore(d, cachedOwnership || null, histArr);
+    const succScore = succResult.score;
+    setKPI('kpiSuccession', String(succScore),
+      succScore >= 60 ? 'red' : succScore >= 30 ? 'amber' : 'green');
+
+    // Background fetch ownership and update KPI when it arrives
+    fetchOwnership(d.orgNr).then(owData => {
+      if (!owData || !companyData || companyData.orgNr !== d.orgNr) return;
+      const histArr2 = d.prevNetSales > 0 ? [{ netSales: d.prevNetSales, netProfit: 0, dividendsPaid: 0 }, d] : [d];
+      const res2 = computeSuccessionScore(d, owData, histArr2);
+      setKPI('kpiSuccession', String(res2.score),
+        res2.score >= 60 ? 'red' : res2.score >= 30 ? 'amber' : 'green');
+    }).catch(() => {});
+  }
 
   // Income / balance tables
   document.getElementById('incomeData').innerHTML = buildFieldRows([
@@ -7553,6 +7828,480 @@ function animateProgress(id, target, duration) {
 }
 
 // ============================================================
+// SUCCESSION RADAR — core data & computation
+// ============================================================
+
+function getOwnershipProxyUrl() { return '/api/ownership'; }
+
+async function fetchOwnership(orgNr) {
+  const clean = orgNr.replace(/[^0-9]/g, '');
+  const cacheKey = 'ownership_' + clean;
+  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+  const cached = DealScopeStore.get(cacheKey);
+  if (cached && cached.fetchedAt && (Date.now() - new Date(cached.fetchedAt).getTime()) < THIRTY_DAYS) {
+    return cached;
+  }
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    const res = await fetch(`${getOwnershipProxyUrl()}?orgNr=${clean}`, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.error && !data.county && !data.boardMembers?.length) return null;
+    DealScopeStore.set(cacheKey, data);
+    return data;
+  } catch(e) { return null; }
+}
+
+function computeSuccessionScore(company, ownership, histYears) {
+  const signals = [];
+  let score = 0;
+  const yr = new Date().getFullYear();
+
+  // Signals 1–3: Primary owner age
+  if (ownership?.primaryOwner?.birthYear) {
+    const age = yr - ownership.primaryOwner.birthYear;
+    if (age >= 65)      { score += 35; signals.push({ label: `Owner aged ${age} — prime succession window`, w: 35, color: 'red' }); }
+    else if (age >= 60) { score += 20; signals.push({ label: `Owner aged ${age} — approaching retirement`, w: 20, color: 'amber' }); }
+    else if (age >= 55) { score += 10; signals.push({ label: `Owner aged ${age} — succession horizon 5–10 yrs`, w: 10, color: 'amber' }); }
+  }
+
+  // Signal 4: No family members on board
+  if (ownership?.boardMembers?.length && ownership?.primaryOwner?.lastName) {
+    const ownerSurname = ownership.primaryOwner.lastName.toLowerCase();
+    const hasFamily = ownership.boardMembers.some(m =>
+      m.lastName && m.name !== ownership.primaryOwner.name &&
+      m.lastName.toLowerCase() === ownerSurname
+    );
+    if (!hasFamily) { score += 15; signals.push({ label: 'No family on board — no obvious internal successor', w: 15, color: 'blue' }); }
+  }
+
+  // Signal 5: Flat or declining revenue last 2 FYs
+  if (histYears && histYears.length >= 2) {
+    const latest = histYears[histYears.length - 1];
+    const prev   = histYears[histYears.length - 2];
+    if (latest && prev && prev.netSales > 0) {
+      const growth = (latest.netSales - prev.netSales) / prev.netSales * 100;
+      if (growth <= 2) { score += 10; signals.push({ label: `Revenue flat/declining (${growth.toFixed(1)}% YoY)`, w: 10, color: 'amber' }); }
+    }
+  } else if (company.prevNetSales > 0) {
+    const growth = (company.netSales - company.prevNetSales) / company.prevNetSales * 100;
+    if (growth <= 2) { score += 10; signals.push({ label: `Revenue flat/declining (${growth.toFixed(1)}% YoY)`, w: 10, color: 'amber' }); }
+  }
+
+  // Signal 6: Dividend payout ratio trending up ≥ 2 years (needs 3 years)
+  if (histYears && histYears.length >= 3) {
+    const payouts = histYears.slice(-3).map(y => y.netProfit > 0 ? y.dividendsPaid / y.netProfit : 0);
+    if (payouts[1] > payouts[0] && payouts[2] > payouts[1] && payouts[2] > 0.3) {
+      score += 10;
+      signals.push({ label: 'Dividends rising 3 consecutive years — extracting cash pre-exit', w: 10, color: 'amber' });
+    }
+  }
+
+  // Signal 7: No leadership hires last 24 months — skip (no data source)
+
+  // Signal 8: Auditor remark present
+  if (company.auditorRemark) { score += 10; signals.push({ label: 'Auditor remark (Anmärkning) — compliance risk', w: 10, color: 'red' }); }
+
+  return { score: Math.min(100, score), signals };
+}
+
+// ── SNI code → radar sector bucket ──────────────────────────────────────────
+function srSniToBucket(sni) {
+  if (!sni || sni === '—') return 'other';
+  const n = parseInt(String(sni).slice(0, 2));
+  if (n >= 10 && n <= 33) return 'manufacturing';
+  if (n >= 41 && n <= 43) return 'construction';
+  if (n === 46)            return 'wholesale';
+  if (n === 47)            return 'retail';
+  if (n >= 49 && n <= 53) return 'transport';
+  if (n === 68)            return 'realestate';
+  if (n >= 58 && n <= 63) return 'ict';
+  if (n >= 69 && n <= 74) return 'professional';
+  if (n >= 86 && n <= 88) return 'healthcare';
+  return 'other';
+}
+
+// ── Revenue band ─────────────────────────────────────────────────────────────
+function srRevBand(netSales) {
+  if (!netSales) return 'micro';
+  if (netSales < 10e6)   return 'micro';
+  if (netSales < 50e6)   return 'small';
+  if (netSales < 200e6)  return 'mid';
+  return 'large';
+}
+
+// ============================================================
+// SUCCESSION RADAR — universe store
+// ============================================================
+
+function srLoadUniverse() { return DealScopeStore.get('radar_universe') || []; }
+function srSaveUniverse(list) { DealScopeStore.set('radar_universe', list); }
+
+function srAddToUniverse(orgNr, name) {
+  const clean = orgNr.replace(/[^0-9]/g, '');
+  const list = srLoadUniverse();
+  if (!list.some(c => c.orgNr === clean)) {
+    list.push({ orgNr: clean, name: name || clean, addedAt: new Date().toISOString() });
+    srSaveUniverse(list);
+  }
+}
+
+function srRemoveFromUniverse(orgNr) {
+  const clean = orgNr.replace(/[^0-9]/g, '');
+  srSaveUniverse(srLoadUniverse().filter(c => c.orgNr !== clean));
+}
+
+// Cache company data keyed by orgNr for use in the radar
+function srCacheCompanyData(orgNr, data) {
+  DealScopeStore.set('company_cache_' + orgNr.replace(/[^0-9]/g, ''), {
+    data, cachedAt: new Date().toISOString()
+  });
+}
+function srGetCachedCompany(orgNr) {
+  const c = DealScopeStore.get('company_cache_' + orgNr.replace(/[^0-9]/g, ''));
+  return c?.data || null;
+}
+
+// ============================================================
+// SUCCESSION RADAR — filter + sort state
+// ============================================================
+
+const _srFilter = { sni: 'all', revBand: 'all', minScore: 0 };
+const _srSort   = { col: 'score', dir: 'desc' };
+let   _srRows   = [];  // last computed full row set
+
+function srSetFilter(key, val, btn) {
+  _srFilter[key] = typeof val === 'string' ? val : Number(val);
+  // Toggle pill active state within the group
+  if (btn) {
+    btn.closest('.sr-filter-group').querySelectorAll('.sr-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  renderSRTable();
+  renderSRMap(_srRows.filter(r => !r.loading));
+}
+
+function srSortBy(col) {
+  if (_srSort.col === col) { _srSort.dir = _srSort.dir === 'asc' ? 'desc' : 'asc'; }
+  else { _srSort.col = col; _srSort.dir = col === 'score' || col === 'revenue' || col === 'ownerAge' ? 'desc' : 'asc'; }
+  // Update header classes
+  document.querySelectorAll('.sr-table th[id^="srTh_"]').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+  });
+  const activeHdr = document.getElementById('srTh_' + col);
+  if (activeHdr) activeHdr.classList.add(_srSort.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+  renderSRTable();
+}
+
+// ============================================================
+// SUCCESSION RADAR — SVG county map
+// ============================================================
+
+const SR_COUNTIES = [
+  { code:'AB', name:'Stockholms',       x:132, y:295 },
+  { code:'C',  name:'Uppsala',          x:118, y:268 },
+  { code:'D',  name:'Södermanlands',    x:110, y:315 },
+  { code:'E',  name:'Östergötlands',    x: 96, y:338 },
+  { code:'F',  name:'Jönköpings',       x: 76, y:363 },
+  { code:'G',  name:'Kronobergs',       x: 78, y:395 },
+  { code:'H',  name:'Kalmar',           x:104, y:375 },
+  { code:'I',  name:'Gotlands',         x:148, y:355 },
+  { code:'K',  name:'Blekinge',         x: 94, y:420 },
+  { code:'M',  name:'Skåne',            x: 68, y:442 },
+  { code:'N',  name:'Hallands',         x: 44, y:415 },
+  { code:'O',  name:'Västra Götalands', x: 44, y:358 },
+  { code:'S',  name:'Värmlands',        x: 58, y:305 },
+  { code:'T',  name:'Örebro',           x: 84, y:308 },
+  { code:'U',  name:'Västmanlands',     x:102, y:290 },
+  { code:'W',  name:'Dalarnas',         x: 68, y:248 },
+  { code:'X',  name:'Gävleborgs',       x:108, y:235 },
+  { code:'Y',  name:'Västernorrlands',  x:118, y:195 },
+  { code:'Z',  name:'Jämtlands',        x: 62, y:188 },
+  { code:'AC', name:'Västerbottens',    x:102, y:138 },
+  { code:'BD', name:'Norrbottens',      x:132, y: 72 },
+];
+
+function renderSRMap(rows) {
+  rows = rows || [];
+  const g = document.getElementById('srCountyDots');
+  if (!g) return;
+
+  // Group rows by county
+  const byCounty = {};
+  rows.forEach(r => {
+    if (!r.county || r.county === '—') return;
+    // Match county name to code
+    const match = SR_COUNTIES.find(c => r.county.toLowerCase().includes(c.name.toLowerCase()));
+    if (!match) return;
+    if (!byCounty[match.code]) byCounty[match.code] = { count: 0, scoreSum: 0 };
+    byCounty[match.code].count++;
+    byCounty[match.code].scoreSum += (r.score || 0);
+  });
+
+  // Render dots
+  const maxCount = Math.max(1, ...Object.values(byCounty).map(d => d.count));
+  g.innerHTML = SR_COUNTIES.map(c => {
+    const d = byCounty[c.code];
+    if (!d) {
+      return `<circle cx="${c.x}" cy="${c.y}" r="4" fill="var(--bg4)" stroke="var(--border)" stroke-width="0.8" opacity="0.5"
+        data-county="${c.name}" class="sr-county-dot"/>
+              <text x="${c.x}" y="${c.y+3}" text-anchor="middle" font-size="5" fill="var(--text3)" pointer-events="none">${c.code}</text>`;
+    }
+    const avg = d.scoreSum / d.count;
+    const r = Math.max(6, Math.min(16, 6 + (d.count / maxCount) * 10));
+    const fill = avg >= 60 ? 'var(--red)' : avg >= 30 ? 'var(--amber)' : 'var(--blue)';
+    const opacity = 0.5 + (avg / 100) * 0.5;
+    return `<circle cx="${c.x}" cy="${c.y}" r="${r.toFixed(1)}" fill="${fill}" stroke="var(--bg)" stroke-width="1" opacity="${opacity.toFixed(2)}"
+      data-county="${c.name}" data-count="${d.count}" data-avg="${avg.toFixed(0)}" class="sr-county-dot" style="cursor:pointer;"/>
+            <text x="${c.x}" y="${c.y+3}" text-anchor="middle" font-size="5.5" font-weight="600" fill="var(--bg)" pointer-events="none">${c.code}</text>`;
+  }).join('');
+
+  // County tooltip
+  g.querySelectorAll('.sr-county-dot').forEach(el => {
+    el.addEventListener('mouseenter', (e) => {
+      const tip = document.getElementById('srCountyTooltip');
+      if (!tip) return;
+      const county = el.dataset.county;
+      const count = el.dataset.count;
+      const avg = el.dataset.avg;
+      tip.textContent = count
+        ? `${county} · ${count} co. · Avg score: ${avg}`
+        : `${county} · No companies`;
+      tip.style.display = 'block';
+      tip.style.left = (e.clientX + 10) + 'px';
+      tip.style.top  = (e.clientY - 4) + 'px';
+    });
+    el.addEventListener('mousemove', (e) => {
+      const tip = document.getElementById('srCountyTooltip');
+      if (tip) { tip.style.left = (e.clientX + 10) + 'px'; tip.style.top = (e.clientY - 4) + 'px'; }
+    });
+    el.addEventListener('mouseleave', () => {
+      const tip = document.getElementById('srCountyTooltip');
+      if (tip) tip.style.display = 'none';
+    });
+  });
+}
+
+// ============================================================
+// SUCCESSION RADAR — table render
+// ============================================================
+
+function renderSRTable() {
+  const tbody = document.getElementById('srTableBody');
+  const countEl = document.getElementById('srTableCount');
+  if (!tbody) return;
+
+  // Apply filters
+  let rows = _srRows.filter(r => {
+    if (r.loading) return true;
+    if (_srFilter.sni !== 'all' && srSniToBucket(r.sni) !== _srFilter.sni) return false;
+    if (_srFilter.revBand !== 'all' && srRevBand(r.revenue) !== _srFilter.revBand) return false;
+    if (r.score < _srFilter.minScore) return false;
+    return true;
+  });
+
+  // Sort
+  rows = [...rows].sort((a, b) => {
+    if (a.loading) return 1;
+    if (b.loading) return -1;
+    const col = _srSort.col;
+    let va = a[col], vb = b[col];
+    if (col === 'name') { va = (va||'').toLowerCase(); vb = (vb||'').toLowerCase(); }
+    if (va === null || va === undefined) return 1;
+    if (vb === null || vb === undefined) return -1;
+    return _srSort.dir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+  });
+
+  // Update stats
+  const scored = rows.filter(r => !r.loading);
+  document.getElementById('srStatTotal').textContent = scored.length;
+  const avgScore = scored.length ? Math.round(scored.reduce((s, r) => s + r.score, 0) / scored.length) : 0;
+  document.getElementById('srStatAvg').textContent = scored.length ? avgScore : '—';
+  document.getElementById('srStatHigh').textContent = scored.filter(r => r.score >= 40).length;
+  document.getElementById('srStatAge').textContent = scored.filter(r => r.ownerAge !== null).length;
+  if (countEl) countEl.textContent = scored.length ? `(${scored.length} companies)` : '';
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:24px;">${t('sr_empty')}</td></tr>`;
+    renderSRMap([]);
+    return;
+  }
+
+  tbody.innerHTML = rows.map((r, idx) => {
+    if (r.loading) {
+      return `<tr><td colspan="9" style="color:var(--text3);font-size:10px;padding:8px 10px;">
+        ⟳ ${r.name} — ${t('sr_loading')}</td></tr>`;
+    }
+    const rankStr = String(idx + 1).padStart(2, '0');
+    const scoreCls = r.score >= 60 ? 'high' : r.score >= 30 ? 'mid' : 'low';
+    const scoreColor = r.score >= 60 ? 'var(--red)' : r.score >= 30 ? 'var(--amber)' : 'var(--blue)';
+    const scoreBar = `<div class="sr-score-bar">
+      <div class="sr-score-fill ${scoreCls}" style="width:${Math.max(2, r.score)}px"></div>
+      <span style="color:${scoreColor};font-weight:600;">${r.score}</span>
+    </div>`;
+    const signalDots = r.signals.slice(0, 4).map(s =>
+      `<span class="sr-signal-dot" style="background:var(--${s.color})" title="${s.label}"></span>`
+    ).join('');
+    const sectorLabel = r.sni && r.sni !== '—' ? r.sni.slice(0, 4) : '—';
+    const orgFmt = r.orgNr.replace(/(\d{6})(\d{4})/, '$1-$2');
+
+    return `<tr onclick="loadCompanyByOrg('${r.orgNr}')" title="Click to load in Company tab">
+      <td style="color:var(--text3);">${rankStr}</td>
+      <td>
+        <div style="color:var(--text);font-weight:600;font-size:11px;">${r.name}</div>
+        <div style="color:var(--text3);font-size:9px;">${orgFmt}</div>
+      </td>
+      <td style="font-size:10px;">${sectorLabel}</td>
+      <td style="font-size:10px;">${r.county || '—'}</td>
+      <td>${scoreBar}${signalDots}</td>
+      <td style="color:${r.ownerAge ? (r.ownerAge >= 65 ? 'var(--red)' : r.ownerAge >= 60 ? 'var(--amber)' : 'var(--text2)') : 'var(--text3)'};">
+        ${r.ownerAge ? r.ownerAge + ' yrs' : '—'}
+      </td>
+      <td style="color:${r.ros > 8 ? 'var(--green)' : r.ros > 0 ? 'var(--amber)' : 'var(--red)'};">
+        ${r.ros !== null ? r.ros.toFixed(1) + '%' : '—'}
+      </td>
+      <td style="font-family:'JetBrains Mono',monospace;">${r.revenue ? fmtSEK(r.revenue) : '—'}</td>
+      <td onclick="event.stopPropagation();" style="white-space:nowrap;">
+        <button class="sr-add-pipeline-btn" onclick="srAddToPipelinePlaceholder('${r.orgNr}','${r.name.replace(/'/g,"\\'")}')">+ Pipeline</button>
+        <button class="sr-remove-btn" onclick="srRemoveRow('${r.orgNr}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  renderSRMap(scored);
+}
+
+function srAddToPipelinePlaceholder(orgNr, name) {
+  showToast(`✓ ${name} — Pipeline CRM coming in Phase 3`);
+}
+
+function srRemoveRow(orgNr) {
+  srRemoveFromUniverse(orgNr);
+  _srRows = _srRows.filter(r => r.orgNr !== orgNr);
+  renderSRTable();
+  renderSRMap(_srRows.filter(r => !r.loading));
+}
+
+// ============================================================
+// SUCCESSION RADAR — init and data loading
+// ============================================================
+
+async function initSuccessionRadar() {
+  // Seed from watchlist on first ever visit
+  const universe = srLoadUniverse();
+  if (universe.length === 0) {
+    const wl = wlLoad();
+    if (wl.length > 0) {
+      wl.forEach(w => srAddToUniverse(w.orgNr, w.name));
+      document.getElementById('srAddStatus').textContent =
+        `✓ Imported ${wl.length} companies from Watchlist`;
+    }
+  }
+  await renderSuccessionRadar();
+}
+
+async function renderSuccessionRadar() {
+  const universe = srLoadUniverse();
+  _srRows = [];
+
+  for (const entry of universe) {
+    const orgNr = entry.orgNr;
+    const company = srGetCachedCompany(orgNr);
+    if (!company) {
+      _srRows.push({ orgNr, name: entry.name, loading: true, score: 0, signals: [], sni: '—', county: '—', ros: null, revenue: null, ownerAge: null });
+      continue;
+    }
+
+    const ownership = DealScopeStore.get('ownership_' + orgNr) || null;
+    // Build minimal history from available prev data
+    const histYears = [];
+    if (company.prevNetSales > 0) {
+      histYears.push({ netSales: company.prevNetSales, netProfit: 0, dividendsPaid: 0 });
+    }
+    histYears.push(company);
+
+    const m           = deriveMetrics(company);
+    const succession  = computeSuccessionScore(company, ownership, histYears);
+
+    _srRows.push({
+      orgNr,
+      name:     company.name || entry.name,
+      sni:      company.sni  || '—',
+      county:   ownership?.county || '—',
+      score:    succession.score,
+      signals:  succession.signals,
+      ownerAge: ownership?.primaryOwner?.birthYear ? (new Date().getFullYear() - ownership.primaryOwner.birthYear) : null,
+      ownerName: ownership?.primaryOwner?.name || null,
+      ros:      m?.ros ?? null,
+      revenue:  company.netSales || null,
+      maScore:  computeMAScore(company),
+      loading:  false,
+    });
+  }
+
+  renderSRTable();
+  renderSRMap(_srRows.filter(r => !r.loading));
+
+  // Background-fetch missing ownership data
+  for (const entry of universe) {
+    const orgNr = entry.orgNr;
+    if (DealScopeStore.get('ownership_' + orgNr)) continue;
+    fetchOwnership(orgNr).then(data => {
+      if (data) {
+        // Update the in-memory row and re-render
+        const row = _srRows.find(r => r.orgNr === orgNr);
+        if (row && !row.loading) {
+          const company = srGetCachedCompany(orgNr);
+          if (company) {
+            const histYears = company.prevNetSales > 0
+              ? [{ netSales: company.prevNetSales, netProfit: 0, dividendsPaid: 0 }, company]
+              : [company];
+            const succession = computeSuccessionScore(company, data, histYears);
+            row.county   = data.county || '—';
+            row.score    = succession.score;
+            row.signals  = succession.signals;
+            row.ownerAge = data.primaryOwner?.birthYear ? (new Date().getFullYear() - data.primaryOwner.birthYear) : null;
+            row.ownerName = data.primaryOwner?.name || null;
+            renderSRTable();
+          }
+        }
+      }
+    }).catch(() => {});
+  }
+}
+
+function srAddByInput() {
+  const input = document.getElementById('srAddInput');
+  const val = (input?.value || '').trim();
+  if (!val) return;
+  const orgNr = val.replace(/[^0-9]/g, '');
+  if (orgNr.length < 10) { document.getElementById('srAddStatus').textContent = '⚠ Enter a valid org. number (10 digits)'; return; }
+  srAddToUniverse(orgNr, orgNr);
+  if (input) input.value = '';
+  document.getElementById('srAddStatus').textContent = `✓ Added ${orgNr} — loading data…`;
+  renderSuccessionRadar();
+}
+
+function srSeedFromWatchlist() {
+  const wl = wlLoad();
+  if (!wl.length) { document.getElementById('srAddStatus').textContent = '⚠ Watchlist is empty'; return; }
+  wl.forEach(w => srAddToUniverse(w.orgNr, w.name));
+  document.getElementById('srAddStatus').textContent = `✓ Imported ${wl.length} from Watchlist`;
+  renderSuccessionRadar();
+}
+
+function srAddCurrentToRadar() {
+  if (!companyData) { showToast(t('toast_no_company')); return; }
+  srAddToUniverse(companyData.orgNr, companyData.name);
+  srCacheCompanyData(companyData.orgNr, companyData);
+  showToast(`✓ ${companyData.name} added to Succession Radar`);
+  // Trigger background ownership fetch
+  fetchOwnership(companyData.orgNr).catch(() => {});
+}
+
+// ============================================================
 // STATUS BAR HELPER
 // ============================================================
 function setStatusBar(msg, state='ok') {
@@ -7569,7 +8318,7 @@ function setStatusBar(msg, state='ok') {
 // Build tracer — lets you confirm the deployed JS is up to date
 // (open DevTools console and look for this line). Cache-busting
 // aside, if you don't see VCFO_BUILD, you're on a stale copy.
-window.DEALSCOPE_BUILD = 'phase-0-rebrand-v1';
+window.DEALSCOPE_BUILD = 'phase-1-succession-radar-v1';
 try { console.log('DealScope build:', window.DEALSCOPE_BUILD); } catch(e){}
 
 document.addEventListener('DOMContentLoaded', () => {

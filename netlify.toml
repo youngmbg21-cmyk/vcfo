@@ -27,3 +27,8 @@
   from = "/api/scb"
   to = "/.netlify/functions/scb-proxy"
   status = 200
+
+[[redirects]]
+  from = "/api/ownership"
+  to = "/.netlify/functions/ownership-proxy"
+  status = 200
