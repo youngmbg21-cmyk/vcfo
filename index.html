@@ -2447,20 +2447,6 @@ body.light-mode {
             </div>
           </div>
 
-          <!-- KOLADA REGIONAL CONTEXT CARD -->
-          <div id="koladaRegionalCard" style="display:none;margin-top:14px;">
-            <div class="card" style="border-color:rgba(16,185,129,0.25);">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-                <div class="card-title" id="koladaMuniTitle" data-i18n="cardregional">🗺 Regional Context</div>
-                <div style="font-size:9px;color:var(--text3);" data-i18n="koladasource">Source: Kolada (SKR + RKA), CC0</div>
-              </div>
-              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;" id="koladaScoreGrid"></div>
-              <div id="koladaLoadingState" style="text-align:center;padding:20px;color:var(--text3);font-size:11px;">
-                <span class="loading-dots"><span></span><span></span><span></span></span> Fetching municipal data from Kolada…
-              </div>
-            </div>
-          </div>
-
           <!-- Raw financial data — side by side -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
             <div class="card">
@@ -5961,15 +5947,12 @@ async function loadCompanyByOrg(raw, knownName) {
     setTimeout(autoRunAllAnalyses, 200);
   }
 
-  // Auto-fetch Kolada regional context
+  // Show Kolada tab + SR color-by toggle (card removed from company tab for now)
   if (window.DEALSCOPE_FLAGS?.koladaContext) {
-    // Show Kolada tab in sidebar
     const koladaBtn = document.getElementById('tab-kolada-btn');
     if (koladaBtn) koladaBtn.style.display = '';
-    // Show color-by row in SR map
     const srColorRow = document.getElementById('srColorByRow');
     if (srColorRow) srColorRow.style.display = 'flex';
-    setTimeout(renderKoladaCard, 400);
   }
 }
 
