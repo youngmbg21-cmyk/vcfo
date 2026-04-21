@@ -543,6 +543,48 @@ body {
 }
 .btn-secondary:hover { border-color:var(--border2); color:var(--text); }
 
+.btn-primary {
+  background: var(--green);
+  border: none;
+  border-radius: 8px;
+  color: #020617;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-primary:hover { opacity: 0.85; }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.field-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text3);
+  margin-bottom: 4px;
+}
+.input-field {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  padding: 7px 10px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.input-field:focus { border-color: var(--border2); }
+.input-field::placeholder { color: var(--text3); }
+select.input-field { cursor: pointer; }
+textarea.input-field { resize: vertical; line-height: 1.6; }
+
 /* ===== LOADING DOTS ===== */
 .loading-dots { display:inline-flex; gap:3px; align-items:center; }
 .loading-dots span {
@@ -2656,40 +2698,6 @@ body.light-mode {
           <!-- Multi-year trend panel — rendered entirely by JS -->
           <div id="trendPanel" style="display:none;"></div>
 
-          <!-- Outreach Generator — flag-gated, populated by renderCompanyTab -->
-          <div id="outreachPanel" style="display:none;margin-top:14px;">
-            <div class="card">
-              <div class="card-title">📨 <span data-i18n="outreach_title">Outreach Generator</span></div>
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
-                <div>
-                  <label class="field-label" data-i18n="outreach_your_name">Your name</label>
-                  <input id="ogYourName" class="input-field" type="text" style="width:100%;box-sizing:border-box;" placeholder="e.g. Erik Svensson" onblur="DealScopeStore.set('og_your_name',this.value)" />
-                </div>
-                <div>
-                  <label class="field-label" data-i18n="outreach_your_firm">Your firm</label>
-                  <input id="ogYourFirm" class="input-field" type="text" style="width:100%;box-sizing:border-box;" placeholder="e.g. Nordic Ventures" onblur="DealScopeStore.set('og_your_firm',this.value)" />
-                </div>
-                <div>
-                  <label class="field-label" data-i18n="outreach_template">Template</label>
-                  <select id="ogTemplate" class="input-field" style="width:100%;box-sizing:border-box;">
-                    <option value="email_en"    selected>Warm email (EN)</option>
-                    <option value="formal_en">Formal letter (EN)</option>
-                    <option value="followup_en">Follow-up (EN)</option>
-                  </select>
-                </div>
-              </div>
-              <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
-                <button class="btn-primary" id="ogGenerateBtn" onclick="ogGenerate()" data-i18n="outreach_generate_btn">📨 Generate</button>
-                <span id="ogStatus" style="font-size:10px;color:var(--text3);"></span>
-              </div>
-              <div id="ogOutput" style="display:none;">
-                <div style="position:relative;">
-                  <textarea id="ogText" style="width:100%;box-sizing:border-box;min-height:200px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;line-height:1.6;padding:12px 52px 12px 12px;font-family:inherit;resize:vertical;" readonly></textarea>
-                  <button class="btn-secondary" style="position:absolute;top:6px;right:6px;font-size:10px;" onclick="ogCopy()" data-i18n="outreach_copy">Copy</button>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -3784,6 +3792,39 @@ body.light-mode {
         </div>
       </div>
     </div>
+    <!-- Outreach Generator -->
+    <div class="card" id="outreachPanel" style="margin-top:14px;">
+      <div class="card-title">📨 <span data-i18n="outreach_title">Outreach Generator</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+        <div>
+          <label class="field-label" data-i18n="outreach_your_name">Your name</label>
+          <input id="ogYourName" class="input-field" type="text" placeholder="e.g. Erik Svensson" onblur="DealScopeStore.set('og_your_name',this.value)" />
+        </div>
+        <div>
+          <label class="field-label" data-i18n="outreach_your_firm">Your firm</label>
+          <input id="ogYourFirm" class="input-field" type="text" placeholder="e.g. Nordic Ventures" onblur="DealScopeStore.set('og_your_firm',this.value)" />
+        </div>
+        <div>
+          <label class="field-label" data-i18n="outreach_template">Template</label>
+          <select id="ogTemplate" class="input-field">
+            <option value="email_en" selected>Warm email (EN)</option>
+            <option value="formal_en">Formal letter (EN)</option>
+            <option value="followup_en">Follow-up (EN)</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+        <button class="btn-primary" id="ogGenerateBtn" onclick="ogGenerate()" data-i18n="outreach_generate_btn">📨 Generate</button>
+        <span id="ogStatus" style="font-size:10px;color:var(--text3);"></span>
+      </div>
+      <div id="ogOutput" style="display:none;">
+        <div style="position:relative;">
+          <textarea id="ogText" style="width:100%;box-sizing:border-box;min-height:200px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;line-height:1.6;padding:12px 52px 12px 12px;font-family:inherit;resize:vertical;" readonly></textarea>
+          <button class="btn-secondary" style="position:absolute;top:6px;right:6px;font-size:10px;" onclick="ogCopy()" data-i18n="outreach_copy">Copy</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Nordic expansion roadmap -->
     <div class="card" id="wsNordicRoadmap" style="margin-top:14px;display:none;">
       <div class="card-title">🌐 <span data-i18n="nc_roadmap_title">Nordic Expansion Roadmap</span></div>
@@ -6638,8 +6679,6 @@ function renderCompanyTab(d) {
     ['Current Liabilities',         d.currentLiabilities, 'neutral'],
   ]);
 
-  // Outreach Generator panel
-  ogShow();
 }
 
 function setKPI(id, val, cls='') {
@@ -9179,6 +9218,7 @@ function wsInit() {
   const statusEl = document.getElementById('wsStatus');
   if (outputEl) outputEl.style.display = 'none';
   if (statusEl) statusEl.textContent = '';
+  ogShow();
 }
 
 function wsPopulateDealPicker() {
@@ -9304,10 +9344,6 @@ const OG_TEMPLATES = {
 };
 
 function ogShow() {
-  const panel = document.getElementById('outreachPanel');
-  if (!panel) return;
-  if (!window.DEALSCOPE_FLAGS?.outreachGenerator) { panel.style.display = 'none'; return; }
-  panel.style.display = '';
   const nameEl = document.getElementById('ogYourName');
   const firmEl = document.getElementById('ogYourFirm');
   if (nameEl && !nameEl.value) nameEl.value = DealScopeStore.get('og_your_name') || '';
@@ -15571,6 +15607,16 @@ function syncCTHeights() {
   _ctHeightObserver.observe(auditPanel);
 }
 
+function _colorizeAISummary(html) {
+  return html
+    .replace(/(-\d[\d.,]*\s*%)/g, '<span style="color:var(--red)">$1</span>')
+    .replace(/(\+\d[\d.,]*\s*%)/g, '<span style="color:var(--green)">$1</span>')
+    .replace(/\b(\d[\d.,]*\s*(?:MSEK|BSEK|kSEK|Mkr)\b)/gi, '<span style="color:var(--blue)">$1</span>')
+    .replace(/\bBUY\b/g, '<span style="color:var(--green);font-weight:700">BUY</span>')
+    .replace(/\bHOLD\b/g, '<span style="color:var(--amber);font-weight:700">HOLD</span>')
+    .replace(/\bPASS\b/g, '<span style="color:var(--red);font-weight:700">PASS</span>');
+}
+
 const _ctAISummaryCache = {};
 
 async function generateCTAISummary(d) {
@@ -15616,7 +15662,7 @@ Cover: (1) verdict + one-sentence rationale, (2) strongest financial signal, (3)
     const text = (res.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
     const bullets = text.split('\n').map(l=>l.trim()).filter(l=>l.startsWith('•')).map(l=>l.slice(1).trim());
     if (!bullets.length) throw new Error('no bullets');
-    const html = `<ul>${bullets.map(b=>`<li>${b.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</li>`).join('')}</ul>`;
+    const html = `<ul>${bullets.map(b=>`<li>${_colorizeAISummary(b.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>'))}</li>`).join('')}</ul>`;
     _ctAISummaryCache[cacheKey] = html;
     el.innerHTML = html;
     syncCTHeights();
