@@ -2268,6 +2268,32 @@ body.light-mode {
   font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--amber); font-weight: 700; margin-bottom: 5px;
 }
+.ct-right-col {
+  display: flex; flex-direction: column; gap: 12px;
+}
+.ct-ai-summary-card {
+  padding: 16px;
+  overflow-y: auto;
+  /* max-height synced to ctScoreCard via JS */
+  max-height: 320px;
+}
+.ct-ai-summary-body {
+  font-size: 11px; color: var(--text2); line-height: 1.65;
+}
+.ct-ai-summary-body ul {
+  list-style: none; padding: 0; margin: 0;
+}
+.ct-ai-summary-body ul li {
+  padding: 6px 0 6px 14px;
+  position: relative;
+  border-bottom: 1px solid rgba(30,41,59,0.35);
+}
+.ct-ai-summary-body ul li:last-child { border-bottom: none; }
+.ct-ai-summary-body ul li::before {
+  content: '›'; position: absolute; left: 0;
+  color: var(--amber); font-weight: 700;
+}
+.ct-ai-summary-body ul li strong { color: var(--text); }
 .ct-feed { display: flex; flex-direction: column; }
 .ct-feed-item {
   padding: 9px 0 9px 13px;
@@ -2466,8 +2492,15 @@ body.light-mode {
     <div id="ctEmpty" class="empty-state">
       <div class="icon">🗼</div>
       <div style="font-size:14px;font-weight:600;color:var(--text);">Control Tower</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:6px;">Search for a company above to load the full deal overview</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:4px;">All KPIs, financials, M&amp;A score and audit signals on one screen</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:6px;">Search for a company above — KPIs, financials, M&amp;A score and audit signals on one screen</div>
+      <div style="margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+        <div style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text3);" data-i18n="demo_or">Or load a demo</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+          <button class="btn-secondary" onclick="loadDemo('559001-6076')" data-i18n="demo_stadstak">Demo: Stadstak Sthlm AB</button>
+          <button class="btn-secondary" onclick="loadDemo('556076-6724')" data-i18n="demo_sturehof">Demo: Sturehof AB</button>
+          <button class="btn-secondary" onclick="loadDemo('556700-5685')" data-i18n="demo_acne">Demo: Acne Studios AB</button>
+        </div>
+      </div>
     </div>
     <div id="ctContent" style="display:none;">
       <div class="ct-grid">
@@ -2481,8 +2514,16 @@ body.light-mode {
           </div>
           <div class="card" style="padding:16px;" id="ctScoreCard"></div>
         </div>
-        <!-- RIGHT: CFO Audit Feed -->
-        <div class="card" style="padding:16px;" id="ctAuditPanel"></div>
+        <!-- RIGHT: CFO Audit Feed + AI Summary -->
+        <div class="ct-right-col">
+          <div class="card" style="padding:16px;" id="ctAuditPanel"></div>
+          <div class="card ct-ai-summary-card" id="ctAISummary">
+            <div class="card-title" style="margin-bottom:10px;">AI Deal Summary</div>
+            <div id="ctAISummaryBody" class="ct-ai-summary-body">
+              <div style="color:var(--text3);font-size:11px;">Loading…</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -2507,14 +2548,6 @@ body.light-mode {
       <div style="font-size:14px;font-weight:600;color:var(--text);" data-i18n="search_heading">Search for any Swedish company</div>
       <div style="font-size:11px;color:var(--text2);margin-top:6px;" data-i18n="search_sub">Type a company name or org. number in the search bar above</div>
       <div style="font-size:10px;color:var(--text3);margin-top:4px;" data-i18n="search_hint">e.g. "Sandvik" · "NCC" · "556000-1234" · Data: allabolag.se 2020–present</div>
-      <div style="margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <div style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text3);" data-i18n="demo_or">Or load a demo</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
-          <button class="btn-secondary" onclick="loadDemo('559001-6076')" data-i18n="demo_stadstak">Demo: Stadstak Sthlm AB</button>
-          <button class="btn-secondary" onclick="loadDemo('556076-6724')" data-i18n="demo_sturehof">Demo: Sturehof AB</button>
-          <button class="btn-secondary" onclick="loadDemo('556700-5685')" data-i18n="demo_acne">Demo: Acne Studios AB</button>
-        </div>
-      </div>
     </div>
     <div id="companyContent" style="display:none;">
 
@@ -15455,7 +15488,11 @@ function renderControlTower(d) {
 
   _renderCTScoreCard(d, pillars);
   _renderCTAuditPanel(d);
-  setTimeout(() => renderCTChart(d), 0);
+  setTimeout(() => {
+    renderCTChart(d);
+    syncCTHeights();
+  }, 0);
+  generateCTAISummary(d);
 }
 
 function computeCFOFlagsArray(d) {
@@ -15507,6 +15544,71 @@ function computeCFOFlagsArray(d) {
   }
 
   return flags;
+}
+
+function syncCTHeights() {
+  const scoreCard = document.getElementById('ctScoreCard');
+  const aiCard    = document.getElementById('ctAISummary');
+  if (!scoreCard || !aiCard) return;
+  // Give the DOM one more tick so the chart canvas has its final height
+  requestAnimationFrame(() => {
+    const h = scoreCard.offsetHeight;
+    if (h > 80) aiCard.style.maxHeight = h + 'px';
+  });
+}
+
+const _ctAISummaryCache = {};
+
+async function generateCTAISummary(d) {
+  const el = document.getElementById('ctAISummaryBody');
+  if (!el) return;
+
+  const cacheKey = `${d.orgNr}_${d.fiscalYear}`;
+  if (_ctAISummaryCache[cacheKey]) {
+    el.innerHTML = _ctAISummaryCache[cacheKey];
+    return;
+  }
+
+  if (!anthropicKey) {
+    el.innerHTML = `<div style="color:var(--text3);font-size:10px;">Add an API key in ⚙ Settings to enable AI summaries.</div>`;
+    return;
+  }
+
+  el.innerHTML = `<div style="color:var(--text3);font-size:10px;"><span class="loading-dots"><span></span><span></span><span></span></span> Generating summary…</div>`;
+
+  const m       = deriveMetrics(d);
+  const pillars = computeMAScorePillars(d);
+  const cf      = computeCashFlow(d);
+  const ebitda  = (d.opProfit || 0) + (d.depreciation || 0);
+  const histYrs = Object.keys(historyData).sort();
+  const multiYr = histYrs.length >= 2
+    ? histYrs.map(y => { const h = historyData[y]; return h ? `FY${y}: Rev ${fmtSEK(h.netSales)}, ROS ${h.netSales>0?(h.opProfit/h.netSales*100).toFixed(1):0}%` : ''; }).filter(Boolean).join(' | ')
+    : 'Single year only';
+
+  const prompt = `You are a senior M&A analyst. Write a concise acquisition brief for ${d.name} (FY${d.fiscalYear}) as exactly 5 bullet points. Each bullet must be on its own line starting with "•". No headers. No extra text.
+
+DATA:
+Revenue ${fmtSEK(d.netSales)} | EBITDA ${fmtSEK(ebitda)} | Net Profit ${fmtSEK(d.netProfit)}
+ROS ${fmtPct(m.ros)} | ROE ${fmtPct(m.roe)} | D/E ${fmtRatio(m.de)} | CR ${fmtRatio(m.cr)}
+Payout ${fmtPct(m.payout)} | Asset depr. ${m.assetDeprec!==null?fmtPct(m.assetDeprec):'N/A'}
+FCF ${cf?fmtSEK(cf.fcf):'N/A'} | Cash conv. ${cf?fmtPct(cf.cashConversion,0):'N/A'}
+M&A Score ${pillars.total}/100 → ${pillars.verdict} | Auditor remark: ${d.auditorRemark?'YES':'No'}
+Trend: ${multiYr}
+
+Cover: (1) verdict + one-sentence rationale, (2) strongest financial signal, (3) top risk, (4) cash/capital note, (5) deal structure angle. Be specific — use the numbers.`;
+
+  try {
+    const res  = await callAnthropic({ model:'claude-haiku-4-5-20251001', max_tokens:400, messages:[{ role:'user', content:prompt }] }, anthropicKey);
+    const text = (res.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+    const bullets = text.split('\n').map(l=>l.trim()).filter(l=>l.startsWith('•')).map(l=>l.slice(1).trim());
+    if (!bullets.length) throw new Error('no bullets');
+    const html = `<ul>${bullets.map(b=>`<li>${b.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</li>`).join('')}</ul>`;
+    _ctAISummaryCache[cacheKey] = html;
+    el.innerHTML = html;
+    syncCTHeights();
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--text3);font-size:10px;">Summary unavailable — run M&A Screener for full AI analysis.</div>`;
+  }
 }
 
 function _renderCTScoreCard(d, pillars) {
