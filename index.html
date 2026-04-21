@@ -2122,6 +2122,174 @@ body.light-mode {
   pointer-events: none; z-index: 999; display: none;
 }
 
+/* ===== CONTROL TOWER TAB ===== */
+.ct-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr 280px;
+  gap: 14px;
+  align-items: start;
+}
+@media (max-width: 1300px) { .ct-grid { grid-template-columns: 260px 1fr 260px; } }
+@media (max-width: 960px)  { .ct-grid { grid-template-columns: 1fr; } }
+
+.ct-kpi-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg3);
+  border-radius: 8px;
+  margin-bottom: 5px;
+  border: 1px solid var(--border);
+  transition: border-color 0.15s;
+}
+.ct-kpi-row:hover { border-color: var(--border2); }
+.ct-kpi-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
+  background: var(--bg4);
+}
+.ct-kpi-body { flex: 1; min-width: 0; }
+.ct-kpi-label {
+  font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--text3); font-weight: 500;
+}
+.ct-kpi-value {
+  font-size: 13px; font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text); line-height: 1.2;
+}
+.ct-kpi-value.pos { color: var(--green); }
+.ct-kpi-value.neg { color: var(--red); }
+.ct-kpi-value.amb { color: var(--amber); }
+.ct-kpi-delta { font-size: 9px; margin-top: 1px; color: var(--text3); }
+.ct-kpi-delta.pos { color: var(--green); }
+.ct-kpi-delta.neg { color: var(--red); }
+.ct-kpi-delta.amb { color: var(--amber); }
+.ct-kpi-bar {
+  width: 44px; height: 3px;
+  background: var(--bg4);
+  border-radius: 2px; overflow: hidden; flex-shrink: 0;
+}
+.ct-kpi-bar-fill { height: 100%; border-radius: 2px; background: var(--blue); }
+.ct-kpi-bar-fill.pos { background: var(--green); }
+.ct-kpi-bar-fill.neg { background: var(--red); }
+.ct-kpi-bar-fill.amb { background: var(--amber); }
+.ct-section-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--blue);
+  margin: 10px 0 5px;
+}
+
+.ct-tiles {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  margin-bottom: 12px;
+}
+@media (max-width: 960px) { .ct-tiles { grid-template-columns: 1fr; } }
+.ct-tile {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px;
+  display: flex; flex-direction: column;
+  transition: border-color 0.15s;
+}
+.ct-tile:hover { border-color: var(--border2); }
+.ct-tile-title {
+  font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text3); font-weight: 600;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 10px;
+}
+.ct-tile-headline {
+  font-size: 19px; font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text); margin-bottom: 2px; line-height: 1.1;
+}
+.ct-tile-sub { font-size: 9px; color: var(--text3); margin-bottom: 8px; }
+.ct-tile-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 3px 0; border-bottom: 1px solid rgba(30,41,59,0.5);
+  font-size: 11px;
+}
+.ct-tile-row:last-of-type { border-bottom: none; }
+.ct-tile-row .lbl { color: var(--text2); }
+.ct-tile-row .val { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 11px; }
+.ct-tile-legend {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 4px; margin-top: auto; padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.ct-legend-item { text-align: center; }
+.ct-legend-item .val {
+  font-size: 11px; font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+}
+.ct-legend-item .lbl { font-size: 9px; color: var(--text3); margin-top: 1px; }
+
+.ct-score-wrap {
+  display: grid; grid-template-columns: 150px 1fr;
+  gap: 14px; align-items: center; margin-bottom: 12px;
+}
+.ct-score-donut { position: relative; width: 120px; height: 120px; margin: 0 auto; }
+.ct-score-donut svg { transform: rotate(-90deg); }
+.ct-score-center {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%); text-align: center;
+}
+.ct-score-num {
+  font-size: 30px; font-weight: 800;
+  font-family: 'JetBrains Mono', monospace; line-height: 1;
+}
+.ct-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.ct-pillar {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 10px 8px;
+}
+.ct-pillar-label {
+  font-size: 9px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--text3); font-weight: 600; margin-bottom: 3px;
+}
+.ct-pillar-value {
+  font-size: 17px; font-weight: 800;
+  font-family: 'JetBrains Mono', monospace; line-height: 1;
+}
+.ct-pillar-max { font-size: 9px; color: var(--text3); font-weight: 400; }
+.ct-pillar-bar { height: 3px; background: var(--bg4); border-radius: 2px; overflow: hidden; margin-top: 5px; }
+.ct-pillar-fill { height: 100%; border-radius: 2px; }
+.ct-thesis {
+  margin-top: 12px; padding: 11px 13px;
+  background: var(--bg3); border-left: 2px solid var(--amber);
+  border-radius: 0 8px 8px 0;
+  font-size: 11px; color: var(--text2); line-height: 1.65;
+}
+.ct-thesis-label {
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--amber); font-weight: 700; margin-bottom: 5px;
+}
+.ct-feed { display: flex; flex-direction: column; }
+.ct-feed-item {
+  padding: 9px 0 9px 13px;
+  border-left: 2px solid var(--border2);
+  margin-left: 2px; margin-bottom: 3px;
+}
+.ct-feed-item.critical { border-left-color: var(--red); }
+.ct-feed-item.warning  { border-left-color: var(--amber); }
+.ct-feed-item.info     { border-left-color: var(--blue); }
+.ct-feed-item.ok       { border-left-color: var(--green); }
+.ct-feed-badge {
+  display: inline-block; font-size: 8px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 1px 5px; border-radius: 3px; margin-bottom: 3px;
+}
+.ct-feed-badge.critical { background: rgba(239,68,68,0.12); color: var(--red); }
+.ct-feed-badge.warning  { background: rgba(245,158,11,0.12); color: var(--amber); }
+.ct-feed-badge.info     { background: rgba(59,130,246,0.12); color: var(--blue); }
+.ct-feed-badge.ok       { background: rgba(16,185,129,0.12); color: var(--green); }
+.ct-feed-title { font-size: 11px; font-weight: 600; margin-bottom: 2px; color: var(--text); }
+.ct-feed-body  { font-size: 10px; color: var(--text2); line-height: 1.5; }
+
 </style>
 </head>
 <body>
@@ -2273,7 +2441,8 @@ body.light-mode {
 
 <!-- SIDEBAR -->
 <div class="tabs">
-  <div class="tab active" id="tab-company-btn"    onclick="switchTab('company')" data-i18n="tab_company">🏢 Company</div>
+  <div class="tab active" id="tab-control-tower-btn" onclick="switchTab('control-tower')">🗼 Control Tower</div>
+  <div class="tab" id="tab-company-btn"    onclick="switchTab('company')" data-i18n="tab_company">🏢 Company</div>
   <div class="tab" id="tab-financials-btn"       onclick="switchTab('financials')" data-i18n="tab_financials">📋 Financials</div>
   <div class="tab" id="tab-cashflow-btn"         onclick="switchTab('cashflow')" data-i18n="tab_cashflow">💧 Cash Flow</div>
   <div class="tab" id="tab-cfo-btn"              onclick="switchTab('cfo')" data-i18n="tab_cfo">📊 CFO Audit</div>
@@ -2292,8 +2461,34 @@ body.light-mode {
 <!-- CONTENT -->
 <div class="content" id="mainContent">
 
+  <!-- ===== CONTROL TOWER TAB ===== -->
+  <div id="tab-control-tower">
+    <div id="ctEmpty" class="empty-state">
+      <div class="icon">🗼</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);">Control Tower</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:6px;">Search for a company above to load the full deal overview</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px;">All KPIs, financials, M&amp;A score and audit signals on one screen</div>
+    </div>
+    <div id="ctContent" style="display:none;">
+      <div class="ct-grid">
+        <!-- LEFT: KPI Sidebar -->
+        <div class="card" id="ctKPIPanel" style="padding:16px;"></div>
+        <!-- CENTER: Tiles + Score -->
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="card" style="padding:16px;">
+            <div class="card-title">Financial Snapshot</div>
+            <div class="ct-tiles" id="ctTiles"></div>
+          </div>
+          <div class="card" style="padding:16px;" id="ctScoreCard"></div>
+        </div>
+        <!-- RIGHT: CFO Audit Feed -->
+        <div class="card" style="padding:16px;" id="ctAuditPanel"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== COMPANY TAB ===== -->
-  <div id="tab-company">
+  <div id="tab-company" style="display:none;">
     <!-- Nordic coming-soon notice (shown when non-SE country active) -->
     <div id="countryNotice" style="display:none;">
       <div class="empty-state">
@@ -4632,7 +4827,7 @@ function updateClock() {
 // TAB SWITCHING
 // ============================================================
 // Track which tab is active — used by chatbot for screen awareness
-let activeTab = 'company';
+let activeTab = 'control-tower';
 
 function switchTab(name) {
   // Compatibility: callers that ask for the old top-level 'compare' tab
@@ -4647,6 +4842,7 @@ function switchTab(name) {
   }
   activeTab = name;
   _switchTopTab(name);
+  if (name === 'control-tower')      renderControlTower(companyData);
   if (name === 'benchmarks')         initBenchmarksTab();
   if (name === 'cashflow')           renderCashFlow();
   if (name === 'watchlist')          renderWatchlistTab();
@@ -4666,7 +4862,7 @@ function switchTab(name) {
 }
 
 function _switchTopTab(name) {
-  ['company','financials','cashflow','cfo','ma','competitor-bench','watchlist','vault','benchmarks',
+  ['control-tower','company','financials','cashflow','cfo','ma','competitor-bench','watchlist','vault','benchmarks',
    'saved-searches','succession-radar','workspace','kolada','guide'].forEach(t => {
     const panel = document.getElementById('tab-' + t);
     if (panel) panel.style.display = (t === name) ? 'block' : 'none';
@@ -5780,6 +5976,7 @@ async function loadCompanyByOrg(raw, knownName) {
   computeAndRenderDeterministicCFO(d);
   computeAndRenderDeterministicMA(d);
   renderCashFlow();
+  renderControlTower(d);
 
   // Show content
   ['companyEmpty'].forEach(id => document.getElementById(id).style.display = 'none');
@@ -6063,6 +6260,7 @@ function renderYearView(d, year) {
   computeAndRenderDeterministicCFO(d);
   computeAndRenderDeterministicMA(d);
   renderCashFlow();
+  renderControlTower(d);
   renderYearSelector(year);
 
   // Update trend panel if multi-year data exists
@@ -15047,6 +15245,418 @@ async function primeKoladaCache() {
 function initKoladaTab() { /* self-contained — no init needed */ }
 
 // Initialize presets on first tab visit
+// ============================================================
+// CONTROL TOWER — main render
+// ============================================================
+let _ctChart = null;
+
+function computeMAScorePillars(d) {
+  if (!d) return null;
+  let prof = 0, comp = 0, bs = 0, eff = 0;
+  const ros = d.netSales ? d.opProfit / d.netSales * 100 : 0;
+  const roe = d.equity   ? d.netProfit / d.equity * 100  : 0;
+  if (ros > 15) prof += 15; else if (ros > 8) prof += 10; else if (ros > 3) prof += 5;
+  if (roe > 15) prof += 10; else if (roe > 8) prof += 6;  else if (roe > 3) prof += 3;
+  if (!d.auditorRemark) comp += 20; else comp += 5;
+  const pay = d.netProfit > 0 ? d.dividendsPaid / d.netProfit * 100 : 999;
+  if (pay < 60) comp += 5; else if (pay < 100) comp += 2;
+  const cr = d.currentLiabilities > 0 ? d.totalCurrentAssets / d.currentLiabilities : 0;
+  const de = d.equity > 0 ? (d.longTermDebt + d.currentLiabilities) / d.equity : 99;
+  if (cr > 1.8) bs += 10; else if (cr > 1.2) bs += 6; else if (cr > 0.8) bs += 3;
+  if (de < 1.0) bs += 10; else if (de < 2.0) bs += 6;  else if (de < 3.5) bs += 3;
+  const ltd5 = d.equity > 0 ? d.longTermDebtOver5y / d.equity * 100 : 100;
+  if (ltd5 < 20) bs += 5; else if (ltd5 < 50) bs += 3;
+  const ad = d.inventarierAcqCost > 0 ? (1 - d.inventarierBV / d.inventarierAcqCost) * 100 : 0;
+  if (ad < 70) eff += 15; else if (ad < 90) eff += 8; else eff += 2;
+  const prevSales = (historyData[String(parseInt(d.fiscalYear) - 1)] || {}).netSales || d.prevNetSales || 0;
+  const rg = prevSales > 0 ? (d.netSales - prevSales) / prevSales * 100 : 0;
+  if (rg > 10) eff += 10; else if (rg > 3) eff += 7; else if (rg > 0) eff += 4;
+  const total = prof + comp + bs + eff;
+  return { total, prof, comp, bs, eff, verdict: total >= 65 ? 'BUY' : total >= 40 ? 'HOLD' : 'PASS' };
+}
+
+function renderControlTower(d) {
+  if (!d) {
+    document.getElementById('ctEmpty').style.display   = 'flex';
+    document.getElementById('ctContent').style.display = 'none';
+    return;
+  }
+  document.getElementById('ctEmpty').style.display   = 'none';
+  document.getElementById('ctContent').style.display = 'block';
+
+  const m       = deriveMetrics(d);
+  const pillars = computeMAScorePillars(d);
+  const cf      = computeCashFlow(d);
+  const ebitda  = (d.opProfit || 0) + (d.depreciation || 0);
+  const ebitdaM = d.netSales > 0 ? ebitda / d.netSales * 100 : null;
+  const prevSales = (historyData[String(parseInt(d.fiscalYear) - 1)] || {}).netSales || d.prevNetSales || 0;
+  const revGrowth = prevSales > 0 ? (d.netSales - prevSales) / prevSales * 100 : null;
+
+  // colour helpers
+  const cn    = (v, g, w) => v >= g ? 'pos' : v >= w ? 'amb' : 'neg';
+  const cnLow = (v, g, w) => v <= g ? 'pos' : v <= w ? 'amb' : 'neg';
+  const bar   = (pct, cls='') =>
+    `<div class="ct-kpi-bar"><div class="ct-kpi-bar-fill ${cls}" style="width:${Math.min(Math.max(pct,0),100)}%"></div></div>`;
+
+  // ── LEFT: KPI SIDEBAR ──────────────────────────────────────
+  const kpiRow = (icon, label, valHtml, deltaHtml, barHtml) => `
+    <div class="ct-kpi-row">
+      <div class="ct-kpi-icon">${icon}</div>
+      <div class="ct-kpi-body">
+        <div class="ct-kpi-label">${label}</div>
+        ${valHtml}${deltaHtml}
+      </div>
+      ${barHtml}
+    </div>`;
+
+  const rosC  = cn(m.ros||0, 12, 6);
+  const roeC  = cn(m.roe||0, 12, 6);
+  const deC   = cnLow(m.de||99, 1.0, 2.0);
+  const crC   = cn(m.cr||0, 1.8, 1.2);
+  const payC  = (m.payout||0) > 100 ? 'neg' : (m.payout||0) > 80 ? 'amb' : 'pos';
+  const adC   = m.assetDeprec === null ? '' : m.assetDeprec > 90 ? 'neg' : m.assetDeprec > 70 ? 'amb' : 'pos';
+  const ebC   = cn(ebitdaM||0, 15, 8);
+  const rgC   = revGrowth === null ? '' : revGrowth >= 0 ? 'pos' : 'neg';
+
+  document.getElementById('ctKPIPanel').innerHTML = `
+    <div class="card-title" style="margin-bottom:10px;">KPI Overview</div>
+    <div style="margin-bottom:10px;">
+      <div style="font-size:14px;font-weight:800;color:var(--text);line-height:1.2;">${d.name}</div>
+      <div style="font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:3px;">${d.orgNr} · FY${d.fiscalYear} · SNI ${d.sni}</div>
+    </div>
+    <div class="separator"></div>
+    <div class="ct-section-label">Profitability</div>
+    ${kpiRow('💰','Net Sales',
+      `<div class="ct-kpi-value">${fmtSEK(d.netSales)}</div>`,
+      revGrowth!==null ? `<div class="ct-kpi-delta ${rgC}">${revGrowth>=0?'▲':'▼'} ${revGrowth>=0?'+':''}${fmtPct(revGrowth)} YoY</div>` : '',
+      bar(d.netSales ? Math.min(d.netSales/5e8*60,100) : 0))}
+    ${kpiRow('📊','EBITDA',
+      `<div class="ct-kpi-value ${ebC}">${fmtSEK(ebitda)}</div>`,
+      `<div class="ct-kpi-delta ${ebC}">Margin ${fmtPct(ebitdaM)}</div>`,
+      bar((ebitdaM||0)*4, ebC))}
+    ${kpiRow('🎯','ROS (EBIT/Rev)',
+      `<div class="ct-kpi-value ${rosC}">${fmtPct(m.ros)}</div>`,
+      `<div class="ct-kpi-delta ${rosC}">Operating margin</div>`,
+      bar((m.ros||0)*5, rosC))}
+    ${kpiRow('⚙️','ROE (Profit/Equity)',
+      `<div class="ct-kpi-value ${roeC}">${fmtPct(m.roe)}</div>`,
+      `<div class="ct-kpi-delta ${roeC}">Return on equity</div>`,
+      bar((m.roe||0)*4, roeC))}
+    <div class="ct-section-label">Balance Sheet</div>
+    ${kpiRow('⚖️','Debt / Equity',
+      `<div class="ct-kpi-value ${deC}">${fmtRatio(m.de)}</div>`,
+      `<div class="ct-kpi-delta ${deC}">${(m.de||99)<1?'▲ Low leverage':(m.de||99)<2?'→ Moderate':'▼ High leverage'}</div>`,
+      bar(Math.min((m.de||0)*25,100), deC))}
+    ${kpiRow('💧','Current Ratio',
+      `<div class="ct-kpi-value ${crC}">${fmtRatio(m.cr)}</div>`,
+      `<div class="ct-kpi-delta ${crC}">${(m.cr||0)>1.8?'▲ Healthy':(m.cr||0)>1.2?'→ Adequate':'▼ Watch liquidity'}</div>`,
+      bar(Math.min((m.cr||0)*40,100), crC))}
+    <div class="ct-section-label">Risk Signals</div>
+    ${kpiRow('📋','Payout Ratio',
+      `<div class="ct-kpi-value ${payC}">${fmtPct(m.payout)}</div>`,
+      `<div class="ct-kpi-delta ${payC}">${(m.payout||0)>100?'▼ Exceeds profit':(m.payout||0)>80?'▼ Above 80% threshold':'▲ Sustainable'}</div>`,
+      bar(Math.min(m.payout||0,100), payC))}
+    ${kpiRow('🏭','Asset Depreciation',
+      m.assetDeprec!==null
+        ? `<div class="ct-kpi-value ${adC}">${fmtPct(m.assetDeprec)}</div>`
+        : `<div class="ct-kpi-value" style="color:var(--text3);">N/A</div>`,
+      m.assetDeprec!==null
+        ? `<div class="ct-kpi-delta ${adC}">${m.assetDeprec>90?'▼ CapEx critical':m.assetDeprec>70?'▼ CapEx needed':'▲ Adequate runway'}</div>`
+        : `<div class="ct-kpi-delta">No asset data available</div>`,
+      bar(m.assetDeprec||0, adC))}
+    ${d.periodiseringsfonder > 0 ? kpiRow('🔒','Hidden Tax (Deferred)',
+      `<div class="ct-kpi-value" style="color:var(--purple);">${fmtSEK(Math.round(d.periodiseringsfonder*(d.taxRateDeferred||0.206)))}</div>`,
+      `<div class="ct-kpi-delta">Reserves ${fmtSEK(d.periodiseringsfonder)}</div>`,
+      bar(Math.min(d.periodiseringsfonder/(d.equity||1)*100,100),'amb')) : ''}
+  `;
+
+  // ── CENTER: FINANCIAL TILES ─────────────────────────────────
+  const opCosts = (d.netSales||0) - (d.opProfit||0);
+  const taxFin  = (d.profitBeforeTax && d.netProfit) ? Math.abs(d.profitBeforeTax - d.netProfit) : null;
+
+  // EV range (same logic as renderValuationCard)
+  let evLow=null, evHigh=null, evMid=null, evML=null, evMH=null;
+  if (ebitda > 0) {
+    let sL, sH;
+    if      (ebitda < 2.5e6)  { sL=1.5; sH=2.5; }
+    else if (ebitda < 7.5e6)  { sL=2.0; sH=3.5; }
+    else if (ebitda < 15e6)   { sL=3.0; sH=5.5; }
+    else if (ebitda < 50e6)   { sL=4.0; sH=9.0; }
+    else                       { sL=5.0; sH=12.0; }
+    const sni2 = parseInt((d.sni||'').replace(/[^0-9]/g,'').slice(0,2))||0;
+    let iL=null, iH=null;
+    if      (sni2>=10&&sni2<=33)                   { iL=3;   iH=6;  }
+    else if ([47,55,56].includes(sni2))             { iL=1.5; iH=3;  }
+    else if ((sni2>=69&&sni2<=74)||(sni2>=77&&sni2<=82)) { iL=1.5; iH=3.5; }
+    else if (sni2===46)                            { iL=2;   iH=5;  }
+    else if (sni2>=58&&sni2<=63)                   { iL=8;   iH=20; }
+    else if (sni2>=41&&sni2<=43)                   { iL=3;   iH=6;  }
+    else if (sni2>=86&&sni2<=88)                   { iL=3;   iH=7;  }
+    else if (sni2===68)                            { iL=4;   iH=10; }
+    evML=iL??sL; evMH=iH??sH;
+    evLow=Math.round(ebitda*evML); evHigh=Math.round(ebitda*evMH);
+    evMid=Math.round(ebitda*(evML+evMH)/2);
+  }
+
+  document.getElementById('ctTiles').innerHTML = `
+    <div class="ct-tile">
+      <div class="ct-tile-title">Revenue → Net Profit</div>
+      <div class="ct-tile-headline">${fmtSEK(d.netSales)}</div>
+      <div class="ct-tile-sub">Net Sales FY${d.fiscalYear}${revGrowth!==null?' · '+(revGrowth>=0?'+':'')+fmtPct(revGrowth)+' YoY':''}</div>
+      <div class="ct-tile-row"><span class="lbl">− Operating Costs</span><span class="val neg">−${fmtSEK(opCosts)}</span></div>
+      <div class="ct-tile-row"><span class="lbl">EBITDA</span><span class="val pos">${fmtSEK(ebitda)}</span></div>
+      <div class="ct-tile-row"><span class="lbl">− Depreciation</span><span class="val neg">−${fmtSEK(d.depreciation||0)}</span></div>
+      <div class="ct-tile-row"><span class="lbl">EBIT</span><span class="val ${d.opProfit>=0?'pos':'neg'}">${fmtSEK(d.opProfit)}</span></div>
+      ${taxFin?`<div class="ct-tile-row"><span class="lbl">− Tax & Finance</span><span class="val neg">−${fmtSEK(taxFin)}</span></div>`:''}
+      <div class="ct-tile-row" style="border-top:1px solid var(--border2);margin-top:4px;padding-top:5px;">
+        <span class="lbl" style="font-weight:700;color:var(--text);">Net Profit</span>
+        <span class="val ${d.netProfit>=0?'pos':'neg'}" style="font-size:12px;">${fmtSEK(d.netProfit)}</span>
+      </div>
+      <div class="ct-tile-legend">
+        <div class="ct-legend-item"><div class="val ${rosC}">${fmtPct(m.ros)}</div><div class="lbl">ROS</div></div>
+        <div class="ct-legend-item"><div class="val ${ebC}">${fmtPct(ebitdaM)}</div><div class="lbl">EBITDA%</div></div>
+        <div class="ct-legend-item"><div class="val ${rgC}">${revGrowth!==null?(revGrowth>=0?'+':'')+fmtPct(revGrowth):'—'}</div><div class="lbl">Growth</div></div>
+      </div>
+    </div>
+
+    <div class="ct-tile">
+      <div class="ct-tile-title">Free Cash Flow</div>
+      <div class="ct-tile-headline ${cf&&cf.fcf>=0?'pos':'neg'}">${cf?fmtSEK(cf.fcf):'—'}</div>
+      <div class="ct-tile-sub">FCF FY${d.fiscalYear}${cf&&d.netSales>0?' · '+fmtPct(cf.fcfMargin)+' of revenue':''}</div>
+      ${cf?`
+      <div class="ct-tile-row"><span class="lbl">Net Profit</span><span class="val">${fmtSEK(cf.netProfit)}</span></div>
+      <div class="ct-tile-row"><span class="lbl">+ Depreciation</span><span class="val pos">+${fmtSEK(cf.depreciation)}</span></div>
+      ${cf.deltaWC!==null?`<div class="ct-tile-row"><span class="lbl">± Δ Working Capital</span><span class="val ${cf.deltaWC>=0?'neg':'pos'}">${cf.deltaWC>=0?'−':'+'} ${fmtSEK(Math.abs(cf.deltaWC))}</span></div>`:''}
+      ${cf.capex!==null?`<div class="ct-tile-row"><span class="lbl">− CapEx (est.)</span><span class="val neg">−${fmtSEK(cf.capex)}</span></div>`:''}
+      `:`<div style="color:var(--text3);font-size:10px;margin-top:4px;">Insufficient data for FCF calculation</div>`}
+      <div class="ct-tile-legend">
+        <div class="ct-legend-item"><div class="val ${cf&&(cf.cashConversion||0)>=50?'pos':'amb'}">${cf?fmtPct(cf.cashConversion,0):'—'}</div><div class="lbl">Cash Conv.</div></div>
+        <div class="ct-legend-item"><div class="val">${cf?fmtPct(cf.fcfMargin):'—'}</div><div class="lbl">FCF Margin</div></div>
+        <div class="ct-legend-item"><div class="val ${payC}">${fmtPct(m.payout,0)}</div><div class="lbl">Payout</div></div>
+      </div>
+    </div>
+
+    <div class="ct-tile">
+      <div class="ct-tile-title">Enterprise Value Est.</div>
+      ${ebitda>0&&evMid!==null?`
+      <div class="ct-tile-headline" style="color:var(--purple);">${fmtSEK(evMid)}</div>
+      <div class="ct-tile-sub">Midpoint · ${((evML+evMH)/2).toFixed(1)}x EBITDA</div>
+      <div class="ct-tile-row"><span class="lbl">EBITDA base</span><span class="val">${fmtSEK(ebitda)}</span></div>
+      <div class="ct-tile-row"><span class="lbl">Multiple range</span><span class="val">${evML.toFixed(1)}x – ${evMH.toFixed(1)}x</span></div>
+      <div class="ct-tile-row"><span class="lbl">EV range</span><span class="val" style="font-size:10px;">${fmtSEK(evLow)} – ${fmtSEK(evHigh)}</span></div>
+      <div class="ct-tile-legend">
+        <div class="ct-legend-item"><div class="val" style="color:var(--purple);">${fmtSEK(evLow)}</div><div class="lbl">Low</div></div>
+        <div class="ct-legend-item"><div class="val" style="color:var(--blue);">${fmtSEK(evMid)}</div><div class="lbl">Mid</div></div>
+        <div class="ct-legend-item"><div class="val pos">${fmtSEK(evHigh)}</div><div class="lbl">High</div></div>
+      </div>
+      `:`<div class="ct-tile-sub" style="color:var(--text3);margin-top:8px;">EBITDA not available — valuation requires positive operating profit.</div>`}
+    </div>
+  `;
+
+  _renderCTScoreCard(d, pillars);
+  _renderCTAuditPanel(d);
+  setTimeout(() => renderCTChart(d), 0);
+}
+
+function computeCFOFlagsArray(d) {
+  const flags = [];
+  const ros      = d.netSales ? d.opProfit / d.netSales * 100 : 0;
+  const prev     = historyData[String(parseInt(d.fiscalYear) - 1)] || null;
+  const prevROS  = prev && prev.netSales ? prev.opProfit / prev.netSales * 100 : (d.prevROS || null);
+  const rosDelta = prevROS !== null ? ros - prevROS : null;
+  const payout   = d.netProfit > 0 ? d.dividendsPaid / d.netProfit * 100 : 0;
+  const cr       = d.currentLiabilities > 0 ? d.totalCurrentAssets / d.currentLiabilities : null;
+
+  if (d.auditorRemark) {
+    flags.push({ sev:'critical', title:'Auditor Remark (Anmärkning)',
+      detail:'Late filing noted under ABL 7 kap. 10§. Signals governance weaknesses — requires investigation before close.' });
+  } else {
+    flags.push({ sev:'ok', title:'Clean Auditor Opinion',
+      detail:'Annual report filed on time with unqualified opinion across available filing history.' });
+  }
+
+  if (rosDelta !== null) {
+    if (rosDelta > 5)
+      flags.push({ sev:'info', title:`ROS Improvement ▲ +${rosDelta.toFixed(1)}pp`,
+        detail:`Margin improved from ${fmtPct(prevROS)} → ${fmtPct(ros)}. Verify not driven by one-off items or capitalised costs.` });
+    else if (rosDelta < -3)
+      flags.push({ sev:'warning', title:`ROS Decline ▼ −${Math.abs(rosDelta).toFixed(1)}pp`,
+        detail:`Margin fell ${fmtPct(prevROS)} → ${fmtPct(ros)}. Cost inflation outpacing revenue — review cost structure.` });
+    else
+      flags.push({ sev:'ok', title:`ROS Stable → ${fmtPct(ros)}`,
+        detail:'Operating margin within normal variance versus prior period. Operational efficiency appears stable.' });
+  }
+
+  if (d.dividendsPaid > d.netProfit && d.netProfit > 0)
+    flags.push({ sev:'critical', title:`Payout ${fmtPct(payout)} — Exceeds Net Profit`,
+      detail:`Dividends (${fmtSEK(d.dividendsPaid)}) exceed annual profit (${fmtSEK(d.netProfit)}), draining equity reserves.` });
+  else if (payout > 80)
+    flags.push({ sev:'warning', title:`High Payout ${fmtPct(payout)}`,
+      detail:`Dividends at ${fmtPct(payout)} of net profit, leaving thin retained-earnings buffer. Monitor for repeated years.` });
+  else if (payout > 0)
+    flags.push({ sev:'ok', title:`Sustainable Payout ${fmtPct(payout)}`,
+      detail:'Dividend distribution leaves adequate equity buffer for reinvestment and downside absorption.' });
+
+  if (cr !== null) {
+    if (cr < 1.0)
+      flags.push({ sev:'critical', title:`Current Ratio ${fmtRatio(cr)} — Liquidity Risk`,
+        detail:'Current assets do not cover current liabilities. Near-term liquidity squeeze requires immediate action.' });
+    else if (cr < 1.5)
+      flags.push({ sev:'warning', title:`Current Ratio ${fmtRatio(cr)} — Below 1.5x`,
+        detail:'Modest stress on receivables or inventory could trigger a liquidity event. Monitor working capital.' });
+  }
+
+  return flags;
+}
+
+function _renderCTScoreCard(d, pillars) {
+  const scoreTotal  = (typeof maScore === 'number' && maScore !== null) ? maScore : pillars.total;
+  const verdict     = scoreTotal >= 65 ? 'BUY' : scoreTotal >= 40 ? 'HOLD' : 'PASS';
+  const scoreColor  = verdict === 'BUY' ? 'var(--green)' : verdict === 'HOLD' ? 'var(--amber)' : 'var(--red)';
+  const circ        = 2 * Math.PI * 15.9;
+  const dash        = (scoreTotal / 100 * circ).toFixed(1);
+  const pillarColor = s => s/25 >= 0.65 ? 'var(--green)' : s/25 >= 0.4 ? 'var(--amber)' : 'var(--red)';
+  const maParsed    = (typeof _maParsed !== 'undefined' && _maParsed && _maParsed.dealStructureRecommendation) ? _maParsed : null;
+
+  document.getElementById('ctScoreCard').innerHTML = `
+    <div class="card-title" style="margin-bottom:12px;">
+      M&amp;A Acquisition Score
+      <span style="margin-left:auto;font-size:10px;color:var(--text3);cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0;"
+        onclick="switchTab('ma')">Full Screener →</span>
+    </div>
+    <div class="ct-score-wrap">
+      <div style="text-align:center;">
+        <div class="ct-score-donut">
+          <svg width="120" height="120" viewBox="0 0 42 42">
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--bg4)" stroke-width="4"></circle>
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="${scoreColor}" stroke-width="4"
+              stroke-dasharray="${dash} ${(circ - parseFloat(dash)).toFixed(1)}"
+              stroke-dashoffset="${(circ * 0.25).toFixed(1)}"
+              stroke-linecap="round"></circle>
+          </svg>
+          <div class="ct-score-center">
+            <div style="font-size:9px;color:var(--text3);">Score</div>
+            <div class="ct-score-num" style="color:${scoreColor};">${scoreTotal}</div>
+            <div style="font-size:8px;color:var(--text3);">/ 100</div>
+          </div>
+        </div>
+        <div class="verdict-badge ${verdict.toLowerCase()}" style="margin-top:8px;display:inline-block;">${verdict}</div>
+      </div>
+      <div>
+        <div style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">4 Pillars × 25 pts</div>
+        <div class="ct-pillars">
+          ${[['Profitability',pillars.prof],['Compliance',pillars.comp],['Balance Sheet',pillars.bs],['Asset Quality',pillars.eff]].map(([lbl,s])=>`
+          <div class="ct-pillar">
+            <div class="ct-pillar-label">${lbl}</div>
+            <div class="ct-pillar-value" style="color:${pillarColor(s)};">${s}<span class="ct-pillar-max">/25</span></div>
+            <div class="ct-pillar-bar"><div class="ct-pillar-fill" style="width:${s/25*100}%;background:${pillarColor(s)};"></div></div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="separator"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div style="font-size:11px;font-weight:600;color:var(--text);">Revenue &amp; Profitability Trend</div>
+      <div style="display:flex;gap:10px;font-size:9px;color:var(--text3);">
+        <span style="color:var(--blue);">■ Revenue</span>
+        <span style="color:var(--green);">■ EBITDA</span>
+        <span style="color:var(--purple);">■ Net Profit</span>
+        <span style="color:var(--amber);">— ROS%</span>
+      </div>
+    </div>
+    <div style="height:160px;position:relative;"><canvas id="ctTrendCanvas"></canvas></div>
+    <div class="ct-thesis">
+      <div class="ct-thesis-label">${maParsed ? 'Deal Structure Recommendation' : 'AI Analysis'}</div>
+      ${maParsed
+        ? maParsed.dealStructureRecommendation
+        : `<span style="color:var(--text3);">Run the M&amp;A Screener to generate an AI deal structure recommendation for this company.</span>
+           <div style="margin-top:8px;"><button class="btn-secondary" style="font-size:10px;" onclick="switchTab('ma');runMAScreen()">🎯 Run M&amp;A Screen</button></div>`}
+    </div>
+  `;
+}
+
+function _renderCTAuditPanel(d) {
+  const flags    = computeCFOFlagsArray(d);
+  const sevLabel = { critical:'🔴 CRITICAL', warning:'🟡 WARNING', info:'🔵 INFO', ok:'✅ OK' };
+  const histYrs  = Object.keys(historyData).sort().reverse().slice(0, 4);
+
+  document.getElementById('ctAuditPanel').innerHTML = `
+    <div class="card-title" style="margin-bottom:12px;">
+      CFO Audit Signals
+      <span style="margin-left:auto;font-size:10px;color:var(--text3);cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0;"
+        onclick="switchTab('cfo');runCFOAudit()">Full Audit →</span>
+    </div>
+    <div class="ct-feed">
+      ${flags.map(f=>`
+        <div class="ct-feed-item ${f.sev}">
+          <div class="ct-feed-badge ${f.sev}">${sevLabel[f.sev]}</div>
+          <div class="ct-feed-title">${f.title}</div>
+          <div class="ct-feed-body">${f.detail}</div>
+        </div>`).join('')}
+    </div>
+    ${histYrs.length >= 2 ? `
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+      <div style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Multi-year history</div>
+      ${histYrs.map(yr => {
+        const h = historyData[yr];
+        if (!h) return '';
+        const r = h.netSales > 0 ? (h.opProfit/h.netSales*100).toFixed(1) : null;
+        const rc = r ? (parseFloat(r)>=10?'pos':parseFloat(r)>=5?'amb':'neg') : '';
+        return `<div style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0;border-bottom:1px solid rgba(30,41,59,0.4);">
+          <span style="color:var(--text3);font-family:'JetBrains Mono',monospace;min-width:38px;">FY${yr}</span>
+          <span>${fmtSEK(h.netSales)}</span>
+          <span class="${rc}">${r ? r+'% ROS' : '—'}</span>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+    <div style="margin-top:12px;">
+      <button class="btn-secondary" style="width:100%;font-size:10px;"
+        onclick="switchTab('financials')">📋 View Full Financials</button>
+    </div>
+  `;
+}
+
+function renderCTChart(d) {
+  const canvas = document.getElementById('ctTrendCanvas');
+  if (!canvas) return;
+  const allYears = Object.keys(historyData).sort();
+  if (!allYears.length) allYears.push(d.fiscalYear);
+  const toM = v => v ? +(v/1e6).toFixed(2) : 0;
+  const revenue = allYears.map(yr => toM((historyData[yr]||{}).netSales));
+  const ebitdas = allYears.map(yr => { const h=historyData[yr]||{}; return toM((h.opProfit||0)+(h.depreciation||0)); });
+  const profits = allYears.map(yr => toM((historyData[yr]||{}).netProfit));
+  const rosPcts = allYears.map(yr => { const h=historyData[yr]||{}; return h.netSales>0 ? +(h.opProfit/h.netSales*100).toFixed(1) : null; });
+  if (_ctChart) { _ctChart.destroy(); _ctChart = null; }
+  _ctChart = new Chart(canvas.getContext('2d'), {
+    data: {
+      labels: allYears,
+      datasets: [
+        { type:'bar',  label:'Revenue (Mkr)',    data:revenue,  backgroundColor:'rgba(59,130,246,0.55)', borderColor:'#3b82f6', borderWidth:1, borderRadius:2, yAxisID:'y' },
+        { type:'bar',  label:'EBITDA (Mkr)',     data:ebitdas,  backgroundColor:'rgba(16,185,129,0.55)', borderColor:'#10b981', borderWidth:1, borderRadius:2, yAxisID:'y' },
+        { type:'bar',  label:'Net Profit (Mkr)', data:profits,  backgroundColor:'rgba(167,139,250,0.55)',borderColor:'#a78bfa', borderWidth:1, borderRadius:2, yAxisID:'y' },
+        { type:'line', label:'ROS%',             data:rosPcts,  borderColor:'#f59e0b', borderWidth:2, pointRadius:3, pointBackgroundColor:'#f59e0b', tension:0.3, yAxisID:'y2' },
+      ],
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          backgroundColor:'#0a1128', borderColor:'#1e293b', borderWidth:1,
+          titleColor:'#94a3b8', bodyColor:'#e2e8f0',
+          callbacks:{ label: ctx => ctx.dataset.label==='ROS%' ? ` ROS: ${ctx.raw}%` : ` ${ctx.dataset.label}: ${ctx.raw?.toFixed(1)} Mkr` }
+        },
+      },
+      scales:{
+        x:{ ticks:{ color:'#64748b', font:{size:10} }, grid:{ color:'rgba(30,41,59,0.5)' } },
+        y:{ position:'left',  ticks:{ color:'#64748b', font:{size:10}, callback:v=>v+'M' }, grid:{ color:'rgba(30,41,59,0.5)' } },
+        y2:{ position:'right', ticks:{ color:'#f59e0b', font:{size:10}, callback:v=>v+'%' }, grid:{ drawOnChartArea:false } },
+      },
+    },
+  });
+}
+
 (function() {
   const origSwitch = switchTab;
   let cbPresetsRendered = false;
