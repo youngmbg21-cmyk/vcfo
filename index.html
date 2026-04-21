@@ -558,6 +558,78 @@ body {
 .btn-primary:hover { opacity: 0.85; }
 .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
 
+/* ===== DOCUMENT OUTPUT VIEWER (Memo / Email) ===== */
+.doc-output {
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 24px 28px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--text);
+  min-height: 200px;
+  overflow-y: auto;
+}
+.doc-meta {
+  font-size: 11px;
+  color: var(--text2);
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.8;
+}
+.doc-meta-key {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-right: 4px;
+}
+.doc-section-head {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-top: 18px;
+  margin-bottom: 5px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--border);
+}
+.doc-para { margin: 0 0 6px; color: var(--text); }
+.doc-subject {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.doc-copy-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* ===== CHAT INLINE CHARTS ===== */
+.chat-chart-wrap {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px 14px;
+  margin: 10px 0 4px;
+}
+.chat-chart-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text3);
+  margin-bottom: 10px;
+}
+
 /* ===== SCORING MODEL SETTINGS ===== */
 .sm-section-label {
   font-size: 9px; font-weight: 700; text-transform: uppercase;
@@ -3843,9 +3915,9 @@ body.light-mode {
         </div>
       </div>
       <div id="wsOutput" style="display:none;">
-        <div style="position:relative;">
-          <textarea id="wsMemoText" style="width:100%;box-sizing:border-box;min-height:320px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;line-height:1.6;padding:12px 52px 12px 12px;font-family:inherit;resize:vertical;" readonly></textarea>
-          <button class="btn-secondary" style="position:absolute;top:6px;right:6px;font-size:10px;" onclick="wsCopyMemo()" data-i18n="outreach_copy">Copy</button>
+        <div id="wsMemoText" class="doc-output"></div>
+        <div class="doc-copy-row">
+          <button class="btn-secondary" style="font-size:10px;" onclick="wsCopyMemo()" data-i18n="outreach_copy">⎘ Copy memo</button>
         </div>
       </div>
     </div>
@@ -3875,9 +3947,9 @@ body.light-mode {
         <span id="ogStatus" style="font-size:10px;color:var(--text3);"></span>
       </div>
       <div id="ogOutput" style="display:none;">
-        <div style="position:relative;">
-          <textarea id="ogText" style="width:100%;box-sizing:border-box;min-height:200px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;line-height:1.6;padding:12px 52px 12px 12px;font-family:inherit;resize:vertical;" readonly></textarea>
-          <button class="btn-secondary" style="position:absolute;top:6px;right:6px;font-size:10px;" onclick="ogCopy()" data-i18n="outreach_copy">Copy</button>
+        <div id="ogText" class="doc-output"></div>
+        <div class="doc-copy-row">
+          <button class="btn-secondary" style="font-size:10px;" onclick="ogCopy()" data-i18n="outreach_copy">⎘ Copy email</button>
         </div>
       </div>
     </div>
@@ -9467,26 +9539,48 @@ async function wsGenerateICMemo() {
   const ros      = (cached?.netSales && cached?.opProfit)
     ? ((cached.opProfit / cached.netSales) * 100).toFixed(1) + '%' : '—';
 
-  const prompt = `You are a senior analyst at a Nordic ${acqType.replace('_', ' ')} called "${firmName}". Write a professional 1-page Investment Committee memo for this potential acquisition target. Use clear M&A language with the following sections:
+  const memoDate = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+  const prompt = `You are a senior analyst at ${firmName}, a Nordic ${acqType.replace(/_/g, ' ')}. Write a formal Investment Committee memo for the following potential acquisition target.
 
-1. EXECUTIVE SUMMARY
-2. COMPANY OVERVIEW
-3. FINANCIAL HIGHLIGHTS
-4. SUCCESSION & OWNERSHIP ANALYSIS
-5. DEAL THESIS (3 bullets)
-6. KEY RISKS (3 bullets)
-7. PROPOSED NEXT STEPS
+STRICT FORMATTING RULES — this memo will be distributed directly to the Investment Committee:
+- Do not use asterisks, hashtags, markdown bullets, dashes as list decorators, or any special characters for emphasis
+- Do not use bold or italic markers of any kind
+- Write section headings in ALL CAPITALS on their own line, followed by a colon
+- Write all body text as plain paragraphs or numbered items (1. 2. 3.)
+- Begin with this exact header block, one field per line:
+  TO: Investment Committee
+  FROM: ${yourName ? yourName + ', ' : ''}${firmName}
+  DATE: ${memoDate}
+  RE: Acquisition Review — ${deal.name}
+
+SECTIONS TO INCLUDE:
+
+EXECUTIVE SUMMARY:
+One paragraph. State the acquisition opportunity, the company, and a single-sentence verdict on fit.
+
+COMPANY OVERVIEW:
+One paragraph. Business description, industry, geography, and estimated market position.
+
+FINANCIAL HIGHLIGHTS:
+One paragraph. Cover revenue, EBIT, margin, equity, and one key ratio observation.
+
+SUCCESSION AND OWNERSHIP:
+One paragraph on the ownership structure and any succession context relevant to a transaction.
+
+DEAL THESIS:
+Three numbered points (1. 2. 3.), each a complete sentence on its own line, making the case for acquisition.
+
+KEY RISKS:
+Three numbered points (1. 2. 3.), each a complete sentence on its own line.
+
+RECOMMENDED NEXT STEPS:
+One paragraph describing the proposed immediate actions.
 
 Company data:
-- Name: ${deal.name}
-- Org nr: ${deal.orgNr || '—'}
-- Industry: ${cached?.industry || '—'}
-- Pipeline stage: ${deal.stage}
-- Revenue: ${revenue} MSEK | EBIT: ${ebit} MSEK | EBIT margin: ${ros} | Equity: ${equity} MSEK
-- Primary owner: ${owData?.primaryOwner?.name || '—'}
-- Succession score: ${deal.score != null ? deal.score + '/100' : '—'}
-- Deal notes: ${deal.note || 'None'}${criteria ? '\n- Acquirer criteria: ' + criteria : ''}${yourName ? '\nPrepared by: ' + yourName : ''}
-Date: ${new Date().toLocaleDateString('en-SE')}
+Name: ${deal.name} | Org nr: ${deal.orgNr || '—'} | Industry: ${cached?.industry || '—'}
+Pipeline stage: ${deal.stage} | Revenue: ${revenue} MSEK | EBIT: ${ebit} MSEK | EBIT margin: ${ros} | Equity: ${equity} MSEK
+Primary owner: ${owData?.primaryOwner?.name || '—'} | Succession score: ${deal.score != null ? deal.score + '/100' : '—'}
+Deal notes: ${deal.note || 'None'}${criteria ? '\nAcquirer criteria: ' + criteria : ''}
 
 Keep the full memo under 520 words.`;
 
@@ -9499,7 +9593,7 @@ Keep the full memo under 520 words.`;
     }, anthropicKey);
     const text = result?.content?.[0]?.text || '';
     if (!text) throw new Error('Empty response');
-    if (textEl) textEl.value = text;
+    if (textEl) textEl.innerHTML = renderDocOutput(text, 'memo');
     if (outputEl) outputEl.style.display = '';
     if (statusEl) statusEl.textContent = t('ws_memo_ready');
   } catch(e) {
@@ -9509,12 +9603,64 @@ Keep the full memo under 520 words.`;
   }
 }
 
+function renderDocOutput(text, mode) {
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const lines = text.split('\n');
+  let html = '';
+  const headerKeys = /^(TO|FROM|DATE|RE|SUBJECT)\s*:/i;
+  let metaLines = [], metaDone = false;
+
+  if (mode === 'memo') {
+    for (let i = 0; i < lines.length; i++) {
+      const raw = lines[i]; const line = raw.trim();
+      if (!metaDone && headerKeys.test(line)) { metaLines.push(line); continue; }
+      if (!metaDone && metaLines.length > 0) {
+        html += `<div class="doc-meta">${metaLines.map(l => {
+          const colon = l.indexOf(':');
+          const key = l.slice(0, colon); const val = l.slice(colon + 1).trim();
+          return `<div><span class="doc-meta-key">${esc(key)}:</span>${esc(val)}</div>`;
+        }).join('')}</div>`;
+        metaLines = []; metaDone = true;
+      }
+      if (!line) { html += '<div style="height:7px;"></div>'; continue; }
+      // Section heading: all-caps line (optionally ending with colon), no lowercase letters
+      if (/^[A-Z][A-Z\s&\/\-–()]{3,}:?$/.test(line) || /^[0-9]+\.\s+[A-Z\s&\/\-–]{4,}:?$/.test(line)) {
+        const clean = esc(line.replace(/^[0-9]+\.\s+/, '').replace(/:$/, ''));
+        html += `<div class="doc-section-head">${clean}</div>`; continue;
+      }
+      // Numbered list item
+      if (/^[0-9]+\.\s/.test(line)) {
+        html += `<div class="doc-para" style="padding-left:14px;">${esc(line)}</div>`; continue;
+      }
+      html += `<div class="doc-para">${esc(line)}</div>`;
+    }
+  } else {
+    // email mode: detect Subject: on first non-blank line
+    let bodyStart = 0;
+    for (let i = 0; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      if (/^subject\s*:/i.test(lines[i].trim())) {
+        const subj = lines[i].replace(/^subject\s*:\s*/i, '').trim();
+        html += `<div class="doc-subject">Subject: ${esc(subj)}</div>`;
+        bodyStart = i + 1;
+      } else { bodyStart = i; }
+      break;
+    }
+    for (let i = bodyStart; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) { html += '<div style="height:9px;"></div>'; continue; }
+      html += `<div class="doc-para">${esc(line)}</div>`;
+    }
+  }
+  return html;
+}
+
 function wsCopyMemo() {
-  const textEl = document.getElementById('wsMemoText');
-  if (!textEl || !textEl.value) return;
-  navigator.clipboard.writeText(textEl.value)
+  const el = document.getElementById('wsMemoText');
+  if (!el) return;
+  navigator.clipboard.writeText(el.innerText || '')
     .then(() => showToast(t('ws_memo_copied')))
-    .catch(() => { textEl.select(); document.execCommand('copy'); showToast(t('ws_memo_copied')); });
+    .catch(() => showToast(t('ws_memo_copied')));
 }
 
 function initWorkspace() {
@@ -9525,11 +9671,46 @@ function initWorkspace() {
 // OUTREACH GENERATOR
 // ============================================================
 const OG_TEMPLATES = {
-  email_en:   (c) => `You are a Nordic M&A originator. Write a warm, direct cold email in English addressed to the owner of ${c.name}.${c.ownerName ? ` The owner's name is ${c.ownerName}.` : ''} From: ${c.yourName}${c.yourFirm ? ' at ' + c.yourFirm : ''}. Company: ${c.industry}, revenue ${c.revenue} MSEK, EBIT ${c.opProfit} MSEK. Goal: genuine acquisition interest, propose a confidential first meeting. Tone: respectful, human, not salesy. Max 160 words.`,
+  email_en: (c) => `You are a Nordic M&A originator writing on behalf of ${c.yourName}${c.yourFirm ? ' at ' + c.yourFirm : ''}. Write a warm, professional acquisition outreach email in English to the owner of ${c.name}${c.ownerName ? ' (' + c.ownerName + ')' : ''}.
 
-  formal_en:  (c) => `You are an experienced M&A advisor. Write a formal acquisition letter in English addressed to the owner of ${c.name} (org. ${c.orgNr}).${c.ownerName ? ` The owner's name is ${c.ownerName}.` : ''} From: ${c.yourName}${c.yourFirm ? ' at ' + c.yourFirm : ''}. Company: ${c.industry}, revenue ${c.revenue} MSEK, EBIT ${c.opProfit} MSEK. The letter should professionally and discreetly express acquisition interest and request an initial meeting, without disclosing price sensitivities. Max 220 words.`,
+STRICT FORMATTING RULES — this email will be pasted directly into an email client:
+- First line must be: Subject: [write a concise subject line]
+- Then one blank line
+- Then the greeting (e.g. Dear [name], or Dear Owner,)
+- Then two or three short paragraphs of plain text
+- Then a sign-off (e.g. Kind regards,) followed by the sender's name and firm on separate lines
+- Do NOT use asterisks, hashtags, bullet symbols, dashes as list decorators, or markdown of any kind
+- Use complete sentences and plain paragraph text throughout
 
-  followup_en: (c) => `You are a Nordic M&A originator. Write a brief, warm follow-up email in English to the owner of ${c.name},${c.ownerName ? ` ${c.ownerName},` : ''} referencing that you reached out previously. From: ${c.yourName}${c.yourFirm ? ' at ' + c.yourFirm : ''}. Keep it under 90 words, maintain warmth, reiterate interest without pressure.`,
+Context: ${c.industry} company, revenue ${c.revenue} MSEK, EBIT ${c.opProfit} MSEK. Convey genuine acquisition interest and invite a confidential first conversation. Tone: respectful, direct, human — not salesy. Total body under 160 words.`,
+
+  formal_en: (c) => `You are a senior M&A advisor writing a formal acquisition approach letter on behalf of ${c.yourName}${c.yourFirm ? ' at ' + c.yourFirm : ''}. Write a formal, professional letter in English addressed to the owner of ${c.name}${c.ownerName ? ' (' + c.ownerName + ')' : ''}.
+
+STRICT FORMATTING RULES — this letter will be sent directly from an email client:
+- First line must be: Subject: [write a concise formal subject line]
+- Then one blank line
+- Then today's date written in full (e.g. 21 April 2026)
+- Then one blank line
+- Then the formal salutation (e.g. Dear Mr. / Ms. [Surname], or Dear Owner,)
+- Then four paragraphs: (1) introduction and purpose of contact, (2) why this specific company is of strategic interest, (3) how a transaction could be structured discreetly and professionally, (4) a clear call to action proposing a private meeting
+- Then a formal close (Yours sincerely,) followed by sender name, title if relevant, and firm on separate lines
+- Do NOT use asterisks, hashtags, bullet symbols, or markdown of any kind
+- Use formal, complete sentences and plain paragraph text throughout
+
+Context: ${c.industry} company, revenue ${c.revenue} MSEK, EBIT ${c.opProfit} MSEK. Total letter under 220 words.`,
+
+  followup_en: (c) => `You are a Nordic M&A originator writing a follow-up email on behalf of ${c.yourName}${c.yourFirm ? ' at ' + c.yourFirm : ''}. Write a brief, warm follow-up email in English to the owner of ${c.name}${c.ownerName ? ' (' + c.ownerName + ')' : ''}, noting that you reached out previously and have not yet connected.
+
+STRICT FORMATTING RULES — this email will be pasted directly into an email client:
+- First line must be: Subject: [write a brief follow-up subject line]
+- Then one blank line
+- Then the greeting
+- Then one or two short paragraphs of plain text — reference the prior outreach briefly, reiterate interest without pressure, and offer a low-commitment next step
+- Then a warm sign-off followed by the sender's name and firm on separate lines
+- Do NOT use asterisks, hashtags, bullet symbols, or markdown of any kind
+- Use complete sentences and plain paragraph text throughout
+
+Tone: warm, light, no pressure. Total body under 90 words.`,
 };
 
 function ogShow() {
@@ -9583,7 +9764,7 @@ async function ogGenerate() {
     }, anthropicKey);
     const text = result?.content?.[0]?.text || '';
     if (!text) throw new Error('Empty response');
-    if (textEl) textEl.value = text;
+    if (textEl) textEl.innerHTML = renderDocOutput(text, 'email');
     if (outputEl) outputEl.style.display = '';
     if (statusEl) statusEl.textContent = t('outreach_done');
   } catch(e) {
@@ -9594,11 +9775,11 @@ async function ogGenerate() {
 }
 
 function ogCopy() {
-  const textEl = document.getElementById('ogText');
-  if (!textEl || !textEl.value) return;
-  navigator.clipboard.writeText(textEl.value)
+  const el = document.getElementById('ogText');
+  if (!el) return;
+  navigator.clipboard.writeText(el.innerText || '')
     .then(() => showToast(t('outreach_copied')))
-    .catch(() => { textEl.select(); document.execCommand('copy'); showToast(t('outreach_copied')); });
+    .catch(() => showToast(t('outreach_copied')));
 }
 
 // ============================================================
@@ -12219,6 +12400,26 @@ FLAGS:
     ctx += `\n\nEXPERT MODE: User is CFO/M&A level. Use precise terminology freely. Be concise and data-driven.`;
   }
 
+  // ── Chart directives (only when company data is available) ──
+  if (companyData) {
+    const histYears = Object.keys(historyData || {}).sort();
+    const hasMultiYear = histYears.length > 1;
+    ctx += `\n\nCHART DIRECTIVES: When your answer would benefit from a visual, you may embed one chart directive per response on its own line. The dashboard will render a live Chart.js chart inline in the chat.
+
+Available directives (use only when relevant data exists):
+[[CHART:revenue_trend]] — bar chart of Net Sales and Net Profit across all available fiscal years${hasMultiYear ? ' (' + histYears.join(', ') + ')' : ' (only one year available — use sparingly)'}
+[[CHART:profitability]] — line chart of ROS % and EBITDA margin % over years
+[[CHART:balance_sheet]] — line chart of Current Ratio and D/E Ratio over years
+[[CHART:ma_pillars]] — radar chart of the four M&A score pillars (Profitability, Compliance, Balance Sheet, Efficiency)
+[[CHART:cashflow]] — bar chart of Free Cash Flow by year (green = positive, red = negative)
+
+Rules:
+- Only use a directive when company data is loaded (it is, right now)
+- Place the directive on its own line between paragraphs — never in the middle of a sentence
+- Always explain what the chart shows and highlight 2-3 specific insights from it
+- Do not include more than one chart per response`;
+  }
+
   // Language instruction — always last
   if (appLang === 'sv') {
     ctx += `\n\nSPRÅK: Svara ALLTID på svenska. Använd svenska finanstermer (rörelsemarginal, soliditet, likviditetsgrad, årsredovisning, etc.). All analys, alla förklaringar och all vägledning ska vara på svenska.`;
@@ -12250,6 +12451,31 @@ function renderChatMessage(msg) {
     bubble.innerHTML = `<div class="chat-typing"><span></span><span></span><span></span></div>`;
   } else if (msg.type === 'lookup') {
     bubble.innerHTML = renderLookupTableHTML(msg.query, msg.results);
+  } else if (msg.role === 'assistant' && /\[\[CHART:[^\]]+\]\]/.test(msg.content || '')) {
+    const CHART_TITLES = {
+      revenue_trend: 'Revenue & Profit Trend',
+      profitability:  'Profitability Trend — ROS & EBITDA Margin',
+      balance_sheet:  'Balance Sheet Ratios — Current Ratio & D/E',
+      ma_pillars:     'M&A Score by Pillar',
+      cashflow:       'Free Cash Flow Trend',
+    };
+    const parts = msg.content.split(/(\[\[CHART:[^\]]+\]\])/);
+    let html = '';
+    parts.forEach((part, idx) => {
+      const m = part.match(/^\[\[CHART:([^\]]+)\]\]$/);
+      if (m) {
+        const type = m[1].trim();
+        const cid  = `chatchart-${msg.id}-${idx}`;
+        html += `<div class="chat-chart-wrap">
+          <div class="chat-chart-title">${CHART_TITLES[type] || type}</div>
+          <div style="position:relative;height:190px;">
+            <canvas class="chat-chart-canvas" id="${cid}" data-type="${type}"></canvas>
+          </div></div>`;
+      } else {
+        html += chatRenderMarkdown(part);
+      }
+    });
+    bubble.innerHTML = html;
   } else {
     bubble.innerHTML = chatRenderMarkdown(msg.content);
   }
@@ -12360,6 +12586,85 @@ async function chatRunLookup(query) {
   chatScrollToLatest(container);
 }
 
+// ── Chat inline chart initialiser ──
+function _initChatCharts(el) {
+  el.querySelectorAll('.chat-chart-canvas[data-type]').forEach(canvas => {
+    if (canvas._chartReady) return;
+    canvas._chartReady = true;
+    createChatChart(canvas.getAttribute('data-type'), canvas);
+  });
+}
+
+function createChatChart(type, canvas) {
+  if (!companyData || typeof Chart === 'undefined') return;
+  const tick  = '#94a3b8';
+  const grid  = 'rgba(30,41,59,0.7)';
+  const tip   = { backgroundColor:'#0a1128', borderColor:'#1e293b', borderWidth:1,
+                  titleColor:'#e2e8f0', bodyColor:'#94a3b8', padding:10 };
+  const baseOpts = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{ color:tick, font:{ size:10, family:'JetBrains Mono' }, boxWidth:10 } }, tooltip:tip },
+    scales:{ x:{ ticks:{ color:tick, font:{size:10} }, grid:{ color:grid } },
+             y:{ ticks:{ color:tick, font:{size:10} }, grid:{ color:grid } } }
+  };
+
+  // Build unified year list
+  const allYears = Object.keys(historyData||{}).sort();
+  if (companyData.fiscalYear && !allYears.includes(String(companyData.fiscalYear)))
+    allYears.push(String(companyData.fiscalYear));
+  allYears.sort();
+  const row = yr => String(yr) === String(companyData.fiscalYear) ? companyData : (historyData[String(yr)] || null);
+
+  let cfg;
+  if (type === 'revenue_trend') {
+    cfg = { type:'bar', data:{ labels:allYears, datasets:[
+      { label:'Net Sales (MSEK)', data:allYears.map(y=>{ const d=row(y); return d?Math.round(d.netSales/1e6):null; }),
+        backgroundColor:'rgba(59,130,246,0.55)', borderColor:'#3b82f6', borderWidth:1, borderRadius:3 },
+      { label:'Net Profit (MSEK)', data:allYears.map(y=>{ const d=row(y); return d?Math.round(d.netProfit/1e6):null; }),
+        backgroundColor:'rgba(16,185,129,0.55)', borderColor:'#10b981', borderWidth:1, borderRadius:3 },
+    ]}, options:baseOpts };
+
+  } else if (type === 'profitability') {
+    cfg = { type:'line', data:{ labels:allYears, datasets:[
+      { label:'ROS %', data:allYears.map(y=>{ const d=row(y); return d&&d.netSales>0?parseFloat((d.opProfit/d.netSales*100).toFixed(1)):null; }),
+        borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.08)', tension:0.35, fill:true, pointRadius:4 },
+      { label:'EBITDA %', data:allYears.map(y=>{ const d=row(y); return d&&d.netSales>0?parseFloat(((d.opProfit+(d.depreciation||0))/d.netSales*100).toFixed(1)):null; }),
+        borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,0.08)', tension:0.35, fill:false, pointRadius:4 },
+    ]}, options:{ ...baseOpts, scales:{ ...baseOpts.scales,
+      y:{ ...baseOpts.scales.y, ticks:{ ...baseOpts.scales.y.ticks, callback:v=>v+'%' } } } } };
+
+  } else if (type === 'balance_sheet') {
+    cfg = { type:'line', data:{ labels:allYears, datasets:[
+      { label:'Current Ratio', data:allYears.map(y=>{ const d=row(y); return d&&d.currentLiabilities>0?parseFloat((d.totalCurrentAssets/d.currentLiabilities).toFixed(2)):null; }),
+        borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.08)', tension:0.35, pointRadius:4 },
+      { label:'D/E Ratio', data:allYears.map(y=>{ const d=row(y); return d&&d.equity>0?parseFloat(((d.longTermDebt+d.currentLiabilities)/d.equity).toFixed(2)):null; }),
+        borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.08)', tension:0.35, pointRadius:4 },
+    ]}, options:baseOpts };
+
+  } else if (type === 'ma_pillars') {
+    const p = computeMAScorePillars(companyData);
+    if (!p) return;
+    cfg = { type:'radar', data:{ labels:['Profitability','Compliance','Balance Sheet','Efficiency'],
+      datasets:[{ label:'Score', data:[p.prof,p.comp,p.bs,p.eff],
+        borderColor:'#a78bfa', backgroundColor:'rgba(167,139,250,0.18)', pointBackgroundColor:'#a78bfa', pointRadius:4 }]
+    }, options:{ responsive:true, maintainAspectRatio:false,
+      scales:{ r:{ min:0, max:25, ticks:{ display:false }, grid:{ color:grid },
+        angleLines:{ color:grid }, pointLabels:{ color:tick, font:{ size:10 } } } },
+      plugins:{ legend:{ display:false }, tooltip:tip } } };
+
+  } else if (type === 'cashflow') {
+    const fcfVals = allYears.map(y=>{ const d=row(y); if(!d) return null; const cf=computeCashFlow(d); return cf?Math.round(cf.fcf/1e6):null; });
+    cfg = { type:'bar', data:{ labels:allYears, datasets:[
+      { label:'FCF (MSEK)', data:fcfVals,
+        backgroundColor:fcfVals.map(v=>v===null?'transparent':v>=0?'rgba(16,185,129,0.6)':'rgba(239,68,68,0.6)'),
+        borderColor:fcfVals.map(v=>v===null?'transparent':v>=0?'#10b981':'#ef4444'),
+        borderWidth:1, borderRadius:3 }
+    ]}, options:baseOpts };
+  }
+
+  if (cfg) new Chart(canvas, cfg);
+}
+
 // ── Simple markdown renderer ──
 function chatRenderMarkdown(text) {
   if (!text) return '';
@@ -12409,7 +12714,11 @@ function renderAllChatMessages() {
   const container = document.getElementById('chatMessages');
   if (!container) return;
   container.innerHTML = '';
-  chatMessages.forEach(msg => container.appendChild(renderChatMessage(msg)));
+  chatMessages.forEach(msg => {
+    const el = renderChatMessage(msg);
+    container.appendChild(el);
+  });
+  requestAnimationFrame(() => _initChatCharts(container));
   container.scrollTop = container.scrollHeight;
 }
 
@@ -12604,6 +12913,7 @@ async function sendChat() {
       chatSaveHistory(chatMessages);
       const assistantEl = renderChatMessage(assistantMsg);
       container.appendChild(assistantEl);
+      requestAnimationFrame(() => _initChatCharts(assistantEl));
       chatScrollToLatest(container);
     }
 
