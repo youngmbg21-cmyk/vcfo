@@ -2274,8 +2274,8 @@ body.light-mode {
 .ct-ai-summary-card {
   padding: 16px;
   overflow-y: auto;
-  /* max-height synced to ctScoreCard via JS */
-  max-height: 320px;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 .ct-ai-summary-body {
   font-size: 11px; color: var(--text2); line-height: 1.65;
@@ -15546,15 +15546,25 @@ function computeCFOFlagsArray(d) {
   return flags;
 }
 
+let _ctHeightObserver = null;
+
 function syncCTHeights() {
   const scoreCard = document.getElementById('ctScoreCard');
   const aiCard    = document.getElementById('ctAISummary');
   if (!scoreCard || !aiCard) return;
-  // Give the DOM one more tick so the chart canvas has its final height
-  requestAnimationFrame(() => {
+
+  const apply = () => {
     const h = scoreCard.offsetHeight;
-    if (h > 80) aiCard.style.maxHeight = h + 'px';
-  });
+    if (h > 80) { aiCard.style.height = h + 'px'; aiCard.style.maxHeight = h + 'px'; }
+  };
+
+  // Run after chart paint
+  requestAnimationFrame(apply);
+
+  // Disconnect any previous observer, then watch the score card for size changes
+  if (_ctHeightObserver) _ctHeightObserver.disconnect();
+  _ctHeightObserver = new ResizeObserver(apply);
+  _ctHeightObserver.observe(scoreCard);
 }
 
 const _ctAISummaryCache = {};
