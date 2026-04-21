@@ -12669,34 +12669,57 @@ function createChatChart(type, canvas) {
 function chatRenderMarkdown(text) {
   if (!text) return '';
 
-  // Tables
-  text = text.replace(/(\|.+\|\n\|[-| :]+\|\n(?:\|.+\|\n?)+)/g, (tableBlock) => {
+  // ── 1. Extract tables → placeholders ──
+  const tablePlaceholders = [];
+  text = text.replace(/(\|.+\|\n\|[-| :]+\|\n(?:\|.+\|\n?)+)/g, tableBlock => {
     const lines = tableBlock.trim().split('\n').filter(l => l.trim());
     if (lines.length < 2) return tableBlock;
     const headers = lines[0].split('|').map(h => h.trim()).filter(Boolean);
-    const rows = lines.slice(2).map(row => row.split('|').map(c => c.trim()).filter(Boolean));
-    const headerHTML = headers.map(h => `<th>${h}</th>`).join('');
-    const rowsHTML = rows.map(row => `<tr>${row.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
-    return `<div style="overflow-x:auto;margin:8px 0;">
-      <table style="width:100%;border-collapse:collapse;font-size:10px;font-family:'JetBrains Mono',monospace;">
-        <thead><tr style="background:var(--bg3);border-bottom:1px solid var(--amber);color:var(--amber);letter-spacing:0.08em;">${headerHTML}</tr></thead>
-        <tbody>${rowsHTML}</tbody>
-      </table>
-    </div>`;
+    const rows    = lines.slice(2).map(row => row.split('|').map(c => c.trim()).filter(Boolean));
+    const hHTML   = headers.map(h => `<th>${h}</th>`).join('');
+    const rHTML   = rows.map(row => `<tr>${row.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
+    const ph = `\x01TBL${tablePlaceholders.length}\x01`;
+    tablePlaceholders.push(`<div style="overflow-x:auto;margin:6px 0;"><table style="width:100%;border-collapse:collapse;font-size:10px;font-family:'JetBrains Mono',monospace;"><thead><tr style="background:var(--bg3);border-bottom:1px solid var(--amber);color:var(--amber);letter-spacing:0.08em;">${hHTML}</tr></thead><tbody>${rHTML}</tbody></table></div>`);
+    return ph;
   });
 
-  return text
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/&lt;(\/?(?:div|table|thead|tbody|tr|th|td|strong|em|code)[^&]*)&gt;/g, '<$1>')
+  const esc    = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const inline = s => s
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-    .replace(/^### (.+)$/gm, '<strong style="color:var(--amber);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">$1</strong>')
-    .replace(/^## (.+)$/gm, '<strong style="color:var(--text);font-size:13px;">$1</strong>')
-    .replace(/^# (.+)$/gm,  '<strong style="color:var(--text);font-size:14px;">$1</strong>')
-    .replace(/^\s*[-•]\s+(.+)$/gm, '<div style="padding-left:12px;position:relative;color:var(--text);"><span style="position:absolute;left:0;color:var(--amber);">▸</span>$1</div>')
-    .replace(/\n\n/g, '<br><br>')
-    .replace(/\n/g, '<br>');
+    .replace(/\*(.+?)\*/g,     '<em>$1</em>')
+    .replace(/`(.+?)`/g,       '<code style="background:var(--bg3);padding:1px 4px;border-radius:3px;font-size:10px;">$1</code>');
+
+  // ── 2. Classify each line ──
+  const parts = [];
+  for (const line of text.split('\n')) {
+    const t = line.trim();
+    if (!t)                                        { parts.push({ k:'blank' }); continue; }
+    if (/^\x01TBL\d+\x01$/.test(t))               { parts.push({ k:'block', h: tablePlaceholders[+t.match(/\d+/)[0]] }); continue; }
+    if (/^### /.test(t))                           { parts.push({ k:'block', h:`<div style="color:var(--amber);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin:10px 0 2px;">${inline(esc(t.slice(4)))}</div>` }); continue; }
+    if (/^## /.test(t))                            { parts.push({ k:'block', h:`<div style="color:var(--text);font-size:13px;font-weight:700;margin:8px 0 2px;">${inline(esc(t.slice(3)))}</div>` }); continue; }
+    if (/^# /.test(t))                             { parts.push({ k:'block', h:`<div style="color:var(--text);font-size:14px;font-weight:700;margin:8px 0 2px;">${inline(esc(t.slice(2)))}</div>` }); continue; }
+    if (/^---+$/.test(t))                          { parts.push({ k:'block', h:`<hr style="border:none;border-top:1px solid var(--border);margin:7px 0;">` }); continue; }
+    if (/^\s*[-•▸►]\s/.test(line))                { parts.push({ k:'bullet', h:`<div style="padding-left:14px;position:relative;margin:2px 0;"><span style="position:absolute;left:0;color:var(--amber);">▸</span>${inline(esc(line.replace(/^\s*[-•▸►]\s+/,'')))}</div>` }); continue; }
+    parts.push({ k:'inline', h: inline(esc(line)) });
+  }
+
+  // ── 3. Render: merge inline runs, tighten bullets, small gap on blank ──
+  let html = '', run = [];
+  const flushRun = () => { if (run.length) { html += '<div>' + run.join('<br>') + '</div>'; run = []; } };
+
+  for (let i = 0; i < parts.length; i++) {
+    const { k, h } = parts[i];
+    if      (k === 'inline')  { run.push(h); }
+    else if (k === 'bullet')  { flushRun(); html += h; }
+    else if (k === 'block')   { flushRun(); html += h; }
+    else /* blank */ {
+      flushRun();
+      const next = parts.slice(i + 1).find(p => p.k !== 'blank');
+      if (next && html) html += '<div style="height:5px;"></div>';
+    }
+  }
+  flushRun();
+  return html;
 }
 
 // ── Scroll helpers ──
