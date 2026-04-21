@@ -558,6 +558,63 @@ body {
 .btn-primary:hover { opacity: 0.85; }
 .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
 
+/* ===== SCORING MODEL SETTINGS ===== */
+.sm-section-label {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text3);
+  margin: 10px 0 6px;
+}
+.sm-section-label:first-of-type { margin-top: 0; }
+.sm-grid {
+  display: grid;
+  grid-template-columns: 148px 78px 44px 78px 44px 78px 44px;
+  gap: 3px 6px;
+  align-items: center;
+  margin-bottom: 3px;
+}
+.sm-grid-2t {
+  display: grid;
+  grid-template-columns: 148px 78px 44px 78px 44px;
+  gap: 3px 6px;
+  align-items: center;
+  margin-bottom: 3px;
+}
+.sm-col-hdr {
+  font-size: 9px; color: var(--text3); text-align: center;
+  padding-bottom: 2px;
+}
+.sm-metric {
+  font-size: 11px; color: var(--text2); font-weight: 600;
+}
+.sm-hint {
+  font-size: 9px; color: var(--text3); font-weight: 400; display: block;
+}
+.sm-tier {
+  display: flex; align-items: center; gap: 2px;
+}
+.sm-op { font-size: 10px; color: var(--text3); flex-shrink: 0; }
+.sm-unit { font-size: 10px; color: var(--text3); flex-shrink: 0; }
+.sm-input {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text);
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  padding: 4px 5px; width: 100%; box-sizing: border-box;
+  text-align: center; outline: none;
+  transition: border-color 0.15s;
+}
+.sm-input:focus { border-color: var(--border2); }
+.sm-pts { color: var(--amber); }
+.sm-sep { height: 1px; background: var(--border); margin: 8px 0; }
+.sm-verdict-row {
+  display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.sm-verdict-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text2);
+}
+.sm-verdict-item .sm-input { width: 52px; }
+
 .field-label {
   display: block;
   font-size: 10px;
@@ -3822,6 +3879,137 @@ body.light-mode {
           <textarea id="ogText" style="width:100%;box-sizing:border-box;min-height:200px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;line-height:1.6;padding:12px 52px 12px 12px;font-family:inherit;resize:vertical;" readonly></textarea>
           <button class="btn-secondary" style="position:absolute;top:6px;right:6px;font-size:10px;" onclick="ogCopy()" data-i18n="outreach_copy">Copy</button>
         </div>
+      </div>
+    </div>
+
+    <!-- M&A Scoring Model -->
+    <div class="card" style="margin-top:14px;" id="wsScoringModel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="card-title" style="margin-bottom:0;">🎯 M&amp;A Scoring Model</div>
+        <button class="btn-secondary" style="font-size:10px;" onclick="smReset()">↺ Reset to defaults</button>
+      </div>
+
+      <!-- Verdict Thresholds -->
+      <div class="sm-section-label">Verdict Thresholds</div>
+      <div class="sm-verdict-row">
+        <div class="sm-verdict-item">
+          <span style="color:var(--green);font-weight:700;">BUY</span> ≥
+          <input id="sm-buy-at" class="sm-input" type="number" min="0" max="100" step="1" onchange="smSet('buyAt',this.value)" />
+          <span class="sm-unit">pts</span>
+        </div>
+        <div class="sm-verdict-item">
+          <span style="color:var(--amber);font-weight:700;">HOLD</span> ≥
+          <input id="sm-hold-at" class="sm-input" type="number" min="0" max="100" step="1" onchange="smSet('holdAt',this.value)" />
+          <span class="sm-unit">pts</span>
+        </div>
+        <div class="sm-verdict-item" style="color:var(--text3);font-size:10px;">
+          Below HOLD → <span style="color:var(--red);font-weight:700;">PASS</span>
+        </div>
+      </div>
+
+      <div class="sm-sep"></div>
+
+      <!-- Profitability -->
+      <div class="sm-section-label">Pillar 1 — Profitability</div>
+      <div class="sm-grid" style="margin-bottom:4px;">
+        <div></div>
+        <div class="sm-col-hdr" style="grid-column:span 2;">Tier 1</div>
+        <div class="sm-col-hdr" style="grid-column:span 2;">Tier 2</div>
+        <div class="sm-col-hdr" style="grid-column:span 2;">Tier 3</div>
+      </div>
+      <div class="sm-grid">
+        <div class="sm-metric">ROS <span class="sm-hint">Op. Profit / Revenue</span></div>
+        <div class="sm-tier"><span class="sm-op">&gt;</span><input id="sm-ros-t1" class="sm-input" type="number" step="0.1" onchange="smSet('ros.t1',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-ros-p1" class="sm-input sm-pts" type="number" step="1" onchange="smSet('ros.p1',this.value)" /></div>
+        <div class="sm-tier"><span class="sm-op">&gt;</span><input id="sm-ros-t2" class="sm-input" type="number" step="0.1" onchange="smSet('ros.t2',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-ros-p2" class="sm-input sm-pts" type="number" step="1" onchange="smSet('ros.p2',this.value)" /></div>
+        <div class="sm-tier"><span class="sm-op">&gt;</span><input id="sm-ros-t3" class="sm-input" type="number" step="0.1" onchange="smSet('ros.t3',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-ros-p3" class="sm-input sm-pts" type="number" step="1" onchange="smSet('ros.p3',this.value)" /></div>
+      </div>
+      <div class="sm-grid">
+        <div class="sm-metric">ROE <span class="sm-hint">Net Profit / Equity</span></div>
+        <div class="sm-tier"><span class="sm-op">&gt;</span><input id="sm-roe-t1" class="sm-input" type="number" step="0.1" onchange="smSet('roe.t1',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-roe-p1" class="sm-input sm-pts" type="number" step="1" onchange="smSet('roe.p1',this.value)" /></div>
+        <div class="sm-tier"><span class="sm-op">&gt;</span><input id="sm-roe-t2" class="sm-input" type="number" step="0.1" onchange="smSet('roe.t2',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-roe-p2" class="sm-input sm-pts" type="number" step="1" onchange="smSet('roe.p2',this.value)" /></div>
+        <div class="sm-tier"><span class="sm-op">&gt;</span><input id="sm-roe-t3" class="sm-input" type="number" step="0.1" onchange="smSet('roe.t3',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-roe-p3" class="sm-input sm-pts" type="number" step="1" onchange="smSet('roe.p3',this.value)" /></div>
+      </div>
+
+      <div class="sm-sep"></div>
+
+      <!-- Compliance -->
+      <div class="sm-section-label">Pillar 2 — Compliance</div>
+      <div class="sm-grid-2t">
+        <div class="sm-metric">Auditor Remark <span class="sm-hint">Anmärkning from auditor</span></div>
+        <div class="sm-tier"><span class="sm-op" style="color:var(--green);">Clean:</span></div>
+        <div><input id="sm-audit-clean" class="sm-input sm-pts" type="number" step="1" onchange="smSet('auditClean',this.value)" /></div>
+        <div class="sm-tier"><span class="sm-op" style="color:var(--red);">Flagged:</span></div>
+        <div><input id="sm-audit-flagged" class="sm-input sm-pts" type="number" step="1" onchange="smSet('auditFlagged',this.value)" /></div>
+      </div>
+      <div class="sm-grid-2t">
+        <div class="sm-metric">Payout Ratio <span class="sm-hint">Dividends / Net Profit</span></div>
+        <div class="sm-tier"><span class="sm-op">&lt;</span><input id="sm-pay-t1" class="sm-input" type="number" step="1" onchange="smSet('payout.t1',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-pay-p1" class="sm-input sm-pts" type="number" step="1" onchange="smSet('payout.p1',this.value)" /></div>
+        <div class="sm-tier"><span class="sm-op">&lt;</span><input id="sm-pay-t2" class="sm-input" type="number" step="1" onchange="smSet('payout.t2',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-pay-p2" class="sm-input sm-pts" type="number" step="1" onchange="smSet('payout.p2',this.value)" /></div>
+      </div>
+
+      <div class="sm-sep"></div>
+
+      <!-- Balance Sheet -->
+      <div class="sm-section-label">Pillar 3 — Balance Sheet</div>
+      <div class="sm-grid">
+        <div class="sm-metric">Current Ratio <span class="sm-hint">Current Assets / Current Liab.</span></div>
+        <div class="sm-tier"><span class="sm-op">&gt;</span><input id="sm-cr-t1" class="sm-input" type="number" step="0.1" onchange="smSet('cr.t1',this.value)" /><span class="sm-unit">x</span></div>
+        <div><input id="sm-cr-p1" class="sm-input sm-pts" type="number" step="1" onchange="smSet('cr.p1',this.value)" /></div>
+        <div class="sm-tier"><span class="sm-op">&gt;</span><input id="sm-cr-t2" class="sm-input" type="number" step="0.1" onchange="smSet('cr.t2',this.value)" /><span class="sm-unit">x</span></div>
+        <div><input id="sm-cr-p2" class="sm-input sm-pts" type="number" step="1" onchange="smSet('cr.p2',this.value)" /></div>
+        <div class="sm-tier"><span class="sm-op">&gt;</span><input id="sm-cr-t3" class="sm-input" type="number" step="0.1" onchange="smSet('cr.t3',this.value)" /><span class="sm-unit">x</span></div>
+        <div><input id="sm-cr-p3" class="sm-input sm-pts" type="number" step="1" onchange="smSet('cr.p3',this.value)" /></div>
+      </div>
+      <div class="sm-grid">
+        <div class="sm-metric">D/E Ratio <span class="sm-hint">(LT Debt + CL) / Equity</span></div>
+        <div class="sm-tier"><span class="sm-op">&lt;</span><input id="sm-de-t1" class="sm-input" type="number" step="0.1" onchange="smSet('de.t1',this.value)" /><span class="sm-unit">x</span></div>
+        <div><input id="sm-de-p1" class="sm-input sm-pts" type="number" step="1" onchange="smSet('de.p1',this.value)" /></div>
+        <div class="sm-tier"><span class="sm-op">&lt;</span><input id="sm-de-t2" class="sm-input" type="number" step="0.1" onchange="smSet('de.t2',this.value)" /><span class="sm-unit">x</span></div>
+        <div><input id="sm-de-p2" class="sm-input sm-pts" type="number" step="1" onchange="smSet('de.p2',this.value)" /></div>
+        <div class="sm-tier"><span class="sm-op">&lt;</span><input id="sm-de-t3" class="sm-input" type="number" step="0.1" onchange="smSet('de.t3',this.value)" /><span class="sm-unit">x</span></div>
+        <div><input id="sm-de-p3" class="sm-input sm-pts" type="number" step="1" onchange="smSet('de.p3',this.value)" /></div>
+      </div>
+      <div class="sm-grid-2t">
+        <div class="sm-metric">LT Debt &gt;5yr <span class="sm-hint">% of equity</span></div>
+        <div class="sm-tier"><span class="sm-op">&lt;</span><input id="sm-ltd5-t1" class="sm-input" type="number" step="1" onchange="smSet('ltd5.t1',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-ltd5-p1" class="sm-input sm-pts" type="number" step="1" onchange="smSet('ltd5.p1',this.value)" /></div>
+        <div class="sm-tier"><span class="sm-op">&lt;</span><input id="sm-ltd5-t2" class="sm-input" type="number" step="1" onchange="smSet('ltd5.t2',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-ltd5-p2" class="sm-input sm-pts" type="number" step="1" onchange="smSet('ltd5.p2',this.value)" /></div>
+      </div>
+
+      <div class="sm-sep"></div>
+
+      <!-- Efficiency & Growth -->
+      <div class="sm-section-label">Pillar 4 — Efficiency &amp; Growth</div>
+      <div class="sm-grid">
+        <div class="sm-metric">Asset Depreciation <span class="sm-hint">Accumulated / Gross assets</span></div>
+        <div class="sm-tier"><span class="sm-op">&lt;</span><input id="sm-ad-t1" class="sm-input" type="number" step="1" onchange="smSet('assetDepr.t1',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-ad-p1" class="sm-input sm-pts" type="number" step="1" onchange="smSet('assetDepr.p1',this.value)" /></div>
+        <div class="sm-tier"><span class="sm-op">&lt;</span><input id="sm-ad-t2" class="sm-input" type="number" step="1" onchange="smSet('assetDepr.t2',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-ad-p2" class="sm-input sm-pts" type="number" step="1" onchange="smSet('assetDepr.p2',this.value)" /></div>
+        <div class="sm-tier" style="color:var(--text3);font-size:10px;">else</div>
+        <div><input id="sm-ad-p3" class="sm-input sm-pts" type="number" step="1" onchange="smSet('assetDepr.p3',this.value)" /></div>
+      </div>
+      <div class="sm-grid">
+        <div class="sm-metric">Revenue Growth <span class="sm-hint">YoY net sales change</span></div>
+        <div class="sm-tier"><span class="sm-op">&gt;</span><input id="sm-rg-t1" class="sm-input" type="number" step="1" onchange="smSet('revGrowth.t1',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-rg-p1" class="sm-input sm-pts" type="number" step="1" onchange="smSet('revGrowth.p1',this.value)" /></div>
+        <div class="sm-tier"><span class="sm-op">&gt;</span><input id="sm-rg-t2" class="sm-input" type="number" step="1" onchange="smSet('revGrowth.t2',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-rg-p2" class="sm-input sm-pts" type="number" step="1" onchange="smSet('revGrowth.p2',this.value)" /></div>
+        <div class="sm-tier"><span class="sm-op">&gt;</span><input id="sm-rg-t3" class="sm-input" type="number" step="1" onchange="smSet('revGrowth.t3',this.value)" /><span class="sm-unit">%</span></div>
+        <div><input id="sm-rg-p3" class="sm-input sm-pts" type="number" step="1" onchange="smSet('revGrowth.p3',this.value)" /></div>
+      </div>
+      <div style="font-size:9px;color:var(--text3);margin-top:8px;">
+        Points shown in <span style="color:var(--amber);">amber</span> are awarded when a company meets the condition.
+        Changes take effect immediately on the next company load or screener run.
       </div>
     </div>
 
@@ -9219,6 +9407,7 @@ function wsInit() {
   if (outputEl) outputEl.style.display = 'none';
   if (statusEl) statusEl.textContent = '';
   ogShow();
+  renderScoringModelSettings();
 }
 
 function wsPopulateDealPicker() {
@@ -9973,25 +10162,103 @@ function deriveMetrics(d) {
   return { ros, roe, de, cr, payout, assetDeprec, revGrowth };
 }
 
+// ============================================================
+// SCORING MODEL — configurable thresholds & points
+// ============================================================
+const SCORING_DEFAULTS = {
+  buyAt: 65, holdAt: 40,
+  ros:       { t1:15, p1:15, t2:8,   p2:10, t3:3,   p3:5  },
+  roe:       { t1:15, p1:10, t2:8,   p2:6,  t3:3,   p3:3  },
+  auditClean: 20, auditFlagged: 5,
+  payout:    { t1:60, p1:5,  t2:100, p2:2  },
+  cr:        { t1:1.8,p1:10, t2:1.2, p2:6,  t3:0.8, p3:3  },
+  de:        { t1:1.0,p1:10, t2:2.0, p2:6,  t3:3.5, p3:3  },
+  ltd5:      { t1:20, p1:5,  t2:50,  p2:3  },
+  assetDepr: { t1:70, p1:15, t2:90,  p2:8,           p3:2  },
+  revGrowth: { t1:10, p1:10, t2:3,   p2:7,  t3:0,   p3:4  },
+};
+
+function _getScoringModel() {
+  const raw = DealScopeStore.get('scoring_model');
+  if (!raw) return SCORING_DEFAULTS;
+  try {
+    const stored = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw));
+    const merged = JSON.parse(JSON.stringify(SCORING_DEFAULTS));
+    Object.keys(stored).forEach(k => {
+      if (stored[k] !== null && typeof stored[k] === 'object') {
+        Object.assign(merged[k], stored[k]);
+      } else if (stored[k] !== null) {
+        merged[k] = stored[k];
+      }
+    });
+    return merged;
+  } catch(e) { return SCORING_DEFAULTS; }
+}
+
+function smSet(path, val) {
+  const v = parseFloat(val);
+  if (isNaN(v)) return;
+  const m = _getScoringModel();
+  const parts = path.split('.');
+  if (parts.length === 1) { m[parts[0]] = v; }
+  else { if (!m[parts[0]]) m[parts[0]] = {}; m[parts[0]][parts[1]] = v; }
+  DealScopeStore.set('scoring_model', JSON.stringify(m));
+}
+
+function smReset() {
+  DealScopeStore.set('scoring_model', null);
+  renderScoringModelSettings();
+}
+
+function renderScoringModelSettings() {
+  const s = _getScoringModel();
+  const sv = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  sv('sm-buy-at', s.buyAt);       sv('sm-hold-at', s.holdAt);
+  sv('sm-ros-t1', s.ros.t1);      sv('sm-ros-p1', s.ros.p1);
+  sv('sm-ros-t2', s.ros.t2);      sv('sm-ros-p2', s.ros.p2);
+  sv('sm-ros-t3', s.ros.t3);      sv('sm-ros-p3', s.ros.p3);
+  sv('sm-roe-t1', s.roe.t1);      sv('sm-roe-p1', s.roe.p1);
+  sv('sm-roe-t2', s.roe.t2);      sv('sm-roe-p2', s.roe.p2);
+  sv('sm-roe-t3', s.roe.t3);      sv('sm-roe-p3', s.roe.p3);
+  sv('sm-audit-clean', s.auditClean); sv('sm-audit-flagged', s.auditFlagged);
+  sv('sm-pay-t1', s.payout.t1);   sv('sm-pay-p1', s.payout.p1);
+  sv('sm-pay-t2', s.payout.t2);   sv('sm-pay-p2', s.payout.p2);
+  sv('sm-cr-t1', s.cr.t1);        sv('sm-cr-p1', s.cr.p1);
+  sv('sm-cr-t2', s.cr.t2);        sv('sm-cr-p2', s.cr.p2);
+  sv('sm-cr-t3', s.cr.t3);        sv('sm-cr-p3', s.cr.p3);
+  sv('sm-de-t1', s.de.t1);        sv('sm-de-p1', s.de.p1);
+  sv('sm-de-t2', s.de.t2);        sv('sm-de-p2', s.de.p2);
+  sv('sm-de-t3', s.de.t3);        sv('sm-de-p3', s.de.p3);
+  sv('sm-ltd5-t1', s.ltd5.t1);    sv('sm-ltd5-p1', s.ltd5.p1);
+  sv('sm-ltd5-t2', s.ltd5.t2);    sv('sm-ltd5-p2', s.ltd5.p2);
+  sv('sm-ad-t1', s.assetDepr.t1); sv('sm-ad-p1', s.assetDepr.p1);
+  sv('sm-ad-t2', s.assetDepr.t2); sv('sm-ad-p2', s.assetDepr.p2);
+                                   sv('sm-ad-p3', s.assetDepr.p3);
+  sv('sm-rg-t1', s.revGrowth.t1); sv('sm-rg-p1', s.revGrowth.p1);
+  sv('sm-rg-t2', s.revGrowth.t2); sv('sm-rg-p2', s.revGrowth.p2);
+  sv('sm-rg-t3', s.revGrowth.t3); sv('sm-rg-p3', s.revGrowth.p3);
+}
+
 // ── Compute M&A score for a company data object (same logic as main screener) ──
 function computeMAScore(d) {
   if (!d) return null;
   const m = deriveMetrics(d);
+  const s = _getScoringModel();
   let prof=0, comp=0, bs=0, eff=0;
-  if (m.ros > 15) prof += 15; else if (m.ros > 8) prof += 10; else if (m.ros > 3) prof += 5;
-  if (m.roe > 15) prof += 10; else if (m.roe > 8) prof += 6; else if (m.roe > 3) prof += 3;
-  if (!d.auditorRemark) comp += 20; else comp += 5;
-  const p = d.netProfit > 0 ? d.dividendsPaid/d.netProfit*100 : 999;
-  if (p < 60) comp += 5; else if (p < 100) comp += 2;
-  if (m.cr > 1.8) bs += 10; else if (m.cr > 1.2) bs += 6; else if (m.cr > 0.8) bs += 3;
-  const de2 = m.de || 99;
-  if (de2 < 1.0) bs += 10; else if (de2 < 2.0) bs += 6; else if (de2 < 3.5) bs += 3;
+  const ros = m.ros||0, roe = m.roe||0;
+  if (ros > s.ros.t1) prof += s.ros.p1; else if (ros > s.ros.t2) prof += s.ros.p2; else if (ros > s.ros.t3) prof += s.ros.p3;
+  if (roe > s.roe.t1) prof += s.roe.p1; else if (roe > s.roe.t2) prof += s.roe.p2; else if (roe > s.roe.t3) prof += s.roe.p3;
+  if (!d.auditorRemark) comp += s.auditClean; else comp += s.auditFlagged;
+  const pay = d.netProfit > 0 ? d.dividendsPaid/d.netProfit*100 : 999;
+  if (pay < s.payout.t1) comp += s.payout.p1; else if (pay < s.payout.t2) comp += s.payout.p2;
+  const cr = m.cr||0, de2 = m.de||99;
+  if (cr > s.cr.t1) bs += s.cr.p1; else if (cr > s.cr.t2) bs += s.cr.p2; else if (cr > s.cr.t3) bs += s.cr.p3;
+  if (de2 < s.de.t1) bs += s.de.p1; else if (de2 < s.de.t2) bs += s.de.p2; else if (de2 < s.de.t3) bs += s.de.p3;
   const ltd5pct = d.equity > 0 ? d.longTermDebtOver5y/d.equity*100 : 100;
-  if (ltd5pct < 20) bs += 5; else if (ltd5pct < 50) bs += 3;
-  const ad = m.assetDeprec || 0;
-  if (ad < 70) eff += 15; else if (ad < 90) eff += 8; else eff += 2;
-  const rg = m.revGrowth || 0;
-  if (rg > 10) eff += 10; else if (rg > 3) eff += 7; else if (rg > 0) eff += 4;
+  if (ltd5pct < s.ltd5.t1) bs += s.ltd5.p1; else if (ltd5pct < s.ltd5.t2) bs += s.ltd5.p2;
+  const ad = m.assetDeprec||0, rg = m.revGrowth||0;
+  if (ad < s.assetDepr.t1) eff += s.assetDepr.p1; else if (ad < s.assetDepr.t2) eff += s.assetDepr.p2; else eff += s.assetDepr.p3;
+  if (rg > s.revGrowth.t1) eff += s.revGrowth.p1; else if (rg > s.revGrowth.t2) eff += s.revGrowth.p2; else if (rg > s.revGrowth.t3) eff += s.revGrowth.p3;
   return prof + comp + bs + eff;
 }
 
@@ -15323,27 +15590,28 @@ let _ctChart = null;
 
 function computeMAScorePillars(d) {
   if (!d) return null;
+  const s = _getScoringModel();
   let prof = 0, comp = 0, bs = 0, eff = 0;
   const ros = d.netSales ? d.opProfit / d.netSales * 100 : 0;
   const roe = d.equity   ? d.netProfit / d.equity * 100  : 0;
-  if (ros > 15) prof += 15; else if (ros > 8) prof += 10; else if (ros > 3) prof += 5;
-  if (roe > 15) prof += 10; else if (roe > 8) prof += 6;  else if (roe > 3) prof += 3;
-  if (!d.auditorRemark) comp += 20; else comp += 5;
+  if (ros > s.ros.t1) prof += s.ros.p1; else if (ros > s.ros.t2) prof += s.ros.p2; else if (ros > s.ros.t3) prof += s.ros.p3;
+  if (roe > s.roe.t1) prof += s.roe.p1; else if (roe > s.roe.t2) prof += s.roe.p2; else if (roe > s.roe.t3) prof += s.roe.p3;
+  if (!d.auditorRemark) comp += s.auditClean; else comp += s.auditFlagged;
   const pay = d.netProfit > 0 ? d.dividendsPaid / d.netProfit * 100 : 999;
-  if (pay < 60) comp += 5; else if (pay < 100) comp += 2;
+  if (pay < s.payout.t1) comp += s.payout.p1; else if (pay < s.payout.t2) comp += s.payout.p2;
   const cr = d.currentLiabilities > 0 ? d.totalCurrentAssets / d.currentLiabilities : 0;
   const de = d.equity > 0 ? (d.longTermDebt + d.currentLiabilities) / d.equity : 99;
-  if (cr > 1.8) bs += 10; else if (cr > 1.2) bs += 6; else if (cr > 0.8) bs += 3;
-  if (de < 1.0) bs += 10; else if (de < 2.0) bs += 6;  else if (de < 3.5) bs += 3;
+  if (cr > s.cr.t1) bs += s.cr.p1; else if (cr > s.cr.t2) bs += s.cr.p2; else if (cr > s.cr.t3) bs += s.cr.p3;
+  if (de < s.de.t1) bs += s.de.p1; else if (de < s.de.t2) bs += s.de.p2; else if (de < s.de.t3) bs += s.de.p3;
   const ltd5 = d.equity > 0 ? d.longTermDebtOver5y / d.equity * 100 : 100;
-  if (ltd5 < 20) bs += 5; else if (ltd5 < 50) bs += 3;
+  if (ltd5 < s.ltd5.t1) bs += s.ltd5.p1; else if (ltd5 < s.ltd5.t2) bs += s.ltd5.p2;
   const ad = d.inventarierAcqCost > 0 ? (1 - d.inventarierBV / d.inventarierAcqCost) * 100 : 0;
-  if (ad < 70) eff += 15; else if (ad < 90) eff += 8; else eff += 2;
+  if (ad < s.assetDepr.t1) eff += s.assetDepr.p1; else if (ad < s.assetDepr.t2) eff += s.assetDepr.p2; else eff += s.assetDepr.p3;
   const prevSales = (historyData[String(parseInt(d.fiscalYear) - 1)] || {}).netSales || d.prevNetSales || 0;
   const rg = prevSales > 0 ? (d.netSales - prevSales) / prevSales * 100 : 0;
-  if (rg > 10) eff += 10; else if (rg > 3) eff += 7; else if (rg > 0) eff += 4;
+  if (rg > s.revGrowth.t1) eff += s.revGrowth.p1; else if (rg > s.revGrowth.t2) eff += s.revGrowth.p2; else if (rg > s.revGrowth.t3) eff += s.revGrowth.p3;
   const total = prof + comp + bs + eff;
-  return { total, prof, comp, bs, eff, verdict: total >= 65 ? 'BUY' : total >= 40 ? 'HOLD' : 'PASS' };
+  return { total, prof, comp, bs, eff, verdict: total >= s.buyAt ? 'BUY' : total >= s.holdAt ? 'HOLD' : 'PASS' };
 }
 
 function renderControlTower(d) {
