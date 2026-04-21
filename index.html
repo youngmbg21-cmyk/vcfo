@@ -15551,22 +15551,24 @@ function computeCFOFlagsArray(d) {
 let _ctHeightObserver = null;
 
 function syncCTHeights() {
-  const scoreCard = document.getElementById('ctScoreCard');
-  const aiCard    = document.getElementById('ctAISummary');
-  if (!scoreCard || !aiCard) return;
+  const scoreCard  = document.getElementById('ctScoreCard');
+  const auditPanel = document.getElementById('ctAuditPanel');
+  const aiCard     = document.getElementById('ctAISummary');
+  if (!scoreCard || !auditPanel || !aiCard) return;
 
   const apply = () => {
-    const h = scoreCard.offsetHeight;
-    if (h > 80) { aiCard.style.height = h + 'px'; aiCard.style.maxHeight = h + 'px'; }
+    const scoreBottom = scoreCard.getBoundingClientRect().bottom;
+    const auditBottom = auditPanel.getBoundingClientRect().bottom;
+    const h = scoreBottom - auditBottom - 12; // 12px = column gap
+    if (h > 60) { aiCard.style.height = h + 'px'; aiCard.style.maxHeight = h + 'px'; }
   };
 
-  // Run after chart paint
   requestAnimationFrame(apply);
 
-  // Disconnect any previous observer, then watch the score card for size changes
   if (_ctHeightObserver) _ctHeightObserver.disconnect();
   _ctHeightObserver = new ResizeObserver(apply);
   _ctHeightObserver.observe(scoreCard);
+  _ctHeightObserver.observe(auditPanel);
 }
 
 const _ctAISummaryCache = {};
